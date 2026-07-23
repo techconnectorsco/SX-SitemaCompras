@@ -1,0 +1,78 @@
+{
+  "success": "boolean",
+  "exportado_en": "string (ISO Date)",
+  "exportado_por": "string",
+  "tipo": "string ('completo' o 'resumen')",
+  "resumen": {
+    "periodo": {
+      "desde": "string (YYYY-MM-DD)",
+      "hasta": "string (YYYY-MM-DD)",
+      "meses": "number"
+    },
+    "totales": {
+      "pedidos_unicos": "number",
+      "lineas_totales": "number",
+      "articulos_unicos": "number"
+    },
+    "cantidades": {
+      "total_pedida": "number",
+      "total_facturada": "number",
+      "total_pendiente": "number",
+      "total_cancelada": "number"
+    },
+    "fill_rate": {
+      "global": "number",
+      "por_estado": {
+        "facturado": "number",
+        "pendiente": "number"
+      }
+    },
+    "lead_time": {
+      "promedio_dias": "number",
+      "minimo_dias": "number",
+      "maximo_dias": "number",
+      "desviacion": "number"
+    },
+    "cumplimiento_fecha": {
+      "a_tiempo": "number",
+      "retrasados": "number",
+      "adelantados": "number",
+      "sin_fecha": "number",
+      "porcentaje_a_tiempo": "number"
+    },
+    "valor_economico": {
+      "total_pedido": "number",
+      "total_facturado": "number",
+      "total_pendiente": "number",
+      "perdida_por_cancelacion": "number"
+    },
+    "por_estado": {
+      "F": "number",
+      "N": "number",
+      "otros": "number"
+    },
+    "por_bodega": {
+      "nombre_bodega_dinamica": "number"
+    }
+  },
+  "pedidos": [
+    {
+      "pedido": "string",
+      "linea": "number",
+      "articulo": "string",
+      "descripcion": "string | null",
+      "bodega": "string",
+      "estado": "string",
+      "fecha_prometida": "string (YYYY-MM-DD) | null",
+      "fecha_entrega": "string (YYYY-MM-DD) | null",
+      "cantidad_pedida": "number",
+      "cantidad_facturada": "number",
+      "cantidad_pendiente": "number",
+      "cantidad_cancelada": "number",
+      "precio_unitario": "number",
+      "dias_diferencia": "number | null",
+      "fill_rate_linea": "number",
+      "cumplimiento_fecha": "string ('A_TIEMPO' | 'RETRASADO' | 'ADELANTADO' | 'SIN_FECHA')"
+    }
+  ]
+}

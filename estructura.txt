@@ -1,0 +1,24 @@
+
+D:\Users\Usuario\Desktop\VedovaWEB\VYOWEB
+├── components.json
+├── end
+├── eslint.config.js
+├── estructura.txt
+├── LICENSE
+├── node_modules
+├── package-lock.json
+├── package.json
+├── postcss.config.cjs
+├── README.md
+├── src
+├── static
+├── svelte.config.js
+├── tailwind.config.ts
+├── tsconfig.json
+└── vite.config.ts
+
+directory: 3 file: 13
+
+
+
+[2K[1G
