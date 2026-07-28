@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * MOTOR DE IA VYOWEB — REGISTRO DE MÓDULOS
+ * MOTOR DE IA SoporteXperto — REGISTRO DE MÓDULOS
  * ============================================================================
  * Punto único donde se registran los módulos. Para agregar finanzas o país,
  * se crea su carpeta en modulos/ y se agrega aquí. El núcleo no se toca.

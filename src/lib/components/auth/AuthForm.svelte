@@ -64,14 +64,14 @@
 				<Form.Control>
 					{#snippet children({ props })}
 						<Form.Label class="text-sm font-medium text-foreground flex items-center gap-2">
-							<Mail class="h-4 w-4 text-[#253166] dark:text-orange-400" />
+							<Mail class="h-4 w-4 text-[#0D1E3D] dark:text-[#1A73C2]" />
 							Correo Electrónico
 						</Form.Label>
 						<Input
 							{...props}
 							type="email"
 							placeholder="tu@ejemplo.com"
-							class="mt-2 h-12 text-base border-gray-300 dark:border-gray-700 focus:border-[#253166] dark:focus:border-orange-400 focus:ring-[#253166] dark:focus:ring-orange-400"
+							class="mt-2 h-12 text-base border-gray-300 dark:border-gray-700 focus:border-[#0D1E3D] dark:focus:border-[#1A73C2] focus:ring-[#0D1E3D] dark:focus:ring-[#1A73C2]"
 							disabled={submitting}
 							bind:value={$formData.email}
 						/>
@@ -90,14 +90,14 @@
 						<Form.Control>
 							{#snippet children({ props })}
 								<Form.Label class="text-sm font-medium text-foreground flex items-center gap-2">
-									<Lock class="h-4 w-4 text-[#253166] dark:text-orange-400" />
+									<Lock class="h-4 w-4 text-[#0D1E3D] dark:text-[#1A73C2]" />
 									Contraseña
 								</Form.Label>
 								<Input
 									{...props}
 									type="password"
 									placeholder="••••••••"
-									class="mt-2 h-12 text-base border-gray-300 dark:border-gray-700 focus:border-[#253166] dark:focus:border-orange-400 focus:ring-[#253166] dark:focus:ring-orange-400"
+									class="mt-2 h-12 text-base border-gray-300 dark:border-gray-700 focus:border-[#0D1E3D] dark:focus:border-[#1A73C2] focus:ring-[#0D1E3D] dark:focus:ring-[#1A73C2]"
 									disabled={submitting}
 									bind:value={$formData.password}
 								/>
@@ -113,14 +113,14 @@
 						<Form.Control>
 							{#snippet children({ props })}
 								<Form.Label class="text-sm font-medium text-foreground flex items-center gap-2">
-									<ShieldCheck class="h-4 w-4 text-[#253166] dark:text-orange-400" />
+									<ShieldCheck class="h-4 w-4 text-[#0D1E3D] dark:text-[#1A73C2]" />
 									Confirmar
 								</Form.Label>
 								<Input
 									{...props}
 									type="password"
 									placeholder="••••••••"
-									class="mt-2 h-12 text-base border-gray-300 dark:border-gray-700 focus:border-[#253166] dark:focus:border-orange-400 focus:ring-[#253166] dark:focus:ring-orange-400"
+									class="mt-2 h-12 text-base border-gray-300 dark:border-gray-700 focus:border-[#0D1E3D] dark:focus:border-[#1A73C2] focus:ring-[#0D1E3D] dark:focus:ring-[#1A73C2]"
 									disabled={submitting}
 									bind:value={$formData.confirmPassword}
 								/>
@@ -138,7 +138,7 @@
 						{#snippet children({ props })}
 							<div class="flex justify-between items-center">
 								<Form.Label class="text-sm font-medium text-foreground flex items-center gap-2">
-									<Lock class="h-4 w-4 text-[#253166] dark:text-orange-400" />
+									<Lock class="h-4 w-4 text-[#0D1E3D] dark:text-[#1A73C2]" />
 									Contraseña
 								</Form.Label>
 							</div>
@@ -147,7 +147,7 @@
 								{...props}
 								type="password"
 								placeholder="••••••••"
-								class="mt-2 h-12 text-base border-gray-300 dark:border-gray-700 focus:border-[#253166] dark:focus:border-orange-400 focus:ring-[#253166] dark:focus:ring-orange-400"
+								class="mt-2 h-12 text-base border-gray-300 dark:border-gray-700 focus:border-[#0D1E3D] dark:focus:border-[#1A73C2] focus:ring-[#0D1E3D] dark:focus:ring-[#1A73C2]"
 								disabled={submitting}
 								bind:value={$formData.password}
 							/>
@@ -161,7 +161,7 @@
 		<!-- Submit button -->
 		<Button 
 			type="submit" 
-			class="w-full h-12 text-base font-semibold bg-[#253166] hover:bg-[#253166]/90 dark:bg-[#253166] dark:hover:bg-[#253166]/80 transition-all" 
+			class="w-full h-12 text-base font-semibold bg-[#0D1E3D] hover:bg-[#0D1E3D]/90 dark:bg-[#0D1E3D] dark:hover:bg-[#0D1E3D]/80 transition-all" 
 			disabled={submitting}
 		>
 			{#if submitting}
@@ -193,7 +193,7 @@
 		{footerText}{' '}
 		<a 
 			href={footerLinkHref} 
-			class="font-medium text-[#253166] hover:text-orange-500 dark:text-orange-400 dark:hover:text-orange-300 transition-colors"
+			class="font-medium text-[#0D1E3D] hover:text-[#1A73C2] dark:text-[#1A73C2] dark:hover:text-[#1A73C2]/80 transition-colors"
 		>
 			{footerLinkText}
 		</a>

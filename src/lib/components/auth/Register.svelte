@@ -1,7 +1,7 @@
 <script lang="ts">
 	/**
 	 * @module RegisterPage
-	 * @description Componente de registro de usuarios para el sistema VYO.
+	 * @description Componente de registro de usuarios para el sistema SoporteXperto.
 	 * Utiliza SuperForms + AuthForm para validación y envío del formulario.
 	 */
 
@@ -60,11 +60,11 @@
 		<div class="w-full max-w-lg px-6 py-6">
 			<!-- Logo y Header -->
 			<div class="space-y-3">
-				<!-- Logo VYO -->
+				<!-- Logo SoporteXperto -->
 				<div class="flex items-center gap-3">
 					<img 
-						src="/grupovyo-removebg-preview.png" 
-						alt="Grupo VYO Logo" 
+						src="/logo-soportexperto.png" 
+						alt="SoporteXperto Logo" 
 						class="h-12 w-auto"
 					/>
 				</div>
@@ -72,7 +72,7 @@
 				<!-- Título y Badge en línea -->
 				<div class="flex items-center justify-between">
 					<div>
-						<h1 class="text-3xl font-bold text-[#253166] dark:text-white">
+						<h1 class="text-3xl font-bold text-[#0D1E3D] dark:text-white">
 							Crear Cuenta
 						</h1>
 						<p class="text-sm text-muted-foreground mt-1">
@@ -123,14 +123,14 @@
 					Al registrarte aceptas{' '}
 					<a 
 						href="/terms" 
-						class="text-[#253166] hover:underline transition-colors"
+						class="text-[#0D1E3D] hover:underline transition-colors"
 					>
 						Términos
 					</a>
 					{' '}y{' '}
 					<a 
 						href="/privacy" 
-						class="text-[#253166] hover:underline transition-colors"
+						class="text-[#0D1E3D] hover:underline transition-colors"
 					>
 						Privacidad
 					</a>
@@ -139,7 +139,7 @@
 					Contacto:{' '}
 					<a 
 						href="mailto:{siteConfig.contact.email}" 
-						class="text-[#253166] hover:underline transition-colors"
+						class="text-[#0D1E3D] hover:underline transition-colors"
 					>
 						{siteConfig.contact.email}
 					</a>

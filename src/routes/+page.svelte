@@ -74,8 +74,8 @@
 		<section class="relative overflow-hidden py-20 lg:py-10">
 			<!-- Background decoration -->
 			<div class="absolute inset-0 -z-10">
-				<div class="absolute top-0 right-0 w-96 h-96 bg-[#253166]/5 rounded-full blur-3xl"></div>
-				<div class="absolute bottom-0 left-0 w-96 h-96 bg-orange-500/5 rounded-full blur-3xl"></div>
+				<div class="absolute top-0 right-0 w-96 h-96 bg-[#0D1E3D]/5 rounded-full blur-3xl"></div>
+				<div class="absolute bottom-0 left-0 w-96 h-96 bg-[#1A73C2]/5 rounded-full blur-3xl"></div>
 			</div>
 
 			<div class="container mx-auto px-4">
@@ -85,26 +85,31 @@
 						<!-- Logo -->
 						<div class="flex items-center gap-3">
 							<img 
-								src="/grupovyo-removebg-preview.png" 
-								alt="Grupo VYO Logo" 
-								class="h-16 w-auto"
+								src="/logo-soportexperto.png" 
+								alt="SoporteXperto Logo" 
+								class="h-16 w-auto dark:hidden"
 							/>
-							<div class="h-12 w-px bg-linear-to-b from-[#253166] to-orange-500"></div>
+							<img 
+								src="/logo-soportexperto1.png" 
+								alt="SoporteXperto Logo" 
+								class="h-16 w-auto hidden dark:block"
+							/>
+							<div class="h-12 w-px bg-linear-to-b from-[#0D1E3D] to-[#1A73C2]"></div>
 							<div>
-								<p class="text-sm font-medium text-[#253166] dark:text-blue-400">
+								<p class="text-sm font-medium text-[#0D1E3D] dark:text-blue-400">
 									Sistema Inteligente
 								</p>
 								<p class="text-xs text-muted-foreground">
-									Grupo Vedova & Obando
+									SoporteXperto
 								</p>
 							</div>
 						</div>
 
 						<!-- Headline -->
 						<div class="space-y-4">
-							<h1 class="text-4xl lg:text-6xl font-bold text-[#253166] dark:text-white leading-tight">
+							<h1 class="text-4xl lg:text-6xl font-bold text-[#0D1E3D] dark:text-white leading-tight">
 								Gestión Inteligente de
-								<span class="block text-transparent bg-clip-text bg-linear-to-r from-[#253166] to-orange-500">
+								<span class="block text-transparent bg-clip-text bg-linear-to-r from-[#0D1E3D] to-[#1A73C2]">
 									Compras y Forecast
 								</span>
 							</h1>
@@ -113,7 +118,7 @@
 								{#if isLoading}
 									<span class="inline-block w-16 h-5 bg-gray-200 dark:bg-gray-700 animate-pulse rounded align-middle"></span>
 								{:else}
-									<span class="font-semibold text-[#253166] dark:text-white">{stats ? formatNumber(stats.totalSKUs) : '1,500'}</span>
+									<span class="font-semibold text-[#0D1E3D] dark:text-white">{stats ? formatNumber(stats.totalSKUs) : '1,500'}</span>
 								{/if}
 								SKUs con reglas de negocio estructuradas y análisis predictivo basado en datos históricos.
 							</p>
@@ -152,7 +157,7 @@
 							<Button 
 								href={AUTH_PATHS.LOGIN} 
 								size="lg" 
-								class="text-base px-8 py-6 bg-[#253166] hover:bg-[#253166]/90 dark:bg-[#253166] dark:hover:bg-[#253166]/80"
+								class="text-base px-8 py-6 bg-[#0D1E3D] hover:bg-[#0D1E3D]/90 dark:bg-[#0D1E3D] dark:hover:bg-[#0D1E3D]/80"
 							>
 								Acceder al Sistema
 								<ChevronRight class="ml-2 h-5 w-5" />
@@ -161,7 +166,7 @@
 								href={AUTH_PATHS.REGISTER} 
 								size="lg" 
 								variant="outline"
-								class="text-base px-8 py-6 border-[#253166] text-[#253166] hover:bg-[#253166]/5"
+								class="text-base px-8 py-6 border-[#0D1E3D] text-[#0D1E3D] hover:bg-[#0D1E3D]/5"
 							>
 								Solicitar Acceso
 							</Button>
@@ -173,18 +178,18 @@
 								{#if isLoading}
 									<div class="h-9 w-20 bg-gray-200 dark:bg-gray-700 animate-pulse rounded"></div>
 								{:else}
-									<p class="text-3xl font-bold text-[#253166] dark:text-white">
+									<p class="text-3xl font-bold text-[#0D1E3D] dark:text-white">
 										{stats ? formatNumber(stats.totalSKUs) : '1,500+'}
 									</p>
 								{/if}
 								<p class="text-sm text-muted-foreground">SKUs Gestionados</p>
 							</div>
 							<div>
-								<p class="text-3xl font-bold text-[#253166] dark:text-white">6 Años</p>
+								<p class="text-3xl font-bold text-[#0D1E3D] dark:text-white">6 Años</p>
 								<p class="text-sm text-muted-foreground">Historial Analizado</p>
 							</div>
 							<div>
-								<p class="text-3xl font-bold text-[#253166] dark:text-white">24/7</p>
+								<p class="text-3xl font-bold text-[#0D1E3D] dark:text-white">24/7</p>
 								<p class="text-sm text-muted-foreground">Disponibilidad</p>
 							</div>
 						</div>
@@ -194,8 +199,8 @@
 					<div class="hidden lg:flex items-center justify-center relative">
 						<div class="relative w-full max-w-lg">
 							<!-- Decorative circles -->
-							<div class="absolute -top-4 -right-4 w-72 h-72 bg-linear-to-br from-[#253166]/10 to-orange-500/10 rounded-full blur-2xl"></div>
-							<div class="absolute -bottom-4 -left-4 w-72 h-72 bg-linear-to-tr from-orange-500/10 to-[#253166]/10 rounded-full blur-2xl"></div>
+							<div class="absolute -top-4 -right-4 w-72 h-72 bg-linear-to-br from-[#0D1E3D]/10 to-[#1A73C2]/10 rounded-full blur-2xl"></div>
+							<div class="absolute -bottom-4 -left-4 w-72 h-72 bg-linear-to-tr from-[#1A73C2]/10 to-[#0D1E3D]/10 rounded-full blur-2xl"></div>
 							
 							<!-- Dashboard Card -->
 							<div class="relative z-10 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 border border-gray-200 dark:border-gray-700">
@@ -203,8 +208,8 @@
 									<!-- Header -->
 									<div class="flex items-center justify-between pb-4 border-b">
 										<div class="flex items-center gap-3">
-											<div class="w-10 h-10 rounded-lg bg-[#253166]/10 flex items-center justify-center">
-												<BarChart3 class="h-5 w-5 text-[#253166]" />
+											<div class="w-10 h-10 rounded-lg bg-[#0D1E3D]/10 flex items-center justify-center">
+												<BarChart3 class="h-5 w-5 text-[#0D1E3D]" />
 											</div>
 											<div>
 												<p class="font-semibold text-sm">Dashboard Compras</p>
@@ -229,10 +234,10 @@
 	<div class="flex justify-between text-xs text-muted-foreground">
 		<span>Distribución ABC</span>
 		{#if stats?.totalSKUs}
-			<span class="text-[#253166] font-medium">{formatNumber(stats.totalSKUs)} SKUs</span>
+			<span class="text-[#0D1E3D] font-medium">{formatNumber(stats.totalSKUs)} SKUs</span>
 		{/if}
 	</div>
-	<div class="h-36 bg-gradient-to-t from-[#253166]/10 to-orange-500/5 rounded-lg p-3">
+	<div class="h-36 bg-gradient-to-t from-[#0D1E3D]/10 to-[#1A73C2]/5 rounded-lg p-3">
 		{#if stats?.distribucionABC}
 			{@const abcData = stats.distribucionABC}
 			{@const maxVal = Math.max(abcData.A || 1, abcData.B || 1, abcData.C || 1, abcData.D || 1, abcData.E || 1)}
@@ -241,7 +246,7 @@
 				<div class="flex-1 flex flex-col items-center h-full">
 					<div class="flex-1 w-full flex items-end">
 						<div 
-							class="w-full bg-[#253166] rounded-t"
+							class="w-full bg-[#0D1E3D] rounded-t"
 							style="height: {Math.max((abcData.A / maxVal) * 100, 8)}%"
 						></div>
 					</div>
@@ -251,7 +256,7 @@
 				<div class="flex-1 flex flex-col items-center h-full">
 					<div class="flex-1 w-full flex items-end">
 						<div 
-							class="w-full bg-[#253166]/80 rounded-t"
+							class="w-full bg-[#0D1E3D]/80 rounded-t"
 							style="height: {Math.max((abcData.B / maxVal) * 100, 8)}%"
 						></div>
 					</div>
@@ -261,7 +266,7 @@
 				<div class="flex-1 flex flex-col items-center h-full">
 					<div class="flex-1 w-full flex items-end">
 						<div 
-							class="w-full bg-orange-500 rounded-t"
+							class="w-full bg-[#1A73C2] rounded-t"
 							style="height: {Math.max((abcData.C / maxVal) * 100, 8)}%"
 						></div>
 					</div>
@@ -271,7 +276,7 @@
 				<div class="flex-1 flex flex-col items-center h-full">
 					<div class="flex-1 w-full flex items-end">
 						<div 
-							class="w-full bg-orange-400 rounded-t"
+							class="w-full bg-[#1A73C2]/80 rounded-t"
 							style="height: {Math.max((abcData.D / maxVal) * 100, 8)}%"
 						></div>
 					</div>
@@ -293,25 +298,25 @@
 			<div class="flex items-end justify-between gap-2 h-full">
 				<div class="flex-1 flex flex-col items-center h-full">
 					<div class="flex-1 w-full flex items-end">
-						<div class="w-full h-[70%] bg-[#253166] rounded-t"></div>
+						<div class="w-full h-[70%] bg-[#0D1E3D] rounded-t"></div>
 					</div>
 					<span class="text-[10px] font-medium text-gray-600 dark:text-gray-400 mt-1">A</span>
 				</div>
 				<div class="flex-1 flex flex-col items-center h-full">
 					<div class="flex-1 w-full flex items-end">
-						<div class="w-full h-[55%] bg-[#253166]/80 rounded-t"></div>
+						<div class="w-full h-[55%] bg-[#0D1E3D]/80 rounded-t"></div>
 					</div>
 					<span class="text-[10px] font-medium text-gray-600 dark:text-gray-400 mt-1">B</span>
 				</div>
 				<div class="flex-1 flex flex-col items-center h-full">
 					<div class="flex-1 w-full flex items-end">
-						<div class="w-full h-[90%] bg-orange-500 rounded-t"></div>
+						<div class="w-full h-[90%] bg-[#1A73C2] rounded-t"></div>
 					</div>
 					<span class="text-[10px] font-medium text-gray-600 dark:text-gray-400 mt-1">C</span>
 				</div>
 				<div class="flex-1 flex flex-col items-center h-full">
 					<div class="flex-1 w-full flex items-end">
-						<div class="w-full h-[40%] bg-orange-400 rounded-t"></div>
+						<div class="w-full h-[40%] bg-[#1A73C2]/80 rounded-t"></div>
 					</div>
 					<span class="text-[10px] font-medium text-gray-600 dark:text-gray-400 mt-1">D</span>
 				</div>
@@ -330,13 +335,13 @@
 									<div class="grid grid-cols-2 gap-4">
 										<div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-900">
 											<div class="flex items-center gap-2 mb-2">
-												<Package class="h-4 w-4 text-orange-500" />
+												<Package class="h-4 w-4 text-[#1A73C2]" />
 												<p class="text-xs text-muted-foreground">SKUs Activos</p>
 											</div>
 											{#if isLoading}
 												<div class="h-6 w-16 bg-gray-200 dark:bg-gray-700 animate-pulse rounded"></div>
 											{:else}
-												<p class="text-lg font-bold text-[#253166] dark:text-white">
+												<p class="text-lg font-bold text-[#0D1E3D] dark:text-white">
 													{stats ? formatNumber(stats.skusActivos) : '1,523'}
 												</p>
 											{/if}
@@ -344,7 +349,7 @@
 										<div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-900">
 											<div class="flex items-center gap-2 mb-2">
 												{#if stats?.stockCritico > 0}
-													<AlertTriangle class="h-4 w-4 text-orange-500" />
+													<AlertTriangle class="h-4 w-4 text-[#1A73C2]" />
 													<p class="text-xs text-muted-foreground">Stock Crítico</p>
 												{:else}
 													<TrendingUp class="h-4 w-4 text-green-500" />
@@ -354,7 +359,7 @@
 											{#if isLoading}
 												<div class="h-6 w-16 bg-gray-200 dark:bg-gray-700 animate-pulse rounded"></div>
 											{:else}
-												<p class="text-lg font-bold {stats?.stockCritico > 0 ? 'text-orange-500' : 'text-[#253166] dark:text-white'}">
+												<p class="text-lg font-bold {stats?.stockCritico > 0 ? 'text-[#1A73C2]' : 'text-[#0D1E3D] dark:text-white'}">
 													{#if stats?.stockCritico > 0}
 														{formatNumber(stats.stockCritico)}
 													{:else if stats?.requierenPedido}
@@ -373,7 +378,7 @@
 											<p class="text-xs text-muted-foreground mb-2">Top Líneas</p>
 											<div class="flex flex-wrap gap-2">
 												{#each stats.topLineas as linea}
-													<span class="px-2 py-1 text-xs bg-[#253166]/10 text-[#253166] dark:bg-[#253166]/20 dark:text-blue-300 rounded-full">
+													<span class="px-2 py-1 text-xs bg-[#0D1E3D]/10 text-[#0D1E3D] dark:bg-[#0D1E3D]/20 dark:text-blue-300 rounded-full">
 														{linea.linea} ({formatNumber(linea.cantidad)})
 													</span>
 												{/each}
@@ -392,7 +397,7 @@
 		<section class="py-10 bg-white dark:bg-gray-900">
 			<div class="container mx-auto px-4">
 				<div class="text-center mb-12">
-					<h2 class="text-3xl lg:text-4xl font-bold text-[#253166] dark:text-white mb-4">
+					<h2 class="text-3xl lg:text-4xl font-bold text-[#0D1E3D] dark:text-white mb-4">
 						Características Principales
 					</h2>
 					<p class="text-muted-foreground max-w-2xl mx-auto">
@@ -402,11 +407,11 @@
 
 				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
 					<!-- Feature 1 -->
-					<div class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#253166]/50 transition-all hover:shadow-lg">
-						<div class="w-12 h-12 rounded-lg bg-[#253166]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-							<TrendingUp class="h-6 w-6 text-[#253166]" />
+					<div class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#0D1E3D]/50 transition-all hover:shadow-lg">
+						<div class="w-12 h-12 rounded-lg bg-[#0D1E3D]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+							<TrendingUp class="h-6 w-6 text-[#0D1E3D]" />
 						</div>
-						<h3 class="text-xl font-semibold mb-2 text-[#253166] dark:text-white">
+						<h3 class="text-xl font-semibold mb-2 text-[#0D1E3D] dark:text-white">
 							Cálculo Automático
 						</h3>
 						<p class="text-muted-foreground">
@@ -415,11 +420,11 @@
 					</div>
 
 					<!-- Feature 2 -->
-					<div class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-orange-500/50 transition-all hover:shadow-lg">
-						<div class="w-12 h-12 rounded-lg bg-orange-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-							<BarChart3 class="h-6 w-6 text-orange-500" />
+					<div class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#1A73C2]/50 transition-all hover:shadow-lg">
+						<div class="w-12 h-12 rounded-lg bg-[#1A73C2]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+							<BarChart3 class="h-6 w-6 text-[#1A73C2]" />
 						</div>
-						<h3 class="text-xl font-semibold mb-2 text-[#253166] dark:text-white">
+						<h3 class="text-xl font-semibold mb-2 text-[#0D1E3D] dark:text-white">
 							Indicadores en Tiempo Real
 						</h3>
 						<p class="text-muted-foreground">
@@ -428,11 +433,11 @@
 					</div>
 
 					<!-- Feature 3 -->
-					<div class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#253166]/50 transition-all hover:shadow-lg">
-						<div class="w-12 h-12 rounded-lg bg-[#253166]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-							<Package class="h-6 w-6 text-[#253166]" />
+					<div class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#0D1E3D]/50 transition-all hover:shadow-lg">
+						<div class="w-12 h-12 rounded-lg bg-[#0D1E3D]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+							<Package class="h-6 w-6 text-[#0D1E3D]" />
 						</div>
-						<h3 class="text-xl font-semibold mb-2 text-[#253166] dark:text-white">
+						<h3 class="text-xl font-semibold mb-2 text-[#0D1E3D] dark:text-white">
 							Gestión de Inventarios
 						</h3>
 						<p class="text-muted-foreground">
@@ -441,11 +446,11 @@
 					</div>
 
 					<!-- Feature 4 -->
-					<div class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-orange-500/50 transition-all hover:shadow-lg">
-						<div class="w-12 h-12 rounded-lg bg-orange-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-							<Shield class="h-6 w-6 text-orange-500" />
+					<div class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#1A73C2]/50 transition-all hover:shadow-lg">
+						<div class="w-12 h-12 rounded-lg bg-[#1A73C2]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+							<Shield class="h-6 w-6 text-[#1A73C2]" />
 						</div>
-						<h3 class="text-xl font-semibold mb-2 text-[#253166] dark:text-white">
+						<h3 class="text-xl font-semibold mb-2 text-[#0D1E3D] dark:text-white">
 							Integración Exactus
 						</h3>
 						<p class="text-muted-foreground">
@@ -454,11 +459,11 @@
 					</div>
 
 					<!-- Feature 5 -->
-					<div class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#253166]/50 transition-all hover:shadow-lg">
-						<div class="w-12 h-12 rounded-lg bg-[#253166]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-							<Zap class="h-6 w-6 text-[#253166]" />
+					<div class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#0D1E3D]/50 transition-all hover:shadow-lg">
+						<div class="w-12 h-12 rounded-lg bg-[#0D1E3D]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+							<Zap class="h-6 w-6 text-[#0D1E3D]" />
 						</div>
-						<h3 class="text-xl font-semibold mb-2 text-[#253166] dark:text-white">
+						<h3 class="text-xl font-semibold mb-2 text-[#0D1E3D] dark:text-white">
 							Alertas Inteligentes
 						</h3>
 						<p class="text-muted-foreground">
@@ -467,11 +472,11 @@
 					</div>
 
 					<!-- Feature 6 -->
-					<div class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-orange-500/50 transition-all hover:shadow-lg">
-						<div class="w-12 h-12 rounded-lg bg-orange-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-							<Target class="h-6 w-6 text-orange-500" />
+					<div class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#1A73C2]/50 transition-all hover:shadow-lg">
+						<div class="w-12 h-12 rounded-lg bg-[#1A73C2]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+							<Target class="h-6 w-6 text-[#1A73C2]" />
 						</div>
-						<h3 class="text-xl font-semibold mb-2 text-[#253166] dark:text-white">
+						<h3 class="text-xl font-semibold mb-2 text-[#0D1E3D] dark:text-white">
 							Historial Analítico
 						</h3>
 						<p class="text-muted-foreground">
@@ -483,7 +488,7 @@
 		</section>
 
 		<!-- CTA Section -->
-		<section class="py-20 bg-linear-to-br from-[#253166] to-[#253166]/90 text-white">
+		<section class="py-20 bg-linear-to-br from-[#0D1E3D] to-[#0D1E3D]/90 text-white">
 			<div class="container mx-auto px-4 text-center">
 				<div class="max-w-3xl mx-auto space-y-6">
 					<h2 class="text-3xl lg:text-4xl font-bold">
@@ -497,7 +502,7 @@
 							href={AUTH_PATHS.REGISTER} 
 							size="lg" 
 							variant="secondary"
-							class="text-base px-8 py-6 bg-white text-[#253166] hover:bg-gray-100"
+							class="text-base px-8 py-6 bg-white text-[#0D1E3D] hover:bg-gray-100"
 						>
 							Solicitar Acceso
 							<ChevronRight class="ml-2 h-5 w-5" />
@@ -506,7 +511,7 @@
 							href="mailto:{siteConfig.contact.email}" 
 							size="lg" 
 							variant="secondary"
-							class="text-base px-8 py-6 bg-white text-[#253166] hover:bg-gray-100"
+							class="text-base px-8 py-6 bg-white text-[#0D1E3D] hover:bg-gray-100"
 						>
 							Contactar Soporte
 						</Button>

@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * MOTOR DE IA VYOWEB — TIPOS CENTRALES
+ * MOTOR DE IA SoporteXperto — TIPOS CENTRALES
  * ============================================================================
  * Tipos compartidos por el núcleo del motor, los proveedores y los módulos.
  * El núcleo es agnóstico al módulo y al proveedor de IA.

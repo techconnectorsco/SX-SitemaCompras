@@ -317,13 +317,13 @@
 		<div class="flex flex-col gap-2">
 			<div class="flex items-center justify-between">
 				<div class="flex items-center gap-3">
-					<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-[#253166]">
+					<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-[#0D1E3D]">
 						<Activity class="h-6 w-6 text-white" />
 					</div>
 					<div>
 						<h1 class="text-2xl font-bold tracking-tight">Dashboard de Compras</h1>
 						<p class="text-sm text-muted-foreground">
-							Sistema de Forecast y Análisis - Vedova & Obando
+							Sistema de Forecast y Análisis - SoporteXperto
 						</p>
 					</div>
 				</div>

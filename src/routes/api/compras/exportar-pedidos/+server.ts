@@ -95,7 +95,7 @@ export const GET: RequestHandler = async ({ url, locals, request }) => {
   }
 
   const ip = request.headers.get('x-forwarded-for') || 'unknown';
-  const userAgent = request.headers.get('user-agent') || 'VYOWEB-App';
+  const userAgent = request.headers.get('user-agent') || 'SoporteXperto-App';
 
   try {
     const codigoProcesamiento = url.searchParams.get('procesamiento');

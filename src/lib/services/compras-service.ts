@@ -1,4 +1,4 @@
-//D:\Users\Usuario\Desktop\VedovaWEB\VYOWEB\src\lib\services\compras-service.ts
+// compras-service.ts
 
 /**
  * @module ComprasService

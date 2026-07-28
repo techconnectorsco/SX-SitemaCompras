@@ -1,7 +1,7 @@
 <script lang="ts">
 	/**
 	 * @module LoginPage
-	 * @description Componente de inicio de sesión para el sistema VYO.
+	 * @description Componente de inicio de sesión para el sistema SoporteXperto.
 	 * Utiliza AuthForm para renderizar el formulario e integra SvelteKit SuperForms para validación del lado del cliente.
 	 */
 	import { loginSchema } from '$lib/features/auth/schemas/auth-schema';
@@ -42,11 +42,11 @@
 		<div class="w-full max-w-lg px-6 py-4">
 			<!-- Logo y Header -->
 			<div class="space-y-4">
-				<!-- Logo VYO -->
+				<!-- Logo SoporteXperto -->
 				<div class="flex items-center gap-3">
 					<img 
-						src="/grupovyo-removebg-preview.png" 
-						alt="Grupo VYO Logo" 
+						src="/logo-soportexperto.png" 
+						alt="SoporteXperto Logo" 
 						class="h-12 w-auto"
 					/>
 				</div>
@@ -54,7 +54,7 @@
 				<!-- Título y Badge en línea -->
 				<div class="flex items-center justify-between">
 					<div>
-						<h1 class="text-3xl font-bold text-[#253166] dark:text-white">
+						<h1 class="text-3xl font-bold text-[#0D1E3D] dark:text-white">
 							Bienvenido
 						</h1>
 						<p class="text-sm text-muted-foreground mt-1">
@@ -99,7 +99,7 @@
 	<div>
 		<a 
 			href="mailto:{siteConfig.contact.email}" 
-			class="text-[#253166] hover:underline transition-colors"
+			class="text-[#0D1E3D] hover:underline transition-colors"
 		>
 			{siteConfig.contact.email}
 		</a>

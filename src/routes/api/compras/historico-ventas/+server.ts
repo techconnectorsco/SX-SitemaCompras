@@ -1,4 +1,4 @@
-// D:\Users\Usuario\Desktop\VedovaWEB\VYOWEB\src\routes\api\compras\historico-ventas\+server.ts
+// historico-ventas server endpoint
 
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';

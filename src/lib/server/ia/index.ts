@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * MOTOR DE IA VYOWEB — ENTRADA PÚBLICA
+ * MOTOR DE IA SoporteXperto — ENTRADA PÚBLICA
  * ============================================================================
  * Importá desde aquí: import { crearMotor } from '$lib/server/ia';
  *
@@ -51,7 +51,7 @@ function seleccionarProveedor(): ProveedorIA {
 
 /**
  * Crea el motor con el proveedor configurado.
- * @param db Instancia de better-sqlite3 ya abierta (la de VYOWEB).
+ * @param db Instancia de better-sqlite3 ya abierta (la de SoporteXperto).
  * @param proveedor Opcional: inyectá tu propio proveedor (tests u otro modelo).
  */
 export function crearMotor(db: DB, proveedor?: ProveedorIA): MotorIA {

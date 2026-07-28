@@ -127,7 +127,7 @@ const apiKeyAuth: Handle = async ({ event, resolve }) => {
   event.locals.session = { id: 'api-key-session' };
   event.locals.user = {
     id: 'service-powerbi',
-    email: 'powerbi-service@vyo.local',
+    email: 'powerbi-service@soportexperto.local',
     email_verified: 1,
     display_name: 'Power BI Service',
     photo_url: null,
@@ -162,7 +162,7 @@ const restoreApiUser: Handle = async ({ event, resolve }) => {
     event.locals.session = { id: 'api-key-session' };
     event.locals.user = {
       id: 'service-powerbi',
-      email: 'powerbi-service@vyo.local',
+      email: 'powerbi-service@soportexperto.local',
       email_verified: 1,
       display_name: 'Power BI Service',
       photo_url: null,

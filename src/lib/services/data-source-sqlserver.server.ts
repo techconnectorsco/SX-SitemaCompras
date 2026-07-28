@@ -423,8 +423,7 @@ async getExistenciasConExclusiones(
 /**
  * ✅ VERSIÓN CORREGIDA: cargarVentasHistoricasEnBD()
  * 
- * Reemplaza esta función en:
- * D:\Users\Usuario\Desktop\VedovaWEB\VYOWEB\src\lib\services\data-source-sqlserver.server.ts
+ * src/lib/services/data-source-sqlserver.server.ts
  * 
  * CAMBIOS:
  * 1. Logging detallado por año para detectar dónde se pierden los datos

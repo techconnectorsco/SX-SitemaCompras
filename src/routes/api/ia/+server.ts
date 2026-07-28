@@ -33,7 +33,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 };
 
 export const POST: RequestHandler = async ({ request, locals }) => {
-	// En VYOWEB el usuario se establece en event.locals.user (sqlite-hook).
+	// En SoporteXperto el usuario se establece en event.locals.user (sqlite-hook).
 	const usuario = locals.user;
 	if (!usuario) throw error(401, 'No autenticado.');
 

@@ -18,7 +18,7 @@
 		autenticado = true,
 		codigoProcesamiento,
 		codigoSku,
-		titulo = 'Asistente de IA'
+		titulo = 'Bitta'
 	}: Props = $props();
 
 	const TIMEOUT_MS = 120000; // 120s: una consulta con varias herramientas puede tardar.

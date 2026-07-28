@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * MOTOR DE IA VYOWEB — PERMISOS POR MÓDULO Y CAPACIDAD DE ADMIN DE IA
+ * MOTOR DE IA SoporteXperto — PERMISOS POR MÓDULO Y CAPACIDAD DE ADMIN DE IA
  * ============================================================================
  * Tabla única ia_permisos_usuario (migración 001). Una fila por (usuario, módulo).
  *

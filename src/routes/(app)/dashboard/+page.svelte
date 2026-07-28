@@ -162,7 +162,7 @@
           class={`
             flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all whitespace-nowrap
             ${activeTab === item.name
-              ? 'bg-[#253166] text-white font-medium shadow-sm'
+              ? 'bg-[#0D1E3D] text-white font-medium shadow-sm'
               : 'text-muted-foreground hover:text-foreground hover:bg-accent'
             }
           `}
@@ -170,7 +170,7 @@
           <Icon class="h-4 w-4" />
           <span class="text-sm">{item.label}</span>
           {#if item.adminOnly}
-            <span class="ml-1 rounded-full bg-orange-500 px-2 py-0.5 text-xs font-bold text-white">
+            <span class="ml-1 rounded-full bg-[#1A73C2] px-2 py-0.5 text-xs font-bold text-white">
               ADMIN
             </span>
           {/if}

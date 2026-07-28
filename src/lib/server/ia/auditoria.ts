@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * MOTOR DE IA VYOWEB — AUDITORÍA DE CONSUMO Y COSTO
+ * MOTOR DE IA SoporteXperto — AUDITORÍA DE CONSUMO Y COSTO
  * ============================================================================
  * Guarda cada interacción con su consumo de tokens y costo.
  *
