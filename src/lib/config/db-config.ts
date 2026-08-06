@@ -311,6 +311,206 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_forecast_usuario_mod ON forecast_procesamiento(usuario_modificacion);
 `);
 
+  // ASSETS POR MARCA (logos, isotipos, sellos, fondos)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS marca_assets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      marca_id INTEGER NOT NULL REFERENCES marcas(id),
+      nombre TEXT NOT NULL,
+      tipo TEXT NOT NULL CHECK(tipo IN ('logo', 'isotipo', 'sello', 'fondo', 'other')),
+      file_path TEXT NOT NULL,
+      file_name TEXT,
+      mime_type TEXT,
+      file_size INTEGER,
+      created_at INTEGER DEFAULT (strftime('%s','now')),
+      deleted_at INTEGER
+    );
+    CREATE INDEX IF NOT EXISTS idx_marca_assets_marca ON marca_assets(marca_id);
+    CREATE INDEX IF NOT EXISTS idx_marca_assets_tipo ON marca_assets(tipo);
+  `);
+
+  // MANUALES DE MARCA (PDFs, docs, imágenes de manual de marca)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS marca_manuales (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      marca_id INTEGER NOT NULL REFERENCES marcas(id) ON DELETE CASCADE,
+      nombre TEXT NOT NULL,
+      file_path TEXT NOT NULL,
+      file_name TEXT,
+      mime_type TEXT,
+      file_size INTEGER,
+      created_at INTEGER DEFAULT (strftime('%s','now')),
+      deleted_at INTEGER
+    );
+    CREATE INDEX IF NOT EXISTS idx_marca_manuales_marca ON marca_manuales(marca_id);
+  `);
+
+  // BODEGAS (gestión de inventario Exactus)
+  // 1) Crear tabla (no-op si ya existe). Para DBs nuevas, cc_incluida nace incluida.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS bodegas (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      bodega_codigo TEXT NOT NULL UNIQUE,
+      bodega_nombre TEXT,
+      tipo TEXT,
+      telefono TEXT,
+      direccion TEXT,
+      u_zona TEXT,
+      tipo_establecimiento TEXT,
+      excluida INTEGER DEFAULT 0,
+      cc_incluida INTEGER DEFAULT 0,
+      fecha_sincronizacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+      fecha_actualizacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+      usuario_actualizacion TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_bodegas_codigo ON bodegas(bodega_codigo);
+    CREATE INDEX IF NOT EXISTS idx_bodegas_excluida ON bodegas(excluida);
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS bodegas_exclusion_historial (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      bodega_codigo TEXT NOT NULL,
+      bodega_nombre TEXT,
+      accion TEXT,
+      usuario TEXT,
+      fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
+      razon TEXT,
+      FOREIGN KEY (bodega_codigo) REFERENCES bodegas(bodega_codigo)
+    );
+  `);
+
+  // 2) Migración: añadir columna cc_incluida si la tabla existía sin ella
+  try {
+    const columnas = db.prepare("PRAGMA table_info(bodegas)").all() as any[];
+    if (!columnas.some((c) => c.name === 'cc_incluida')) {
+      db.exec('ALTER TABLE bodegas ADD COLUMN cc_incluida INTEGER DEFAULT 0');
+      console.log('[db] ➕ Columna cc_incluida añadida a bodegas');
+    }
+  } catch (e) {
+    console.error('[db] ⚠️ Migración cc_incluida:', e);
+  }
+
+  // 2b) Migración: añadir columna prompt_personalizado a publicaciones si no existe
+  try {
+    const colsPub = db.prepare("PRAGMA table_info(publicaciones)").all() as any[];
+    if (colsPub.length > 0 && !colsPub.some((c) => c.name === 'prompt_personalizado')) {
+      db.exec('ALTER TABLE publicaciones ADD COLUMN prompt_personalizado TEXT');
+      console.log('[db] ➕ Columna prompt_personalizado añadida a publicaciones');
+    }
+  } catch (e) {
+    console.error('[db] ⚠️ Migración prompt_personalizado:', e);
+  }
+
+  // 2c) Migración: añadir columna prompt_copy a publicaciones si no existe
+  try {
+    const colsPub = db.prepare("PRAGMA table_info(publicaciones)").all() as any[];
+    if (colsPub.length > 0 && !colsPub.some((c) => c.name === 'prompt_copy')) {
+      db.exec('ALTER TABLE publicaciones ADD COLUMN prompt_copy TEXT');
+      console.log('[db] ➕ Columna prompt_copy añadida a publicaciones');
+    }
+    if (colsPub.length > 0 && !colsPub.some((c) => c.name === 'meta_pauta_inicio')) {
+      db.exec('ALTER TABLE publicaciones ADD COLUMN meta_pauta_inicio INTEGER');
+      console.log('[db] ➕ Columna meta_pauta_inicio añadida a publicaciones');
+    }
+    if (colsPub.length > 0 && !colsPub.some((c) => c.name === 'meta_pauta_fin')) {
+      db.exec('ALTER TABLE publicaciones ADD COLUMN meta_pauta_fin INTEGER');
+      console.log('[db] ➕ Columna meta_pauta_fin añadida a publicaciones');
+    }
+    // Es_carrusel: modo multi-imagen, independiente del nombre del formato
+    if (colsPub.length > 0 && !colsPub.some((c) => c.name === 'es_carrusel')) {
+      db.exec('ALTER TABLE publicaciones ADD COLUMN es_carrusel INTEGER DEFAULT 0');
+      console.log('[db] ➕ Columna es_carrusel añadida a publicaciones');
+    }
+  } catch (e) {
+    console.error('[db] ⚠️ Migración publicaciones:', e);
+  }
+
+  // 2d) Migración: actualizar CHECK constraint de estado en publicaciones para incluir 'Guardado'
+  try {
+    const tableDef = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='publicaciones'").get() as { sql: string } | undefined;
+    if (tableDef && tableDef.sql && tableDef.sql.includes('CHECK(estado IN') && !tableDef.sql.includes("'Guardado'")) {
+      console.log('[db] 🔄 Migrando CHECK constraint de estado en publicaciones para incluir "Guardado"...');
+      db.transaction(() => {
+        db.exec('PRAGMA foreign_keys = OFF;');
+        db.exec(`
+          CREATE TABLE publicaciones_new (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              user_id TEXT NOT NULL,
+              cuenta_id INTEGER NOT NULL,
+              marca_id INTEGER NOT NULL,
+              formato_id INTEGER,
+              audiencia_id INTEGER,
+              titulo TEXT NOT NULL,
+              contexto TEXT,
+              objetivo TEXT,
+              cta TEXT,
+              presupuesto_usd REAL,
+              copy_ia_original TEXT,
+              copy_final TEXT,
+              estado TEXT DEFAULT 'Borrador' CHECK(estado IN ('Borrador', 'En revisión', 'Guardado', 'Aprobado', 'Publicado', 'Error API')),
+              api_error_log TEXT,
+              retry_count INTEGER DEFAULT 0,
+              notas_revision TEXT,
+              aprobado_por TEXT,
+              aprobado_at INTEGER,
+              campana TEXT,
+              designed INTEGER DEFAULT 0,
+              published INTEGER DEFAULT 0,
+              published_at INTEGER,
+              meta_post_id TEXT,
+              fecha_programada INTEGER,
+              sharepoint_item_id TEXT,
+              sharepoint_thumbnail_id TEXT,
+              image_name TEXT,
+              created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+              updated_at INTEGER,
+              deleted_at INTEGER,
+              modificado_por TEXT REFERENCES users(id),
+              meta_pauta_inicio INTEGER,
+              meta_pauta_fin INTEGER,
+              sharepoint_drive_id TEXT,
+              ultimo_reintento_at INTEGER,
+              promoted INTEGER DEFAULT 0,
+              carousel_images TEXT,
+              prompt_personalizado TEXT,
+              prompt_copy TEXT,
+              es_carrusel INTEGER DEFAULT 0,
+              FOREIGN KEY(user_id) REFERENCES users(id),
+              FOREIGN KEY(cuenta_id) REFERENCES cuentas(id),
+              FOREIGN KEY(marca_id) REFERENCES marcas(id),
+              FOREIGN KEY(formato_id) REFERENCES formatos(id),
+              FOREIGN KEY(audiencia_id) REFERENCES audiencias(id),
+              FOREIGN KEY(aprobado_por) REFERENCES users(id)
+          );
+        `);
+        db.exec('INSERT INTO publicaciones_new SELECT * FROM publicaciones;');
+        db.exec('DROP TABLE publicaciones;');
+        db.exec('ALTER TABLE publicaciones_new RENAME TO publicaciones;');
+        db.exec(`
+          CREATE INDEX IF NOT EXISTS idx_pub_user_id ON publicaciones(user_id);
+          CREATE INDEX IF NOT EXISTS idx_pub_cuenta_id ON publicaciones(cuenta_id);
+          CREATE INDEX IF NOT EXISTS idx_pub_marca_id ON publicaciones(marca_id);
+          CREATE INDEX IF NOT EXISTS idx_pub_estado ON publicaciones(estado);
+          CREATE INDEX IF NOT EXISTS idx_pub_fecha ON publicaciones(fecha_programada);
+          CREATE INDEX IF NOT EXISTS idx_pub_deleted ON publicaciones(deleted_at);
+          CREATE INDEX IF NOT EXISTS idx_pub_campana ON publicaciones(campana);
+        `);
+        db.exec('PRAGMA foreign_keys = ON;');
+      })();
+      console.log('[db] ✅ CHECK constraint de estado en publicaciones actualizado a Guardado');
+    }
+  } catch (e) {
+    console.error('[db] ⚠️ Error al migrar CHECK constraint en publicaciones:', e);
+  }
+
+  // 3) Crear índice sobre cc_incluida (solo cuando la columna ya existe seguro)
+  try {
+    db.exec('CREATE INDEX IF NOT EXISTS idx_bodegas_cc_incluida ON bodegas(cc_incluida)');
+  } catch (e) {
+    console.error('[db] ⚠️ Índice idx_bodegas_cc_incluida:', e);
+  }
+
   console.log('[db] ✅ Database schema initialized');
   ensureFirstUserLogic();
 }

@@ -39,13 +39,13 @@ export const AUTH_REDIRECT_PATHS = {
 	/** Redirect paths after successful actions */
 	SUCCESS: {
 	/** After successful login */
-	LOGIN: '/dashboard',
+	LOGIN: '/',
 		/** After successful registration */
 		REGISTER: '/auth?mode=login', //'/auth/login',
 		/** After successful password update */
 		PASSWORD_UPDATE: '/auth?message=Password updated successfully',
 	/** After successful OAuth callback */
-	OAUTH: '/dashboard',
+	OAUTH: '/',
 		/** After successful logout */
 		LOGOUT: '/'
 	},

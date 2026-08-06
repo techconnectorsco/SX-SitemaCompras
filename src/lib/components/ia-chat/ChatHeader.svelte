@@ -8,7 +8,7 @@
 		avatar?: string;
 	}
 	let {
-		titulo = 'Bitta',
+		titulo = 'Betti A.',
 		costoSesion,
 		moneda = 'USD',
 		onCerrar,
@@ -53,7 +53,7 @@
 		align-items: center;
 		justify-content: space-between;
 		padding: 0.65rem 0.9rem;
-		background: #1A73C2;
+		background: #1a73c2;
 		color: #fff;
 		border-top-left-radius: 12px;
 		border-top-right-radius: 12px;

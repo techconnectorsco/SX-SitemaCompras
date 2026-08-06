@@ -8,7 +8,7 @@ import { redirect, type Handle } from '@sveltejs/kit';
  * Routes that require authentication
  */
 const PROTECTED_ROUTES = [
-  '/dashboard',
+  '/AsistenteCompras',
   '/servers',
   '/domains',
   '/email',
@@ -17,7 +17,8 @@ const PROTECTED_ROUTES = [
   '/settings',
   '/billing',
   '/support',
-  '/account'
+  '/account',
+  '/contentCreator'
 ];
 
 /**
@@ -88,7 +89,7 @@ export const authGuard: Handle = async ({ event, resolve }) => {
 
   // Auth routes - redirect if already authenticated AND ACTIVE
   if (isAuthRoute(pathname) && user && user.account_status === 'ACTIVE') {
-    const redirectTo = event.url.searchParams.get('redirect') || '/dashboard';
+    const redirectTo = event.url.searchParams.get('redirect') || '/';
     throw redirect(303, redirectTo);
   }
 

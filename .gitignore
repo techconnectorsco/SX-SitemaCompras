@@ -33,5 +33,10 @@ vite.config.ts.timestamp-*
 *.db-shm
 *.db-wal
 *.csv
+
+/.agents
+skills-lock.json
+/static/uploads
+/.codegraph
 *.ecosystem.config.cjs
 ecosystem.config.cjs

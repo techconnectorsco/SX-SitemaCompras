@@ -14,12 +14,7 @@
 		codigoSku?: string;
 		titulo?: string;
 	}
-	let {
-		autenticado = true,
-		codigoProcesamiento,
-		codigoSku,
-		titulo = 'Bitta'
-	}: Props = $props();
+	let { autenticado = true, codigoProcesamiento, codigoSku, titulo = 'Betti A.' }: Props = $props();
 
 	const TIMEOUT_MS = 120000; // 120s: una consulta con varias herramientas puede tardar.
 	const MAX_CARACTERES = 1000;

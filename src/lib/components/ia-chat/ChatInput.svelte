@@ -95,6 +95,8 @@
 		font-family: inherit;
 		max-height: 120px;
 		min-height: 38px;
+		color: #000000;
+		background-color: #ffffff;
 	}
 	textarea:focus {
 		outline: none;

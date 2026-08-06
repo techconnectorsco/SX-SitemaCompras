@@ -1,0 +1,1387 @@
+<script lang="ts">
+	import { toast } from 'svelte-sonner';
+	import { Button } from '$lib/components/ui/button';
+	import * as Card from '$lib/components/ui/card';
+	import { 
+		CheckCircle, 
+		XCircle, 
+		MessageSquare, 
+		Eye, 
+		Calendar, 
+		Clock, 
+		ArrowRight, 
+		FileText,
+		Sparkles,
+		Download,
+		UploadCloud,
+		Send,
+		UserCheck,
+		RefreshCw,
+		ChevronLeft,
+		ChevronRight,
+		Save,
+		Image as ImageIcon,
+		Trash2
+	} from 'lucide-svelte';
+	import type { MarcaAsset } from '$lib/features/content-creator/types';
+
+	interface ExcelPost {
+		id: string;
+		title: string;
+		format: string;
+		context: string;
+		objective: string;
+		audience: string;
+		budget: number;
+		network: string;
+		designed: boolean;
+		published: boolean;
+		promoted: boolean;
+		copy: string;
+		week: string;
+		links: string;
+		kpi: string;
+		cta: string;
+		references: string;
+		trend: string;
+		date: string;
+		imagePreview: string | null;
+		imageName?: string;
+		imageBase64?: string;
+		
+		brand?: string;
+		status?: 'Borrador' | 'En revisión' | 'Guardado' | 'Aprobado' | 'Publicado';
+		ecommerceImage?: boolean;
+		ecommerceUrl?: string;
+		sellerEmail?: string;
+		sellerPhone?: string;
+		templateId?: string;
+
+		carouselImages?: Array<{
+			imagePreview: string | null;
+			imageName: string;
+			imageBase64: string;
+			prompt?: string;
+			modo?: 'editar' | 'crear';
+		}>;
+		prompt?: string;
+		promptCopy?: string;
+		esCarrusel?: boolean;
+	}
+
+	// Props Svelte 5
+	let { posts = $bindable(), catalogos } = $props<{ posts: ExcelPost[], catalogos: any }>();
+
+	// Filtros de la lista
+	let filterStatus = $state<'Todos' | 'Borrador' | 'En revisión' | 'Guardado' | 'Aprobado'>('En revisión');
+	let filterBrand = $state<string>('Todas');
+	
+	// ID de pieza seleccionada
+	let selectedPostId = $state<string | null>(null);
+
+	// Estados de Carga Simulada
+	let nanoBananaGenerating = $state(false);
+	let downloadingImage = $state(false);
+	let finalizingPost = $state(false);
+	let savingPost = $state(false);
+	let deletingPost = $state(false);
+	let viewerState = $state<{ images: Array<{ preview: string; name: string }>; index: number } | null>(null);
+	let promptDialog = $state<{ open: boolean; customPrompt: string }>({ open: false, customPrompt: '' });
+	let lastCustomPrompts = $state<Record<string, string>>({});
+
+	// Slide del carrusel destino cuando se regenera un único slide (null = todo el post)
+	let regeneratingSlideIndex = $state<number | null>(null);
+
+	let assetSelectorDialog = $state<{
+		open: boolean;
+		marcaId: number | null;
+		assets: MarcaAsset[];
+		selectedIds: Set<number>;
+		loading: boolean;
+	} | null>(null);
+
+	async function loadLastPrompt(post: ExcelPost, tipo: 'imagen' | 'copy' = 'imagen') {
+		try {
+			const numericId = post.id.replace('MER-', '');
+			if (!/^\d+$/.test(numericId)) return;
+			const res = await fetch(`/api/content-creator/publicaciones/${numericId}/ultimo-prompt?tipo=${tipo}`);
+			if (!res.ok) return;
+			const data = await res.json();
+			if (data?.success && data.prompt) {
+				lastCustomPrompts = { ...lastCustomPrompts, [post.id]: data.prompt };
+			}
+		} catch (e) {
+			console.warn('[ultimo-prompt] no se pudo recuperar el último prompt usado', e);
+		}
+	}
+
+	async function openRegenerationFlow(slideIndex?: number) {
+		if (!selectedPost) return;
+		regeneratingSlideIndex = (slideIndex !== undefined && !Number.isNaN(slideIndex)) ? slideIndex : null;
+		await loadLastPrompt(selectedPost);
+
+		// Prompt por defecto: el del slide (si estamos regenerando uno), si no el último usado, si no el del post
+		let basePrompt = buildPromptPreview(selectedPost);
+		if (slideIndex !== undefined && selectedPost.carouselImages?.[slideIndex]?.prompt?.trim()) {
+			basePrompt = selectedPost.carouselImages[slideIndex].prompt;
+		}
+
+		const marca = catalogos?.marcas?.find((m: any) => m.nombre === selectedPost?.brand);
+		if (!marca?.id) {
+			promptDialog = { open: true, customPrompt: basePrompt };
+			return;
+		}
+
+		assetSelectorDialog = {
+			open: true,
+			marcaId: marca.id,
+			assets: [],
+			selectedIds: new Set(),
+			loading: true
+		};
+
+		try {
+			const res = await fetch(`/api/content-creator/marcas/${marca.id}/assets`);
+			const data = await res.json();
+			if (data.assets && data.assets.length > 0) {
+				assetSelectorDialog = { ...assetSelectorDialog!, assets: data.assets, loading: false };
+			} else {
+				// No assets, skip straight to prompt dialog
+				assetSelectorDialog = null;
+				promptDialog = { open: true, customPrompt: basePrompt };
+			}
+		} catch (e) {
+			assetSelectorDialog = null;
+			promptDialog = { open: true, customPrompt: basePrompt };
+		}
+	}
+
+	function confirmAssetSelection() {
+		if (!assetSelectorDialog) return;
+		promptDialog = { open: true, customPrompt: buildPromptPreview(selectedPost as ExcelPost) };
+	}
+	
+	function skipAssetSelection() {
+		if (!assetSelectorDialog) return;
+		assetSelectorDialog.selectedIds = new Set();
+		promptDialog = { open: true, customPrompt: buildPromptPreview(selectedPost as ExcelPost) };
+	}
+
+	function toggleAsset(id: number) {
+		if (!assetSelectorDialog) return;
+		if (assetSelectorDialog.selectedIds.has(id)) {
+			assetSelectorDialog.selectedIds.delete(id);
+		} else {
+			assetSelectorDialog.selectedIds.add(id);
+		}
+		assetSelectorDialog.selectedIds = new Set(assetSelectorDialog.selectedIds);
+	}
+
+	let finalDesignInput = $state<HTMLInputElement | null>(null);
+
+	let geminiGeneratingReview = $state(false);
+
+	// --- Modal de generación de Copy (override puntual del prompt) ---
+	let copyPromptDialog = $state<{ open: boolean; customPrompt: string; postId: string | null }>({ open: false, customPrompt: '', postId: null });
+
+	function openCopyPromptDialog(post: ExcelPost) {
+		if (!post.title.trim()) {
+			toast.error('Falta el Tipo de contenido (nombre del producto) para generar el copy.');
+			return;
+		}
+		// Precargar: si la publicación tiene prompt_copy guardado, lo usamos; si no, fallback al manual
+		const seed = (post.promptCopy && post.promptCopy.trim())
+			? post.promptCopy.trim()
+			: (catalogos?.marcas?.find((m: any) => m.nombre === post.brand)?.prompt_sistema || '');
+		copyPromptDialog = { open: true, customPrompt: seed, postId: post.id };
+	}
+
+	function useDefaultCopyPrompt() {
+		if (!copyPromptDialog.postId) return;
+		const post = filteredPosts.find((p) => p.id === copyPromptDialog.postId);
+		if (!post) return;
+		copyPromptDialog.customPrompt = (catalogos?.marcas?.find((m: any) => m.nombre === post.brand)?.prompt_sistema || '');
+	}
+
+	async function confirmGenerateCopy() {
+		if (!copyPromptDialog.postId) return;
+		const post = filteredPosts.find((p) => p.id === copyPromptDialog.postId);
+		if (!post) return;
+
+		// Vacío = usar fallback (no enviamos prompt, el backend usará prompt_copy guardado o la plantilla)
+		const trimmed = copyPromptDialog.customPrompt.trim();
+		const overrideToSend = trimmed.length > 0 ? trimmed : null;
+
+		copyPromptDialog = { ...copyPromptDialog, open: false };
+		geminiGeneratingReview = true;
+
+		try {
+			const numericId = post.id.replace('MER-', '');
+			const response = await fetch(`/api/content-creator/publicaciones/${numericId}/generar-copy`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ prompt: overrideToSend })
+			});
+			const data = await response.json();
+
+			if (data.success && data.copy) {
+				posts = posts.map(p => p.id === post.id ? { ...p, copy: data.copy, promptCopy: overrideToSend ?? p.promptCopy } : p);
+				toast.success(`Copy generado con éxito.`);
+			} else {
+				toast.error(data.error || 'Error al generar copy.');
+			}
+		} catch (error) {
+			console.error(error);
+			toast.error('Error de red al generar copy.');
+		} finally {
+			geminiGeneratingReview = false;
+		}
+	}
+
+	// Marcas para el filtro
+	const brands = $derived(['Todas', ...catalogos.marcas.map((m: any) => m.nombre)]);
+
+	// Filtrar posts reactivamente
+	const filteredPosts = $derived.by(() => {
+		return posts.filter(p => {
+			const matchesStatus = filterStatus === 'Todos' || p.status === filterStatus;
+			const matchesBrand = filterBrand === 'Todas' || p.brand === filterBrand;
+			return matchesStatus && matchesBrand;
+		});
+	});
+
+	// Obtener el post seleccionado
+	const selectedPost = $derived.by(() => {
+		if (selectedPostId) {
+			const found = filteredPosts.find(p => p.id === selectedPostId);
+			if (found) return found;
+		}
+		return filteredPosts[0] || null;
+	});
+
+	// Variables derivadas seguras para el carrusel (evita errores de compilador Svelte 5 en el DOM)
+	const isCarousel = $derived(selectedPost
+		? (selectedPost.esCarrusel !== undefined
+			? !!selectedPost.esCarrusel
+			: (Array.isArray(selectedPost.carouselImages) && selectedPost.carouselImages.length > 0))
+		: false);
+	const hasCarouselImages = $derived(isCarousel && selectedPost && Array.isArray(selectedPost.carouselImages) && selectedPost.carouselImages.length > 0);
+	const activeCarouselImages = $derived(hasCarouselImages && selectedPost?.carouselImages ? selectedPost.carouselImages : []);
+
+	function buildPromptPreview(post: ExcelPost): string {
+		if (lastCustomPrompts[post.id]) return lastCustomPrompts[post.id];
+		if (post.prompt && post.prompt.trim()) return post.prompt;
+		const brandPrompt = catalogos?.marcas?.find((m: any) => m.nombre === post.brand)?.prompt_sistema || 'Aplica los estilos de marca por defecto.';
+		return `${brandPrompt}\nContexto del producto: ${post.title}. ${post.context || ''}.\nObjetivo: ${post.objective || 'Interacción'}.`.trim();
+	}
+
+	// Generar o Re-generar imagen con la IA de Gemini/Imagen
+	// Si slideIndex está definido, regenera solo ese slide del carrusel.
+	async function regenerateImageIA(post: ExcelPost, customPrompt?: string, assetIds?: number[], slideIndex?: number) {
+		const isSlide = slideIndex !== undefined && slideIndex !== null && !Number.isNaN(slideIndex);
+
+		let body: any;
+
+		if (isSlide) {
+			const slide = post.carouselImages?.[slideIndex as number];
+			if (!slide) {
+				toast.error('Slide del carrusel no encontrado.');
+				return;
+			}
+			const modo = slide.modo === 'crear' ? 'crear' : 'editar';
+			// Prioridad: prompt override del modal > prompt del slide > prompt del post > buildPreview
+			const promptToUse = (customPrompt && customPrompt.trim())
+				? customPrompt.trim()
+				: (slide.prompt && slide.prompt.trim())
+					? slide.prompt
+					: (post.prompt && post.prompt.trim())
+						? post.prompt
+						: null;
+
+			if (modo === 'crear') {
+				if (!promptToUse) {
+					toast.error('En modo crear se requiere un prompt para regenerar la imagen.');
+					return;
+				}
+				body = {
+					base64Image: null,
+					brand: post.brand,
+					title: post.title,
+					context: post.context,
+					objective: post.objective,
+					index: slideIndex,
+					modo: 'crear',
+					customPrompt: promptToUse,
+					selectedAssetIds: assetIds || Array.from(assetSelectorDialog?.selectedIds || [])
+				};
+			} else {
+				const refImage = slide.imageBase64 || slide.imagePreview || null;
+				if (!refImage) {
+					toast.error(`No hay imagen de referencia para la slide ${slideIndex + 1}.`);
+					return;
+				}
+				body = {
+					base64Image: slide.imageBase64 || null,
+					imageUrl: slide.imageBase64 ? null : refImage,
+					brand: post.brand,
+					title: post.title,
+					context: post.context,
+					objective: post.objective,
+					index: slideIndex,
+					modo: 'editar',
+					customPrompt: promptToUse || undefined,
+					selectedAssetIds: assetIds || Array.from(assetSelectorDialog?.selectedIds || [])
+				};
+			}
+		} else {
+			const carouselImg = post.carouselImages?.find(img => img.imagePreview);
+			const refImage = post.imageBase64 || post.imagePreview || carouselImg?.imagePreview || null;
+			if (!refImage) {
+				toast.error('No hay imagen de referencia. Sube una desde el calendario.');
+				return;
+			}
+			body = {
+				base64Image: post.imageBase64 || null,
+				imageUrl: post.imageBase64 ? null : refImage,
+				brand: post.brand,
+				title: post.title,
+				context: post.context,
+				objective: post.objective,
+				customPrompt,
+				selectedAssetIds: assetIds || Array.from(assetSelectorDialog?.selectedIds || [])
+			};
+		}
+
+		nanoBananaGenerating = true;
+
+		try {
+			const response = await fetch(`/api/content-creator/publicaciones/${post.id}/generar-imagen`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(body)
+			});
+			const data = await response.json();
+
+			if (data.success && data.imageUrl) {
+				if (isSlide) {
+					posts = posts.map(p => {
+						if (p.id === post.id && p.carouselImages) {
+							const updatedImages = [...p.carouselImages];
+							const idx = slideIndex as number;
+							if (updatedImages[idx]) {
+								updatedImages[idx] = {
+									...updatedImages[idx],
+									imageName: `ia_gen_pub_${post.id}_${idx}.jpg`,
+									imagePreview: data.imageUrl,
+									imageBase64: ''
+								};
+							}
+							return { ...p, carouselImages: updatedImages };
+						}
+						return p;
+					});
+					toast.success(`¡Gemini regeneró la imagen ${slideIndex + 1} del carrusel!`);
+				} else {
+					posts = posts.map(p => {
+						if (p.id === post.id) {
+							return {
+								...p,
+								imageName: `ia_gen_pub_${post.id}.jpg`,
+								imagePreview: data.imageUrl
+							};
+						}
+						return p;
+					});
+					toast.success('¡Gemini ha generado una nueva propuesta visual!');
+				}
+			} else {
+				toast.error(data.error || 'Error al generar la imagen.');
+			}
+		} catch (error) {
+			console.error(error);
+			toast.error('Error de red al intentar generar la imagen.');
+		} finally {
+			nanoBananaGenerating = false;
+			regeneratingSlideIndex = null;
+		}
+	}
+
+	// Descargar imagen generada por IA (guardada en /uploads/)
+	function downloadBaseImage(post: ExcelPost) {
+		const isCarousel = post?.esCarrusel !== undefined
+			? !!post.esCarrusel
+			: (Array.isArray(post?.carouselImages) && post.carouselImages.length > 0);
+		const hasCarousels = isCarousel && post?.carouselImages && post.carouselImages.length > 0;
+
+		if (hasCarousels && post.carouselImages) {
+			downloadingImage = true;
+			try {
+				post.carouselImages.forEach((img, idx) => {
+					if (img.imagePreview) {
+						setTimeout(() => {
+							const a = document.createElement('a');
+							a.href = img.imagePreview as string;
+							a.download = img.imageName || `ia_gen_pub_${post.id}_${idx}.jpg`;
+							document.body.appendChild(a);
+							a.click();
+							document.body.removeChild(a);
+						}, idx * 500); // Retraso de medio segundo entre descargas
+					}
+				});
+				toast.success('Descargando carrusel...', {
+					description: `Se descargarán ${post.carouselImages.length} imágenes.`
+				});
+			} catch (e) {
+				toast.error('No se pudieron descargar las imágenes del carrusel.');
+			} finally {
+				setTimeout(() => downloadingImage = false, post.carouselImages.length * 500);
+			}
+			return;
+		}
+
+		if (!post?.imagePreview) {
+			toast.error('No hay imagen generada para descargar.');
+			return;
+		}
+
+		downloadingImage = true;
+
+		try {
+			// Crear un enlace temporal y hacer click programáticamente
+			const a = document.createElement('a');
+			a.href = post.imagePreview;
+			a.download = post.imageName || `ia_gen_pub_${post.id}.jpg`;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+
+			toast.success('Descargando imagen...', {
+				description: `${a.download} — lista para edición en Photoshop/Illustrator.`
+			});
+		} catch (e) {
+			toast.error('No se pudo descargar la imagen.');
+		} finally {
+			downloadingImage = false;
+		}
+	}
+
+	// Acción: Reemplazar por Diseño Final (Adobe Photoshop/Illustrator)
+	async function handleFinalDesignUpload(event: Event, id: string) {
+		const input = event.currentTarget as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file) return;
+
+		// Preview provisional inmediato
+		posts = posts.map(p => {
+			if (p.id === id) {
+				return {
+					...p,
+					imageName: `DISEÑO_FINAL_${file.name}`,
+					imagePreview: URL.createObjectURL(file),
+					designed: true // Se marca como diseñado por el humano
+				};
+			}
+			return p;
+		});
+
+		// Persistir a disco en paralelo
+		try {
+			const fd = new FormData();
+			fd.append('file', file);
+			fd.append('subPath', `designs/${id}`);
+			const res = await fetch('/api/content-creator/upload-imagen', { method: 'POST', body: fd });
+			const data = await res.json();
+			if (!res.ok || !data.success || !data.imageUrl) {
+				toast.error(`No se pudo subir el diseño final: ${data.error || 'error desconocido'}`);
+				return;
+			}
+
+			const imageUrl = data.imageUrl as string;
+			const imageName = (data.fileName as string) || `DISEÑO_FINAL_${file.name}`;
+
+			// Actualizar estado local con la URL persistente
+			posts = posts.map(p => {
+				if (p.id === id) {
+					return { ...p, imageName, imagePreview: imageUrl, designed: true };
+				}
+				return p;
+			});
+
+			// Persistir el reemplazo en la BD (sólo si el id es numérico real)
+			const numericId = id.replace('MER-', '');
+			if (/^\d+$/.test(numericId)) {
+				const putResp = await fetch(`/api/content-creator/publicaciones/${numericId}/design-final`, {
+					method: 'PUT',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ imageUrl, imageName })
+				});
+				if (!putResp.ok) {
+					const errData = await putResp.json().catch(() => ({}));
+					toast.error(`El archivo se subió pero no se pudo guardar en la BD: ${errData.error || 'error'}`);
+				} else {
+					toast.success('¡Sustitución Exitosa!', {
+						description: 'El diseño del diseñador (Adobe) se subió y reemplazó la propuesta de la IA.'
+					});
+				}
+			} else {
+				toast.success('Diseño final subido', {
+					description: 'Nota: la publicación aún no está guardada en la BD; el cambio se guardará al guardar la ficha.'
+				});
+			}
+		} catch (e) {
+			console.error('[handleFinalDesignUpload]', e);
+			toast.error('Error de red al subir el diseño final.');
+		} finally {
+			if (input) input.value = '';
+		}
+	}
+
+	// Acción: Solicitar ajustes (devuelve a borrador)
+	async function requestAdjusts(id: string) {
+		try {
+			const numericId = id.replace('MER-', '');
+			const response = await fetch(`/api/content-creator/publicaciones/${numericId}/rechazar`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ notas: 'Ajustes solicitados desde el dashboard' })
+			});
+
+			if (response.ok) {
+				posts = posts.map(p => {
+					if (p.id === id) {
+						return { ...p, status: 'Borrador' };
+					}
+					return p;
+				});
+				toast.warning('Pieza devuelta a Borrador para ajustes de copy o parámetros.');
+			} else {
+				toast.error('Error al solicitar ajustes');
+			}
+		} catch (error) {
+			console.error(error);
+			toast.error('Error de red');
+		}
+	}
+
+	// Acción: Guardar publicación (cambia a estado Guardado y desactiva aprobación)
+	async function savePost(id: string) {
+		const post = posts.find(p => p.id === id);
+		if (!post) return;
+
+		savingPost = true;
+		try {
+			const numericId = id.replace('MER-', '');
+			if (/^\d+$/.test(numericId)) {
+				const response = await fetch(`/api/content-creator/publicaciones/${numericId}`, {
+					method: 'PUT',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						estado: 'Guardado',
+						copy_final: post.copy,
+						titulo: post.title,
+						contexto: post.context,
+						objetivo: post.objective,
+						cta: post.cta
+					})
+				});
+
+				if (!response.ok) {
+					toast.error('Error al guardar la publicación en el servidor');
+					return;
+				}
+			}
+
+			posts = posts.map(p => {
+				if (p.id === id) {
+					return { 
+						...p, 
+						status: 'Guardado'
+					};
+				}
+				return p;
+			});
+			toast.info('Publicación guardada exitosamente', {
+				description: 'El estado cambió a "Guardado". La opción de aprobar y enviar a Meta ha sido desactivada.'
+			});
+		} catch (error) {
+			console.error(error);
+			toast.error('Error de red al guardar la publicación');
+		} finally {
+			savingPost = false;
+		}
+	}
+
+	// Acción: Aprobar y programar en Meta
+	async function approveAndSchedule(id: string) {
+		const post = posts.find(p => p.id === id);
+		if (!post) return;
+
+		if (!post.designed) {
+			toast.error('No se puede aprobar para publicación sin cargar el diseño final editado por el diseñador (Adobe).');
+			return;
+		}
+
+		if (!post.copy.trim()) {
+			toast.error('El copy de la publicación no puede estar vacío.');
+			return;
+		}
+
+		finalizingPost = true;
+		try {
+			const numericId = id.replace('MER-', '');
+			const response = await fetch(`/api/content-creator/publicaciones/${numericId}/aprobar`, {
+				method: 'POST'
+			});
+
+			if (response.ok) {
+				posts = posts.map(p => {
+					if (p.id === id) {
+						return { 
+							...p, 
+							status: 'Aprobado',
+							published: true // Se marca como lista y programada
+						};
+					}
+					return p;
+				});
+				toast.success('¡Pieza Aprobada con éxito!', {
+					description: 'Configuración enviada a Meta Business Suite. Programación de publicación lista.'
+				});
+			} else {
+				toast.error('Error al aprobar publicación');
+			}
+		} catch (error) {
+			console.error(error);
+			toast.error('Error de red al aprobar');
+		} finally {
+			finalizingPost = false;
+		}
+	}
+
+	// Acción: Descartar / Borrado Lógico (Soft Delete)
+	async function deletePost(id: string) {
+		const post = posts.find(p => p.id === id);
+		if (!post) return;
+
+		if (!confirm(`¿Estás seguro de descartar la publicación "${post.title}"?`)) {
+			return;
+		}
+
+		deletingPost = true;
+		try {
+			const numericId = id.replace('MER-', '');
+			if (/^\d+$/.test(numericId)) {
+				const response = await fetch(`/api/content-creator/publicaciones/${numericId}`, {
+					method: 'DELETE'
+				});
+
+				if (!response.ok) {
+					toast.error('Error al descartar la publicación');
+					return;
+				}
+			}
+
+			posts = posts.filter(p => p.id !== id);
+			if (selectedPostId === id) {
+				selectedPostId = null;
+			}
+			toast.success('Publicación descartada correctamente');
+		} catch (error) {
+			console.error(error);
+			toast.error('Error de red al descartar la publicación');
+		} finally {
+			deletingPost = false;
+		}
+	}
+</script>
+
+<div class="grid gap-6 lg:grid-cols-[380px_1fr]">
+	
+	<!-- Panel Izquierdo: Lista de Publicaciones en Revisión -->
+	<div class="flex flex-col gap-4">
+		<!-- Filtros de Estado y Marca -->
+		<div class="rounded-xl border bg-card p-4 shadow-sm space-y-3">
+			<div class="flex items-center justify-between">
+				<span class="text-xs font-bold uppercase text-slate-500">Filtrar Estado</span>
+				<div class="flex gap-1 flex-wrap justify-end">
+					{#each ['Todos', 'Borrador', 'En revisión', 'Guardado', 'Aprobado'] as st}
+						<button 
+							type="button"
+							onclick={() => filterStatus = st as any}
+							class={`rounded px-2.5 py-1 text-[10px] font-bold transition-all
+								${filterStatus === st 
+									? 'bg-[#253166] text-white' 
+									: 'bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}
+						>
+							{st === 'En revisión' ? 'Revisión' : st}
+						</button>
+					{/each}
+				</div>
+			</div>
+			
+			<div class="flex items-center justify-between border-t pt-2.5">
+				<span class="text-xs font-bold uppercase text-slate-500">Filtrar Marca</span>
+				<select 
+					bind:value={filterBrand}
+					class="h-8 rounded-md border bg-background px-2 text-[10px] font-bold outline-none"
+				>
+					{#each brands as b}
+						<option value={b}>{b}</option>
+					{/each}
+				</select>
+			</div>
+		</div>
+
+		<!-- Lista Scrollable de Publicaciones -->
+		<div class="max-h-[550px] space-y-3 overflow-y-auto pr-1">
+			{#if filteredPosts.length === 0}
+				<div class="flex flex-col items-center justify-center rounded-xl border border-dashed p-8 text-center bg-card">
+					<div class="rounded-full bg-emerald-100 dark:bg-emerald-950/40 p-3 text-emerald-600 dark:text-emerald-400">
+						<CheckCircle class="h-6 w-6" />
+					</div>
+					<p class="mt-3 text-sm font-bold text-slate-800 dark:text-slate-200">¡Todo al día!</p>
+					<p class="mt-1 text-xs text-muted-foreground">No hay piezas que coincidan con los filtros seleccionados.</p>
+				</div>
+			{:else}
+				{#each filteredPosts as post (post.id)}
+					<button 
+						type="button"
+						onclick={() => selectedPostId = post.id}
+						class={`group w-full rounded-xl border text-left p-3.5 transition-all duration-200 hover:shadow-sm hover:scale-[1.01] flex flex-col gap-2
+							${selectedPostId === post.id 
+								? 'border-[#253166] bg-[#253166]/5 dark:border-blue-500 dark:bg-blue-950/10' 
+								: 'border-slate-200 bg-card dark:border-slate-800'}`}
+					>
+						<div class="flex items-center justify-between gap-2 w-full">
+							<span class="rounded bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[8px] font-extrabold tracking-wider text-slate-600 uppercase">
+								{post.brand || 'V&O'}
+							</span>
+							<span class={`rounded-full px-2 py-0.5 text-[8px] font-bold
+								${post.status === 'Aprobado' 
+									? 'bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400' 
+									: post.status === 'En revisión' 
+										? 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400' 
+										: post.status === 'Guardado'
+											? 'bg-sky-100 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400'
+											: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}
+							>
+								{post.status || 'Borrador'}
+							</span>
+						</div>
+						
+						<div>
+							<h4 class="text-xs font-bold text-slate-900 line-clamp-1 dark:text-slate-100 group-hover:text-[#253166] dark:group-hover:text-blue-400">
+								{post.title}
+							</h4>
+							<p class="mt-1 text-[10px] text-muted-foreground line-clamp-2 italic">
+								"{post.copy ? post.copy.substring(post.copy.indexOf('\n\n') + 2) : 'Sin copy generado'}"
+							</p>
+						</div>
+
+						<div class="mt-1 flex items-center justify-between border-t border-slate-100 dark:border-slate-800/80 pt-2 text-[9px] font-semibold text-slate-400">
+							<div class="flex items-center gap-1">
+								<Calendar class="h-3 w-3" />
+								<span>{post.date} · {post.week}</span>
+							</div>
+							<div class="flex gap-1.5">
+								{#if post.imagePreview}<span class="text-blue-500" title="Imagen de referencia IA cargada">🤖</span>{/if}
+								{#if post.designed}<span class="text-emerald-500" title="Diseño Final Adobe Cargado">🎨</span>{/if}
+								{#if post.promoted}<span class="text-amber-500" title="Pauta de Pago Configurada">🔥</span>{/if}
+							</div>
+						</div>
+					</button>
+				{/each}
+			{/if}
+		</div>
+	</div>
+
+	<!-- Panel Derecho: Detalle de Publicación y Aprobación HITL -->
+	<div>
+		{#if selectedPost}
+			<Card.Root class="border-slate-200 bg-card shadow-sm dark:border-slate-800 overflow-hidden">
+				<Card.Header class="border-b border-slate-100 bg-muted/40 p-4 dark:border-slate-800/80">
+					<div class="flex flex-wrap items-center justify-between gap-4">
+						<div class="space-y-1">
+							<div class="flex items-center gap-2">
+								<span class="rounded bg-[#253166]/10 px-2 py-0.5 text-[9px] font-bold text-[#253166] dark:bg-blue-900/30 dark:text-blue-400 uppercase">
+									{selectedPost.brand}
+								</span>
+								<span class="text-[10px] text-muted-foreground">· {selectedPost.network} ({selectedPost.format})</span>
+							</div>
+							<Card.Title class="text-base font-bold text-slate-900 dark:text-white">
+								{selectedPost.title}
+							</Card.Title>
+						</div>
+						
+						<div class="flex items-center gap-1.5 text-[10px] font-bold">
+							<span class="rounded-md border bg-background px-2.5 py-1">
+								📅 {selectedPost.date}
+							</span>
+							<span class="rounded-md border bg-background px-2.5 py-1">
+								📦 {selectedPost.week}
+							</span>
+						</div>
+					</div>
+				</Card.Header>
+				
+				<Card.Content class="p-5 space-y-5">
+					<div class="grid gap-5 md:grid-cols-2">
+						
+						<!-- Columna Izquierda: Flujo Visual de la Imagen (IA vs. Adobe Humano) -->
+						<div class="space-y-3.5">
+							<span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Flujo de Diseño (Human in the Loop)</span>
+							
+							<!-- Caja del Contenedor de Imagen -->
+							<div class="relative overflow-hidden rounded-xl border bg-slate-50 dark:bg-slate-900/50 flex flex-col justify-center items-center p-2 min-h-[220px]">
+{#if hasCarouselImages}
+								<div class="flex overflow-x-auto w-full gap-2 pb-2 snap-x">
+									{#each activeCarouselImages as img, i}
+										<div class="snap-center shrink-0 w-4/5 sm:w-1/2 relative group">
+											<span class="absolute top-2 left-2 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">#{i+1}</span>
+											{#if img.modo === 'crear'}
+												<span class="absolute top-2 right-2 bg-[#253166]/80 text-white text-[8px] font-bold uppercase px-1.5 py-0.5 rounded">✨ Crear</span>
+											{/if}
+											{#if img.imagePreview}
+												<img src={img.imagePreview} alt="Mockup {i+1}" class="h-48 w-full object-contain rounded-lg border shadow-sm bg-white dark:bg-black/50" />
+											{:else}
+												<div class="h-48 w-full border flex items-center justify-center rounded-lg bg-card">
+													<span class="text-xs text-muted-foreground">Generando...</span>
+												</div>
+											{/if}
+											<!-- Acción por slide -->
+											<button
+												type="button"
+												title={`Regenerar imagen ${i+1}`}
+												class="absolute bottom-2 right-2 inline-flex items-center justify-center h-7 w-7 rounded-md bg-background/90 border border-slate-200 text-[#253166] hover:bg-[#253166] hover:text-white transition opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+												onclick={(e) => { e.stopPropagation(); openRegenerationFlow(i); }}
+												disabled={nanoBananaGenerating}
+											>
+												{#if nanoBananaGenerating && regeneratingSlideIndex === i}
+													<span class="animate-spin">🌀</span>
+												{:else}
+													<RefreshCw class="h-3.5 w-3.5" />
+												{/if}
+											</button>
+										</div>
+									{/each}
+								</div>
+								{:else if selectedPost?.imagePreview}
+									<img src={selectedPost.imagePreview} alt="Mockup" class="h-48 w-full object-contain rounded-lg border shadow-sm" />
+								{:else}
+									<div class="flex flex-col items-center justify-center p-4 text-center">
+										<ImageIcon class="h-10 w-10 text-slate-400 mb-2" />
+										<p class="text-xs font-semibold">No se ha cargado imagen de referencia</p>
+										<p class="text-[10px] text-muted-foreground">Usa el planificador para subir la imagen inicial.</p>
+									</div>
+								{/if}
+
+								<!-- Badge de Tipo de Imagen Activa -->
+								<div class="absolute top-4 right-4 flex gap-1.5">
+									{#if selectedPost.designed}
+										<span class="bg-indigo-600 text-white text-[8px] font-bold uppercase px-2 py-0.5 rounded-full shadow border border-indigo-700 animate-pulse">
+											🎨 Editado en Adobe (Humano)
+										</span>
+									{:else}
+										<span class="bg-amber-600 text-white text-[8px] font-bold uppercase px-2 py-0.5 rounded-full shadow border border-amber-700">
+											🤖 Borrador IA (Nano Banana)
+										</span>
+									{/if}
+								</div>
+							</div>
+
+							<!-- Acciones del Flujo de Diseño (Download / Regenerate IA / Sustituir Adobe) -->
+							<div class="flex flex-col gap-2">
+								<div class="flex gap-2">
+									<!-- Re-generar con IA (Nano Banana) -->
+									<Button 
+										variant="outline" 
+										size="sm"
+										class="flex-1 text-[11px] font-bold"
+										onclick={openRegenerationFlow}
+										disabled={nanoBananaGenerating || (!selectedPost.imageBase64 && !selectedPost.imagePreview && !hasCarouselImages)}
+									>
+										{#if nanoBananaGenerating}
+											<span class="animate-spin mr-1">🌀</span> Generando...
+										{:else}
+											<RefreshCw class="h-3.5 w-3.5 mr-1" />
+											Regenerar IA
+										{/if}
+									</Button>
+
+									<!-- Descargar Base IA -->
+									<Button 
+										variant="outline" 
+										size="sm"
+										class="flex-1 text-[11px] font-bold border-[#253166]/20 text-[#253166] hover:bg-[#253166]/5 dark:border-blue-400/30 dark:text-blue-300 dark:hover:bg-blue-400/10"
+										onclick={() => downloadBaseImage(selectedPost)}
+										disabled={downloadingImage || (!selectedPost?.imagePreview && !hasCarouselImages)}
+									>
+										<Download class="h-3.5 w-3.5 mr-1" />
+										Descargar Base IA
+									</Button>
+								</div>
+								
+								<div class="flex gap-2">
+									<!-- Ver Imagen en Pantalla Completa -->
+									<Button 
+										variant="outline" 
+										size="sm"
+										class="flex-1 text-[11px] font-bold"
+										onclick={() => {
+										if (hasCarouselImages) {
+											viewerState = {
+												images: activeCarouselImages.map(img => ({ preview: img.imagePreview || '', name: img.imageName || '' })),
+												index: 0
+											};
+										} else if (selectedPost?.imagePreview) {
+											viewerState = {
+												images: [{ preview: selectedPost.imagePreview, name: selectedPost.imageName || '' }],
+												index: 0
+											};
+										}
+									}}
+										disabled={!selectedPost?.imagePreview && !hasCarouselImages}
+									>
+										<Eye class="h-3.5 w-3.5 mr-1" />
+										Ver Imagen
+									</Button>
+								</div>
+
+								<!-- Reemplazar con el diseño final de Adobe (Manual Humano) -->
+								<div class="border border-dashed rounded-lg p-2.5 bg-slate-50 dark:bg-slate-900/30 flex flex-col items-center justify-center text-center">
+									<span class="text-[9px] font-bold text-slate-400 uppercase mb-1">Subir Pieza Final (Photoshop / Illustrator)</span>
+									<label class="flex items-center gap-1 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-md cursor-pointer font-bold text-[10px] shadow-sm transition">
+										<UploadCloud class="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+										<span>Reemplazar con Diseño Final (Adobe)</span>
+										<input 
+											bind:this={finalDesignInput} 
+											type="file" 
+											accept="image/*" 
+											class="hidden" 
+											onchange={(e) => handleFinalDesignUpload(e, selectedPost.id)} 
+										/>
+									</label>
+								</div>
+							</div>
+						</div>
+
+						<!-- Columna Derecha: Revisión y Edición de Textos/Copy -->
+						<div class="space-y-3.5 flex flex-col justify-between">
+							<div class="space-y-3">
+								<div class="flex items-center justify-between">
+									<span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Copy y Hashtags Generados</span>
+									<Button 
+										size="xs"
+										class="bg-orange-500 hover:bg-orange-600 text-white font-bold h-7 gap-1 text-[10px] cursor-pointer"
+onclick={() => openCopyPromptDialog(selectedPost)}
+									disabled={geminiGeneratingReview}
+									>
+										{#if geminiGeneratingReview}
+											<span class="animate-spin text-[8px]">🌀</span> Generando...
+										{:else}
+											<Sparkles class="h-3 w-3" />
+											Generar Copy con IA
+										{/if}
+									</Button>
+								</div>
+								
+								<!-- Visualización y Modificación del Copy -->
+								<div class="space-y-1">
+									<textarea 
+										bind:value={selectedPost.copy} 
+										rows="8"
+										class="w-full rounded-lg border bg-background px-3 py-2.5 text-xs outline-none focus:border-[#253166] leading-relaxed font-sans"
+										placeholder="Ingresa o edita el copy definitivo..."
+									></textarea>
+								</div>
+
+								<!-- Modificación de Parámetros Clave -->
+								<div class="grid gap-3 sm:grid-cols-2">
+									<div class="space-y-1">
+										<span class="text-[9px] font-bold uppercase text-slate-400">Llamado a la acción (CTA)</span>
+										<input 
+											type="text" 
+											bind:value={selectedPost.cta} 
+											class="h-8.5 w-full rounded-md border bg-background px-2 text-xs outline-none focus:border-[#253166]" 
+										/>
+									</div>
+									<div class="space-y-1">
+										<span class="text-[9px] font-bold uppercase text-slate-400">Objetivo</span>
+										<input 
+											type="text" 
+											bind:value={selectedPost.objective} 
+											class="h-8.5 w-full rounded-md border bg-background px-2 text-xs outline-none focus:border-[#253166]" 
+										/>
+									</div>
+								</div>
+							</div>
+
+							<!-- Pauta Presupuesto y Redes -->
+							<div class="rounded-xl border p-3 bg-muted/30 text-xs space-y-2">
+								<span class="text-[9px] font-bold uppercase text-slate-400 block">Presupuesto y Configuración Meta</span>
+								<div class="grid grid-cols-3 gap-2">
+									<div>
+										<span class="text-[8px] text-slate-400 block">Público</span>
+										<span class="font-bold text-slate-800 dark:text-slate-200">{selectedPost.audience || 'Amplio'}</span>
+									</div>
+									<div>
+										<span class="text-[8px] text-slate-400 block">Presupuesto</span>
+										<span class="font-bold text-emerald-600">¢{selectedPost.budget}</span>
+									</div>
+									<div>
+										<span class="text-[8px] text-slate-400 block">Pautada</span>
+										<span class="font-bold">{selectedPost.promoted ? '🔥 Pauta Activa' : 'Sin Pauta'}</span>
+									</div>
+								</div>
+							</div>
+						</div>
+
+					</div>
+
+					<!-- Caja de Acciones de Aprobación HITL -->
+					<div class="border-t pt-4 flex flex-wrap gap-3 items-center justify-between">
+						
+						<!-- Status del flujo actual -->
+						<div class="text-xs">
+							<span class="text-[9px] text-slate-400 uppercase font-bold block">Estado Actual</span>
+							<span class={`font-bold uppercase tracking-wide
+								${selectedPost.status === 'Aprobado' 
+									? 'text-green-600' 
+									: selectedPost.status === 'En revisión' 
+										? 'text-amber-500 animate-pulse' 
+										: selectedPost.status === 'Guardado'
+											? 'text-sky-600'
+											: 'text-slate-500'}`}
+							>
+								{selectedPost.status === 'Aprobado' 
+									? '✓ Aprobado y Programado' 
+									: selectedPost.status === 'En revisión' 
+										? '⏳ Pendiente de Aprobación' 
+										: selectedPost.status === 'Guardado'
+											? '💾 Guardado (Aprobación Desactivada)'
+											: '⚙️ Borrador Local'}
+							</span>
+						</div>
+
+						<div class="flex flex-wrap gap-2">
+							<!-- Descartar (Soft Delete) -->
+							<Button 
+								variant="outline" 
+								class="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900/60 dark:text-red-400 dark:hover:bg-red-950/50 font-bold"
+								onclick={() => deletePost(selectedPost.id)}
+								disabled={deletingPost}
+							>
+								{#if deletingPost}
+									<span class="animate-spin mr-1">🌀</span> Descartando...
+								{:else}
+									<Trash2 class="h-4 w-4 mr-1.5" />
+									Descartar
+								{/if}
+							</Button>
+
+							<!-- Devolver a Borrador -->
+							{#if selectedPost.status !== 'Borrador'}
+								<Button 
+									variant="outline" 
+									class="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:border-rose-900/60 dark:text-rose-400 dark:hover:bg-rose-950/50 dark:hover:text-rose-300 font-bold"
+									onclick={() => requestAdjusts(selectedPost.id)}
+								>
+									<XCircle class="h-4 w-4 mr-1.5" />
+									Devolver a Ajustes
+								</Button>
+							{/if}
+
+							<!-- Guardar Cambios (Desactiva opción de aprobar y enviar a Meta) -->
+							<Button 
+								variant="outline"
+								class="border-sky-300 text-sky-700 hover:bg-sky-50 dark:border-sky-800 dark:text-sky-400 dark:hover:bg-sky-950/50 font-bold"
+								onclick={() => savePost(selectedPost.id)}
+								disabled={savingPost}
+							>
+								{#if savingPost}
+									<span class="animate-spin mr-1">🌀</span> Guardando...
+								{:else}
+									<Save class="h-4 w-4 mr-1.5" />
+									{selectedPost.status === 'Guardado' ? 'Guardado' : 'Guardar'}
+								{/if}
+							</Button>
+
+							<!-- Aprobar y Programar -->
+							<Button 
+								class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold disabled:opacity-50"
+								onclick={() => approveAndSchedule(selectedPost.id)}
+								disabled={finalizingPost || selectedPost.status === 'Aprobado' || selectedPost.status === 'Guardado'}
+							>
+								{#if finalizingPost}
+									<span class="animate-spin mr-1">🌀</span> Procesando...
+								{:else if selectedPost.status === 'Aprobado'}
+									<CheckCircle class="h-4 w-4 mr-1.5" />
+									Ya Programado
+								{:else if selectedPost.status === 'Guardado'}
+									<CheckCircle class="h-4 w-4 mr-1.5" />
+									Aprobación Desactivada
+								{:else}
+									<CheckCircle class="h-4 w-4 mr-1.5" />
+									Aprobar y Programar en Meta
+								{/if}
+							</Button>
+						</div>
+					</div>
+
+				</Card.Content>
+			</Card.Root>
+		{:else}
+			<div class="flex min-h-[400px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-card p-8 text-center dark:border-slate-800">
+				<Eye class="h-10 w-10 text-slate-400" />
+				<p class="mt-4 text-sm font-semibold text-slate-800 dark:text-slate-200">No hay pieza seleccionada</p>
+				<p class="text-xs text-slate-500 mt-1 dark:text-slate-400">Selecciona una publicación de la lista izquierda para iniciar la auditoría y reemplazo.</p>
+			</div>
+		{/if}
+	</div>
+
+</div>
+
+<!-- Visor de Imagen a Pantalla Completa -->
+{#if viewerState}
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div 
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+		onclick={() => viewerState = null}
+	>
+		<div class="relative max-w-[90vw] max-h-[90vh] flex flex-col items-center">
+			<!-- Botón de Cerrar -->
+			<Button 
+				variant="outline" 
+				size="icon" 
+				class="absolute -top-12 right-0 rounded-full bg-slate-800/50 hover:bg-slate-700 text-white border-none"
+				onclick={(e) => { e.stopPropagation(); viewerState = null; }}
+			>
+				<XCircle class="h-6 w-6" />
+			</Button>
+
+			<!-- Navegación Anterior -->
+			{#if viewerState.images.length > 1}
+				<button
+					onclick={(e) => { e.stopPropagation(); viewerState = { ...viewerState, index: Math.max(0, viewerState.index - 1) }; }}
+					disabled={viewerState.index === 0}
+					class="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-white/20 p-2 text-white hover:bg-white/40 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+				>
+					<ChevronLeft class="h-8 w-8" />
+				</button>
+			{/if}
+			
+			<img 
+				src={viewerState.images[viewerState.index].preview} 
+				alt="Vista Previa de Pantalla Completa" 
+				class="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl ring-1 ring-white/10"
+				onclick={(e) => e.stopPropagation()} 
+			/>
+
+			<!-- Navegación Siguiente -->
+			{#if viewerState.images.length > 1}
+				<button
+					onclick={(e) => { e.stopPropagation(); viewerState = { ...viewerState, index: Math.min(viewerState.images.length - 1, viewerState.index + 1) }; }}
+					disabled={viewerState.index === viewerState.images.length - 1}
+					class="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/20 p-2 text-white hover:bg-white/40 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+				>
+					<ChevronRight class="h-8 w-8" />
+				</button>
+
+				<!-- Dots indicadores -->
+				<div class="flex gap-2 mt-3">
+					{#each viewerState.images as _, i}
+						<button
+							onclick={(e) => { e.stopPropagation(); viewerState = { ...viewerState, index: i }; }}
+							class={`h-2 rounded-full transition-all ${i === viewerState.index ? 'w-6 bg-white' : 'w-2 bg-white/50 hover:bg-white/70'}`}
+						></button>
+					{/each}
+				</div>
+			{/if}
+		</div>
+	</div>
+{/if}
+
+<!-- Diálogo de Personalización de Prompt -->
+{#if promptDialog.open}
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div 
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+		onclick={() => { promptDialog = { ...promptDialog, open: false }; assetSelectorDialog = null; regeneratingSlideIndex = null; }}
+	>
+		<div class="relative w-full max-w-2xl rounded-xl border bg-card p-6 shadow-2xl" onclick={(e) => e.stopPropagation()}>
+			<div class="flex items-center gap-3 mb-4">
+				<RefreshCw class="h-5 w-5 text-[#253166]" />
+				<h3 class="text-base font-bold text-[#253166]">
+					{regeneratingSlideIndex !== null
+						? `Regenerar imagen ${regeneratingSlideIndex + 1} del carrusel`
+						: 'Regenerar imagen'}
+				</h3>
+			</div>
+
+			<p class="text-xs text-muted-foreground mb-4">
+				{regeneratingSlideIndex !== null
+					? '¿Quieres modificar el prompt antes de regenerar solo esta imagen del carrusel?'
+					: '¿Quieres modificar el prompt antes de regenerar la imagen?'}
+			</p>
+
+			<textarea
+				bind:value={promptDialog.customPrompt}
+				rows="12"
+				class="w-full rounded-lg border bg-background px-3 py-2.5 text-xs outline-none focus:border-[#253166] leading-relaxed font-sans resize-y mb-4"
+				placeholder="Edita el prompt para la generación de imagen..."
+			></textarea>
+
+			<div class="flex justify-end gap-2">
+				<Button 
+					variant="outline" 
+					size="sm"
+					class="text-xs font-bold"
+					onclick={() => {
+						const ids = Array.from(assetSelectorDialog?.selectedIds || []);
+						assetSelectorDialog = null;
+						lastCustomPrompts = { ...lastCustomPrompts, [selectedPost.id]: '' };
+						promptDialog = { ...promptDialog, open: false };
+						const slideIdx = regeneratingSlideIndex;
+						regenerateImageIA(selectedPost, undefined, ids, slideIdx ?? undefined);
+					}}
+				>
+					No, regenerar igual
+				</Button>
+				<Button 
+					size="sm"
+					class="bg-[#253166] hover:bg-[#1c264f] text-white text-xs font-bold"
+					onclick={() => {
+						const ids = Array.from(assetSelectorDialog?.selectedIds || []);
+						assetSelectorDialog = null;
+						const customPrompt = promptDialog.customPrompt;
+						// Guardamos el último prompt usado solo si NO estamos regenerando un slide individual
+						if (regeneratingSlideIndex === null) {
+							lastCustomPrompts = { ...lastCustomPrompts, [selectedPost.id]: customPrompt };
+						}
+						promptDialog = { ...promptDialog, open: false };
+						const slideIdx = regeneratingSlideIndex;
+						regenerateImageIA(selectedPost, customPrompt, ids, slideIdx ?? undefined);
+					}}
+				>
+					Sí, usar este prompt
+				</Button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- Diálogo de Personalización de Prompt de Copy -->
+{#if copyPromptDialog.open}
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+		onclick={() => { copyPromptDialog = { ...copyPromptDialog, open: false }; }}
+	>
+		<div class="relative w-full max-w-2xl rounded-xl border bg-card p-6 shadow-2xl" onclick={(e) => e.stopPropagation()}>
+			<div class="flex items-center gap-3 mb-4">
+				<Sparkles class="h-5 w-5 text-orange-500" />
+				<h3 class="text-base font-bold text-[#253166]">Generar Copy con IA</h3>
+			</div>
+
+			<p class="text-xs text-muted-foreground mb-3">
+				Edita el prompt antes de generar el texto. El manual de marca se incluye siempre automáticamente; aquí añades indicaciones específicas para este copy (tono, longitud, hashtags, etc.). Si lo dejas vacío, se usa el manual tal cual.
+			</p>
+
+			<textarea
+				bind:value={copyPromptDialog.customPrompt}
+				rows="8"
+				class="w-full rounded-lg border bg-background px-3 py-2.5 text-xs outline-none focus:border-[#253166] leading-relaxed font-sans resize-y mb-3"
+				placeholder="Ej: Usa un tono humorístico, máx. 120 palabras, sin hashtags en inglés..."
+			></textarea>
+
+			<div class="flex items-center justify-between gap-2">
+				<Button
+					variant="ghost"
+					size="sm"
+					class="text-[10px] font-bold text-muted-foreground hover:text-foreground"
+					onclick={useDefaultCopyPrompt}
+					title="Rellenar con el manual de marca (system prompt)"
+				>
+					Usar manual de marca
+				</Button>
+				<div class="flex gap-2">
+					<Button
+						variant="outline"
+						size="sm"
+						class="text-xs font-bold"
+						onclick={() => { copyPromptDialog = { ...copyPromptDialog, open: false }; }}
+					>
+						Cancelar
+					</Button>
+					<Button
+						size="sm"
+						class="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold gap-1.5"
+						onclick={confirmGenerateCopy}
+						disabled={geminiGeneratingReview}
+					>
+						{#if geminiGeneratingReview}
+							<span class="animate-spin text-[8px]">🌀</span> Generando...
+						{:else}
+							<Sparkles class="h-3 w-3" /> Generar Copy
+						{/if}
+					</Button>
+				</div>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- Dialogo de Selección de Assets (Intermedio) -->
+{#if assetSelectorDialog?.open && !promptDialog.open}
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+		<div class="relative w-full max-w-lg rounded-xl bg-white dark:bg-slate-900 shadow-2xl p-6 border border-slate-200 dark:border-slate-800">
+			<Button 
+				variant="outline" 
+				size="icon" 
+				class="absolute top-4 right-4 h-8 w-8 rounded-full border-none"
+				onclick={() => assetSelectorDialog = null}
+			>
+				<XCircle class="h-5 w-5 text-slate-500" />
+			</Button>
+
+			<h3 class="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2 mb-2">
+				<Sparkles class="h-5 w-5 text-indigo-500" />
+				Selecciona Assets de Marca
+			</h3>
+			<p class="text-xs text-slate-500 dark:text-slate-400 mb-6">
+				Elige qué elementos de identidad visual deseas incluir en la nueva generación con IA.
+			</p>
+
+			{#if assetSelectorDialog.loading}
+				<div class="py-8 flex justify-center text-slate-500"><span class="animate-pulse font-semibold">Cargando assets...</span></div>
+			{:else}
+				<div class="grid grid-cols-3 gap-3 mb-6 max-h-[300px] overflow-y-auto p-1">
+					{#each assetSelectorDialog.assets as asset}
+						<label class={`flex flex-col gap-2 p-2 border rounded-xl cursor-pointer transition-all text-center ${assetSelectorDialog.selectedIds.has(asset.id) ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 shadow-md' : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
+							<input type="checkbox" class="hidden" checked={assetSelectorDialog.selectedIds.has(asset.id)} onchange={() => toggleAsset(asset.id)} />
+							<div class="h-16 w-full flex items-center justify-center">
+								<img src={asset.file_path} alt={asset.nombre} class="max-w-full max-h-full object-contain drop-shadow-sm" />
+							</div>
+							<div>
+								<span class="text-[9px] font-bold uppercase block">{asset.tipo}</span>
+								<span class="text-[9px] text-muted-foreground truncate w-full block" title={asset.nombre}>{asset.nombre}</span>
+							</div>
+						</label>
+					{/each}
+				</div>
+
+				<div class="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+					<Button variant="outline" onclick={skipAssetSelection}>
+						Omitir / Sin assets
+					</Button>
+					<Button class="bg-indigo-600 hover:bg-indigo-700 text-white" onclick={confirmAssetSelection}>
+						Continuar al Prompt →
+					</Button>
+				</div>
+			{/if}
+		</div>
+	</div>
+{/if}

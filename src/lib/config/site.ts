@@ -57,7 +57,7 @@ export const siteConfig = {
 export const mainNav: NavItem[] = [
 	{
 		title: "Dashboard",
-		href: "/dashboard",
+		href: "/AsistenteCompras",
 		icon: Home,
 	},
 	{
