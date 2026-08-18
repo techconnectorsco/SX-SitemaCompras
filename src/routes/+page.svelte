@@ -166,11 +166,11 @@
 						</div>
 
 						<!-- CTA Buttons -->
-						<div class="flex flex-col sm:flex-row gap-4">
+						<div class="flex flex-col sm:flex-row gap-4 flex-wrap">
 							<Button
 								href={AUTH_PATHS.LOGIN}
 								size="lg"
-								class="text-base px-8 py-6 bg-[#0D1E3D] hover:bg-[#0D1E3D]/90 dark:bg-[#0D1E3D] dark:hover:bg-[#0D1E3D]/80"
+								class="text-base px-8 py-6 bg-[#1A73C2] hover:bg-[#1A73C2]/90 text-white"
 							>
 								Acceder al Sistema
 								<ChevronRight class="ml-2 h-5 w-5" />
@@ -178,8 +178,7 @@
 							<Button
 								href="/AsistenteCompras"
 								size="lg"
-								variant="outline"
-								class="text-base px-8 py-6 border-[#253166] text-[#253166] hover:bg-[#253166]/5"
+								class="text-base px-8 py-6 bg-[#1A73C2] hover:bg-[#1A73C2]/90 text-white"
 							>
 								<BarChart3 class="mr-2 h-5 w-5" />
 								Asistente de Compras
@@ -187,11 +186,18 @@
 							<Button
 								href="/contentCreator"
 								size="lg"
-								variant="outline"
-								class="text-base px-8 py-6 border-[#0D1E3D] text-[#0D1E3D] hover:bg-[#0D1E3D]/5"
+								class="text-base px-8 py-6 bg-[#1A73C2] hover:bg-[#1A73C2]/90 text-white"
 							>
 								<Sparkles class="mr-2 h-5 w-5" />
 								Community Manager
+							</Button>
+							<Button
+								href="/cxc"
+								size="lg"
+								class="text-base px-8 py-6 bg-[#1A73C2] hover:bg-[#1A73C2]/90 text-white"
+							>
+								<Target class="mr-2 h-5 w-5" />
+								Asistente CXC
 							</Button>
 							<Button
 								href={AUTH_PATHS.REGISTER}
@@ -201,272 +207,18 @@
 								Solicitar Acceso
 							</Button>
 						</div>
-
-						<!-- Stats -->
-						<div class="grid grid-cols-3 gap-6 pt-8 border-t">
-							<div>
-								{#if isLoading}
-									<div class="h-9 w-20 bg-gray-200 dark:bg-gray-700 animate-pulse rounded"></div>
-								{:else}
-									<p class="text-3xl font-bold text-[#0D1E3D] dark:text-white">
-										{stats ? formatNumber(stats.totalSKUs) : '1,500+'}
-									</p>
-								{/if}
-								<p class="text-sm text-muted-foreground">SKUs Gestionados</p>
-							</div>
-							<div>
-								<p class="text-3xl font-bold text-[#0D1E3D] dark:text-white">6 Años</p>
-								<p class="text-sm text-muted-foreground">Historial Analizado</p>
-							</div>
-							<div>
-								<p class="text-3xl font-bold text-[#0D1E3D] dark:text-white">24/7</p>
-								<p class="text-sm text-muted-foreground">Disponibilidad</p>
-							</div>
-						</div>
 					</div>
 
 					<!-- Right Column: Visual Element -->
 					<div class="hidden lg:flex items-center justify-center relative">
-						<div class="relative w-full max-w-lg">
-							<!-- Decorative circles -->
-							<div
-								class="absolute -top-4 -right-4 w-72 h-72 bg-linear-to-br from-[#0D1E3D]/10 to-[#1A73C2]/10 rounded-full blur-2xl"
-							></div>
-							<div
-								class="absolute -bottom-4 -left-4 w-72 h-72 bg-linear-to-tr from-[#1A73C2]/10 to-[#0D1E3D]/10 rounded-full blur-2xl"
-							></div>
-
-							<!-- Dashboard Card -->
-							<div
-								class="relative z-10 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 border border-gray-200 dark:border-gray-700"
-							>
-								<div class="space-y-6">
-									<!-- Header -->
-									<div class="flex items-center justify-between pb-4 border-b">
-										<div class="flex items-center gap-3">
-											<div
-												class="w-10 h-10 rounded-lg bg-[#0D1E3D]/10 flex items-center justify-center"
-											>
-												<BarChart3 class="h-5 w-5 text-[#0D1E3D]" />
-											</div>
-											<div
-												class="flex items-center gap-1.5 px-2 py-1 rounded-full bg-green-500/10 text-green-600 text-[10px] font-medium"
-											>
-												<div class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-												Operativo
-											</div>
-										</div>
-									</div>
-
-									<!-- Gráfico ABC -->
-									<!-- Gráfico ABC -->
-									<div class="space-y-2">
-										<div class="flex justify-between text-xs text-muted-foreground">
-											<span>Distribución ABC</span>
-											{#if stats?.totalSKUs}
-												<span class="text-[#0D1E3D] font-medium"
-													>{formatNumber(stats.totalSKUs)} SKUs</span
-												>
-											{/if}
-										</div>
-										<div
-											class="h-36 bg-gradient-to-t from-[#0D1E3D]/10 to-[#1A73C2]/5 rounded-lg p-3"
-										>
-											{#if stats?.distribucionABC}
-												{@const abcData = stats.distribucionABC}
-												{@const maxVal = Math.max(
-													abcData.A || 1,
-													abcData.B || 1,
-													abcData.C || 1,
-													abcData.D || 1,
-													abcData.E || 1
-												)}
-												<div class="flex items-end justify-between gap-2 h-full">
-													<!-- Barra A -->
-													<div class="flex-1 flex flex-col items-center h-full">
-														<div class="flex-1 w-full flex items-end">
-															<div
-																class="w-full bg-[#0D1E3D] rounded-t"
-																style="height: {Math.max((abcData.A / maxVal) * 100, 8)}%"
-															></div>
-														</div>
-														<span
-															class="text-[10px] font-medium text-gray-600 dark:text-gray-400 mt-1"
-															>A</span
-														>
-													</div>
-													<!-- Barra B -->
-													<div class="flex-1 flex flex-col items-center h-full">
-														<div class="flex-1 w-full flex items-end">
-															<div
-																class="w-full bg-[#0D1E3D]/80 rounded-t"
-																style="height: {Math.max((abcData.B / maxVal) * 100, 8)}%"
-															></div>
-														</div>
-														<span
-															class="text-[10px] font-medium text-gray-600 dark:text-gray-400 mt-1"
-															>B</span
-														>
-													</div>
-													<!-- Barra C -->
-													<div class="flex-1 flex flex-col items-center h-full">
-														<div class="flex-1 w-full flex items-end">
-															<div
-																class="w-full bg-[#1A73C2] rounded-t"
-																style="height: {Math.max((abcData.C / maxVal) * 100, 8)}%"
-															></div>
-														</div>
-														<span
-															class="text-[10px] font-medium text-gray-600 dark:text-gray-400 mt-1"
-															>C</span
-														>
-													</div>
-													<!-- Barra D -->
-													<div class="flex-1 flex flex-col items-center h-full">
-														<div class="flex-1 w-full flex items-end">
-															<div
-																class="w-full bg-[#1A73C2]/80 rounded-t"
-																style="height: {Math.max((abcData.D / maxVal) * 100, 8)}%"
-															></div>
-														</div>
-														<span
-															class="text-[10px] font-medium text-gray-600 dark:text-gray-400 mt-1"
-															>D</span
-														>
-													</div>
-													<!-- Barra E -->
-													<div class="flex-1 flex flex-col items-center h-full">
-														<div class="flex-1 w-full flex items-end">
-															<div
-																class="w-full bg-gray-400 rounded-t"
-																style="height: {Math.max((abcData.E / maxVal) * 100, 8)}%"
-															></div>
-														</div>
-														<span
-															class="text-[10px] font-medium text-gray-600 dark:text-gray-400 mt-1"
-															>E</span
-														>
-													</div>
-												</div>
-											{:else}
-												<!-- Placeholder estático cuando no hay datos -->
-												<div class="flex items-end justify-between gap-2 h-full">
-													<div class="flex-1 flex flex-col items-center h-full">
-														<div class="flex-1 w-full flex items-end">
-															<div class="w-full h-[70%] bg-[#0D1E3D] rounded-t"></div>
-														</div>
-														<span
-															class="text-[10px] font-medium text-gray-600 dark:text-gray-400 mt-1"
-															>A</span
-														>
-													</div>
-													<div class="flex-1 flex flex-col items-center h-full">
-														<div class="flex-1 w-full flex items-end">
-															<div class="w-full h-[55%] bg-[#0D1E3D]/80 rounded-t"></div>
-														</div>
-														<span
-															class="text-[10px] font-medium text-gray-600 dark:text-gray-400 mt-1"
-															>B</span
-														>
-													</div>
-													<div class="flex-1 flex flex-col items-center h-full">
-														<div class="flex-1 w-full flex items-end">
-															<div class="w-full h-[90%] bg-[#1A73C2] rounded-t"></div>
-														</div>
-														<span
-															class="text-[10px] font-medium text-gray-600 dark:text-gray-400 mt-1"
-															>C</span
-														>
-													</div>
-													<div class="flex-1 flex flex-col items-center h-full">
-														<div class="flex-1 w-full flex items-end">
-															<div class="w-full h-[40%] bg-[#1A73C2]/80 rounded-t"></div>
-														</div>
-														<span
-															class="text-[10px] font-medium text-gray-600 dark:text-gray-400 mt-1"
-															>D</span
-														>
-													</div>
-													<div class="flex-1 flex flex-col items-center h-full">
-														<div class="flex-1 w-full flex items-end">
-															<div class="w-full h-[25%] bg-gray-400 rounded-t"></div>
-														</div>
-														<span
-															class="text-[10px] font-medium text-gray-600 dark:text-gray-400 mt-1"
-															>E</span
-														>
-													</div>
-												</div>
-											{/if}
-										</div>
-									</div>
-
-									<!-- Métricas -->
-									<div class="grid grid-cols-2 gap-4">
-										<div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-900">
-											<div class="flex items-center gap-2 mb-2">
-												<Package class="h-4 w-4 text-[#1A73C2]" />
-												<p class="text-xs text-muted-foreground">SKUs Activos</p>
-											</div>
-											{#if isLoading}
-												<div
-													class="h-6 w-16 bg-gray-200 dark:bg-gray-700 animate-pulse rounded"
-												></div>
-											{:else}
-												<p class="text-lg font-bold text-[#0D1E3D] dark:text-white">
-													{stats ? formatNumber(stats.skusActivos) : '1,523'}
-												</p>
-											{/if}
-										</div>
-										<div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-900">
-											<div class="flex items-center gap-2 mb-2">
-												{#if stats?.stockCritico > 0}
-													<AlertTriangle class="h-4 w-4 text-[#1A73C2]" />
-													<p class="text-xs text-muted-foreground">Stock Crítico</p>
-												{:else}
-													<TrendingUp class="h-4 w-4 text-green-500" />
-													<p class="text-xs text-muted-foreground">Requieren Pedido</p>
-												{/if}
-											</div>
-											{#if isLoading}
-												<div
-													class="h-6 w-16 bg-gray-200 dark:bg-gray-700 animate-pulse rounded"
-												></div>
-											{:else}
-												<p
-													class="text-lg font-bold {stats?.stockCritico > 0
-														? 'text-[#1A73C2]'
-														: 'text-[#0D1E3D] dark:text-white'}"
-												>
-													{#if stats?.stockCritico > 0}
-														{formatNumber(stats.stockCritico)}
-													{:else if stats?.requierenPedido}
-														{formatNumber(stats.requierenPedido)}
-													{:else}
-														0
-													{/if}
-												</p>
-											{/if}
-										</div>
-									</div>
-
-									<!-- Top Líneas (si hay datos) -->
-									{#if stats?.topLineas && stats.topLineas.length > 0}
-										<div class="pt-4 border-t">
-											<p class="text-xs text-muted-foreground mb-2">Top Líneas</p>
-											<div class="flex flex-wrap gap-2">
-												{#each stats.topLineas as linea}
-													<span
-														class="px-2 py-1 text-xs bg-[#0D1E3D]/10 text-[#0D1E3D] dark:bg-[#0D1E3D]/20 dark:text-blue-300 rounded-full"
-													>
-														{linea.linea} ({formatNumber(linea.cantidad)})
-													</span>
-												{/each}
-											</div>
-										</div>
-									{/if}
-								</div>
-							</div>
+						<div class="relative w-full max-w-lg overflow-visible">
+							<!-- Hero Image -->
+							<img 
+								src="/hero_img.png" 
+								alt="Asistente IA" 
+								class="relative z-10 w-[115%] max-w-none h-auto object-cover -ml-4" 
+								style="-webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%); mask-image: linear-gradient(to bottom, black 80%, transparent 100%);"
+							/>
 						</div>
 					</div>
 				</div>
@@ -481,8 +233,7 @@
 						Características Principales
 					</h2>
 					<p class="text-muted-foreground max-w-2xl mx-auto">
-						Módulos especializados que integran automatización, inteligencia artificial y gestión
-						operativa
+						El módulo debe ser multiplataforma, no limitado a una sola.
 					</p>
 				</div>
 
@@ -550,7 +301,7 @@
 							<Shield class="h-6 w-6 text-[#1A73C2]" />
 						</div>
 						<h3 class="text-xl font-semibold mb-2 text-[#0D1E3D] dark:text-white">
-							Integración Exactus
+							Múltiples ERPs
 						</h3>
 						<p class="text-muted-foreground">
 							Administra múltiples marcas con prompts personalizados, brand assets y estrategias
@@ -585,7 +336,7 @@
 							<Target class="h-6 w-6 text-[#1A73C2]" />
 						</div>
 						<h3 class="text-xl font-semibold mb-2 text-[#0D1E3D] dark:text-white">
-							Historial Analítico
+							Funcionalidades híbridas
 						</h3>
 						<p class="text-muted-foreground">
 							Publica directamente en Facebook e Instagram, gestiona pautas y monitorea el
@@ -607,21 +358,12 @@
 					</p>
 					<div class="flex flex-col sm:flex-row gap-4 justify-center pt-4">
 						<Button
-							href={AUTH_PATHS.REGISTER}
-							size="lg"
-							variant="secondary"
-							class="text-base px-8 py-6 bg-white text-[#0D1E3D] hover:bg-gray-100"
-						>
-							Solicitar Acceso
-							<ChevronRight class="ml-2 h-5 w-5" />
-						</Button>
-						<Button
 							href="mailto:{siteConfig.contact.email}"
 							size="lg"
 							variant="secondary"
 							class="text-base px-8 py-6 bg-white text-[#0D1E3D] hover:bg-gray-100"
 						>
-							Contactar Soporte
+							Contactar SoporteXperto
 						</Button>
 					</div>
 				</div>

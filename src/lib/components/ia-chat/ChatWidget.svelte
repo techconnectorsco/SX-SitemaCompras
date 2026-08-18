@@ -13,8 +13,24 @@
 		codigoProcesamiento?: string;
 		codigoSku?: string;
 		titulo?: string;
+		saludoPrincipal?: string;
+		saludoHtml?: string;
+		saludoSub?: string;
+		opcionesSugeridas?: { texto: string; enviar: boolean }[];
 	}
-	let { autenticado = true, codigoProcesamiento, codigoSku, titulo = 'Betti A.' }: Props = $props();
+	let {
+		autenticado = true,
+		codigoProcesamiento,
+		codigoSku,
+		titulo = 'Betti A.',
+		saludoPrincipal = '¡Hola! Soy el asistente virtual de SoporteXperto 👋',
+		saludoHtml = '<p>Si piensa en Tecnologia, piense en SoporteXperto. Te ayudamos con servicios de TI, gestion de infraestructura y cableado, nube (Azure/AWS/GCP), ciberseguridad, ciencia de datos, CCTV, licenciamiento y venta de hardware/software (Dell, HP, Lenovo, Epson, Microsoft, Cisco, Fortinet, Logitech y mas).</p><p class="mt-2 font-medium">Antes de continuar, necesitamos tu consentimiento para tratar tus datos personales según nuestra política de datos. ¿Aceptas?</p>',
+		saludoSub = '',
+		opcionesSugeridas = [
+			{ texto: '1. Acepto', enviar: true },
+			{ texto: '2. No acepto', enviar: true }
+		]
+	}: Props = $props();
 
 	const TIMEOUT_MS = 120000; // 120s: una consulta con varias herramientas puede tardar.
 	const MAX_CARACTERES = 1000;
@@ -33,18 +49,14 @@
 		ruta: typeof window !== 'undefined' ? window.location.pathname : undefined
 	});
 
-	// Sugerencias: 1 contextual (si hay SKU) + 3 fijas que siempre funcionan.
+	// Sugerencias combinadas
 	const sugerencias = $derived.by(() => {
-		const fijas = [
-			{ texto: '¿Qué compras debo priorizar hoy?', enviar: true },
-			{ texto: '¿Dónde tengo mayor riesgo de quiebre?', enviar: true },
-			{ texto: '¿Dónde estoy inmovilizando dinero?', enviar: true }
-		];
+		const fijas = opcionesSugeridas;
 		if (codigoSku) {
 			// Contextual: rellena el campo (no envía) para que el usuario confirme.
 			return [
 				{ texto: `Analizá el SKU ${codigoSku} y dame tu recomendación`, enviar: false },
-				...fijas.slice(0, 3)
+				...fijas
 			];
 		}
 		return fijas;
@@ -213,8 +225,15 @@
 		<div class="cuerpo" bind:this={contenedor}>
 			{#if chatStore.mensajes.length === 0}
 				<div class="vacio">
-					<p class="saludo">Hola, soy tu asistente de compras.</p>
-					<p class="sub">Elegí una pregunta o escribí la tuya:</p>
+					<p class="saludo">{saludoPrincipal}</p>
+					{#if saludoHtml}
+						<div class="saludo-html text-sm text-left text-muted-foreground my-3 leading-relaxed">
+							{@html saludoHtml}
+						</div>
+					{/if}
+					{#if saludoSub}
+						<p class="sub">{saludoSub}</p>
+					{/if}
 					<div class="sugerencias">
 						{#each sugerencias as s (s.texto)}
 							<button class="chip" onclick={() => usarSugerencia(s)}>{s.texto}</button>

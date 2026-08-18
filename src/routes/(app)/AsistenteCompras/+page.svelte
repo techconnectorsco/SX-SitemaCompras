@@ -8,7 +8,8 @@
     FileSearch,
     Settings,
     Loader2,
-    BarChart2
+    BarChart2,
+    CreditCard
   } from 'lucide-svelte';
   
   // ✅ CAMBIO: Lazy loading - imports dinámicos en lugar de estáticos
