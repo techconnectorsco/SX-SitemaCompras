@@ -44,15 +44,24 @@ export async function POST({ params, request, locals }) {
         // Leer assets del disco y convertir a base64
         let brandAssets: any[] = [];
         if (selectedAssetIds && Array.isArray(selectedAssetIds) && selectedAssetIds.length > 0) {
-            const assets = selectedAssetIds.map((id) => db.prepare('SELECT * FROM marca_assets WHERE id = ? AND deleted_at IS NULL').get(id)).filter(Boolean) as any[];
-            brandAssets = (
-                await Promise.all(
-                    assets.map(async (asset: any) => {
-                        const b64 = await AssetService.readAsBase64(asset);
-                        return b64 ? { nombre: asset.nombre, tipo: asset.tipo, mimeType: asset.mime_type, base64: b64 } : null;
-                    })
-                )
-            ).filter(Boolean);
+            const assets = selectedAssetIds.map((id) => ({
+                id,
+                asset: db.prepare('SELECT * FROM marca_assets WHERE id = ? AND deleted_at IS NULL').get(id) as any
+            }));
+            const missingRecords = assets.filter(({ asset }) => !asset).map(({ id }) => id);
+            if (missingRecords.length > 0) {
+                return json({ success: false, error: `Assets no disponibles: ${missingRecords.join(', ')}` }, { status: 404 });
+            }
+
+            brandAssets = await Promise.all(
+                assets.map(async ({ id, asset }) => {
+                    const b64 = await AssetService.readAsBase64(asset);
+                    if (!b64) {
+                        throw new Error(`El asset seleccionado "${asset.nombre}" (ID ${id}) no está disponible en disco: ${asset.file_path}`);
+                    }
+                    return { nombre: asset.nombre, tipo: asset.tipo, mimeType: asset.mime_type, base64: b64 };
+                })
+            );
         }
 
         const sharepointUrl = await IAContentService.generarImagenEditada(publicacionId, userId, isCrear ? null : base64Image, fallbackData, index, customPrompt, brandAssets, isCrear);

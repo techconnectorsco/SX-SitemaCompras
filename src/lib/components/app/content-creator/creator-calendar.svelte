@@ -882,6 +882,9 @@
 
 	// Guardar formulario
 	async function savePost() {
+		// Snapshot the selection before saving/closing the modal because reactive effects can reset it.
+		const assetIdsForGeneration = Array.from(selectedAssetIds);
+		const hasSelectedAssets = assetIdsForGeneration.length > 0;
 		if (!draftPost.title.trim()) {
 			toast.error('El tipo de contenido (título/producto) es requerido');
 			return;
@@ -951,24 +954,28 @@
 		}
 
 		const promptGeneral = draftPost.prompt?.trim() || '';
+		const systemPrompt = buildSystemPromptForBrand(draftPost.brand).trim();
 		if (draftPost.esCarrusel) {
-			const missingSlide = (draftPost.carouselImages || []).findIndex((img) => {
-				const hasReference = Boolean(img.imageBase64?.trim() || img.imagePreview?.trim());
-				const hasPrompt = Boolean(img.prompt?.trim() || promptGeneral);
-				return !hasReference && !hasPrompt;
-			});
-			if (missingSlide >= 0) {
-				toast.error(`El slide #${missingSlide + 1} requiere una imagen de referencia o un prompt.`, {
-					description: 'Activa «Crear (sin ref)» y usa el prompt del slide o el prompt general.'
+			const missingSlides = (draftPost.carouselImages || [])
+				.map((img, index) => ({ img, number: index + 1 }))
+				.filter(({ img }) => {
+					const hasPrimaryImage = Boolean(img.imageBase64?.trim() || img.imagePreview?.trim());
+					const hasContentPrompt = Boolean(img.prompt?.trim() || promptGeneral);
+					return !hasPrimaryImage && !hasContentPrompt;
+				})
+				.map(({ number }) => number);
+			if (missingSlides.length > 0) {
+				toast.error(`Slides incompletos: #${missingSlides.join(', #')}`, {
+					description: 'Cada slide sin imagen principal necesita un prompt propio o el prompt general.'
 				});
 				return;
 			}
 		}
 		const carouselImages = draftPost.esCarrusel
 			? (draftPost.carouselImages || []).map((img) => {
-				const hasReference = Boolean(img.imageBase64?.trim() || img.imagePreview?.trim());
-				const hasPrompt = Boolean(img.prompt?.trim() || promptGeneral);
-				return !hasReference && hasPrompt ? { ...img, modo: 'crear' as const } : img;
+				const hasPrimaryImage = Boolean(img.imageBase64?.trim() || img.imagePreview?.trim());
+				const hasContentPrompt = Boolean(img.prompt?.trim() || promptGeneral);
+				return !hasPrimaryImage && hasContentPrompt ? { ...img, modo: 'crear' as const } : img;
 			})
 			: draftPost.carouselImages;
 
@@ -1040,18 +1047,18 @@
 		const isCarouselFormat = !!postToProcess.esCarrusel;
 
 		if (isCarouselFormat && postToProcess.carouselImages && postToProcess.carouselImages.length > 0) {
-			// Filtrar slides procesables: modo crear SIEMPRE (requiere prompt); modo editar solo si hay base64
+			// Los assets son referencias visuales compartidas, no sustituyen el prompt de contenido.
 			const slidesProcesables = postToProcess.carouselImages
 				.map((img, idx) => ({ img, idx }))
 				.filter(({ img, idx }) => {
 					if (img.modo === 'crear') {
-						const ok = (img.prompt && img.prompt.trim()) || (postToProcess.prompt && postToProcess.prompt.trim());
+						const ok = (img.prompt && img.prompt.trim()) || promptGeneral;
 						if (!ok) {
 							console.warn(`[savePost] Slide ${idx} en modo crear sin prompt — se omite.`);
 						}
 						return ok;
 					}
-					return !!img.imageBase64;
+					return Boolean(img.imageBase64 || img.imagePreview);
 				});
 
 			if (slidesProcesables.length === 0) {
@@ -1064,29 +1071,33 @@
 				// Procesar todas las imágenes del carrusel individualmente
 				Promise.all(slidesProcesables.map(async ({ img, idx }) => {
 					try {
+						// Un prompt de slide reemplaza al general; el system prompt sólo es fallback
+						// cuando existe una imagen principal y no hay ninguno de los dos.
+						const resolvedPrompt = img.prompt?.trim() || promptGeneral || systemPrompt;
 						const response = await fetch(`/api/content-creator/publicaciones/${realId}/generar-imagen`, {
 							method: 'POST',
 							headers: { 'Content-Type': 'application/json' },
 							body: JSON.stringify({
 								base64Image: img.modo === 'crear' ? null : img.imageBase64,
+								imageUrl: img.modo === 'crear' ? null : (img.imagePreview || undefined),
 								brand: postToProcess.brand,
 								title: postToProcess.title,
 								context: postToProcess.context,
 								objective: postToProcess.objective,
 								index: idx,
-								customPrompt: (img.prompt && img.prompt.trim()) ? img.prompt.trim() : (postToProcess.prompt || undefined),
+								customPrompt: resolvedPrompt,
 								modo: img.modo || 'editar',
-								selectedAssetIds: Array.from(selectedAssetIds)
+								selectedAssetIds: assetIdsForGeneration
 							})
 						});
 						const data = await response.json();
 						if (data.success && data.imageUrl) {
 							return { index: idx, url: data.imageUrl };
 						}
-						return null;
+						return { index: idx, error: data.error || `No se pudo generar el slide #${idx + 1}` };
 					} catch (error) {
 						console.error(error);
-						return null;
+						return { index: idx, error: `Fallo de conexión al generar el slide #${idx + 1}` };
 					}
 				})).then((results) => {
 					// Actualizar estado local
@@ -1094,7 +1105,7 @@
 						if (p.id === realId && p.carouselImages) {
 							const updatedImages = [...p.carouselImages];
 							results.forEach(res => {
-								if (res && updatedImages[res.index]) {
+								if (res && 'url' in res && updatedImages[res.index]) {
 									updatedImages[res.index].imageName = `ia_gen_pub_${realId}_${res.index}.jpg`;
 									updatedImages[res.index].imagePreview = res.url;
 									updatedImages[res.index].imageBase64 = '';
@@ -1104,7 +1115,11 @@
 						}
 						return p;
 					});
-					const completados = results.filter(r => r !== null).length;
+					const completados = results.filter(r => 'url' in r).length;
+					const primerError = results.find((r) => 'error' in r);
+					if (primerError && 'error' in primerError) {
+						toast.error('No se pudieron generar todos los slides.', { description: primerError.error });
+					}
 					if (completados > 0) {
 						toast.success(`¡Edición de ${completados} imágenes de carrusel terminada!`, {
 							description: 'Revisa el resultado en la pestaña de Revisión.'
@@ -1114,8 +1129,8 @@
 			}
 } else {
 			// Post individual: modo editar (con imagen de referencia) o modo crear (text-to-image)
-			const isSingleCrear = postToProcess.modo === 'crear';
 			const hasRefImage = !!postToProcess.imageBase64 || !!postToProcess.imagePreview;
+			const isSingleCrear = postToProcess.modo === 'crear' || (!hasRefImage && hasSelectedAssets);
 
 			if (!isSingleCrear && !hasRefImage) {
 				toast.error('Sube una imagen de referencia o activá «Crear sin referencia» para generar con IA', {
@@ -1145,9 +1160,9 @@
 						title: postToProcess.title,
 						context: postToProcess.context,
 						objective: postToProcess.objective,
-						customPrompt: postToProcess.prompt || undefined,
+						customPrompt: promptGeneral || systemPrompt,
 						modo: isSingleCrear ? 'crear' : 'editar',
-						selectedAssetIds: Array.from(selectedAssetIds)
+						selectedAssetIds: assetIdsForGeneration
 					})
 				});
 				const data = await response.json();
@@ -1168,7 +1183,7 @@
 						description: 'Revisa el resultado en la pestaña de Revisión.'
 					});
 				} else {
-					toast.error('Error al generar la imagen automáticamente.');
+					toast.error('Error al generar la imagen automáticamente.', { description: data.error || '' });
 				}
 			} catch (error) {
 				console.error(error);

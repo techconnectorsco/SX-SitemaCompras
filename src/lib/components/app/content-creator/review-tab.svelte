@@ -24,6 +24,10 @@
 		Trash2
 	} from 'lucide-svelte';
 	import type { MarcaAsset } from '$lib/features/content-creator/types';
+	import {
+		MAX_COPY_PROMPT_LENGTH,
+		type CopyQualityWarning
+	} from '$lib/features/content-creator/copy-generation';
 
 	interface ExcelPost {
 		id: string;
@@ -243,46 +247,68 @@
 			toast.error('Falta el Tipo de contenido (nombre del producto) para generar el copy.');
 			return;
 		}
-		// Precargar: si la publicación tiene prompt_copy guardado, lo usamos; si no, fallback al manual
-		const seed = (post.promptCopy && post.promptCopy.trim())
-			? post.promptCopy.trim()
-			: (catalogos?.marcas?.find((m: any) => m.nombre === post.brand)?.prompt_sistema || '');
+		const numericId = post.id.replace('MER-', '');
+		if (!/^\d+$/.test(numericId) || Number(numericId) <= 0) {
+			toast.error('La publicación no tiene un ID válido para generar el copy.');
+			return;
+		}
+		// El manual y el prompt de sistema se agregan automáticamente en el servidor.
+		// Este campo contiene exclusivamente instrucciones adicionales para la publicación.
+		const seed = post.promptCopy?.trim() || '';
 		copyPromptDialog = { open: true, customPrompt: seed, postId: post.id };
 	}
 
-	function useDefaultCopyPrompt() {
-		if (!copyPromptDialog.postId) return;
-		const post = filteredPosts.find((p) => p.id === copyPromptDialog.postId);
-		if (!post) return;
-		copyPromptDialog.customPrompt = (catalogos?.marcas?.find((m: any) => m.nombre === post.brand)?.prompt_sistema || '');
+	function resetCopyPrompt() {
+		copyPromptDialog.customPrompt = '';
 	}
 
 	async function confirmGenerateCopy() {
 		if (!copyPromptDialog.postId) return;
-		const post = filteredPosts.find((p) => p.id === copyPromptDialog.postId);
+		const post = posts.find((p) => p.id === copyPromptDialog.postId);
 		if (!post) return;
+		if (!post.title.trim()) {
+			toast.error('Falta el Tipo de contenido (nombre del producto) para generar el copy.');
+			return;
+		}
+		if (copyPromptDialog.customPrompt.length > MAX_COPY_PROMPT_LENGTH) {
+			toast.error(`Las instrucciones no pueden superar ${MAX_COPY_PROMPT_LENGTH.toLocaleString('es')} caracteres.`);
+			return;
+		}
 
-		// Vacío = usar fallback (no enviamos prompt, el backend usará prompt_copy guardado o la plantilla)
+		// null elimina el override persistido: el servidor usará sólo marca, manuales y datos del post.
 		const trimmed = copyPromptDialog.customPrompt.trim();
 		const overrideToSend = trimmed.length > 0 ? trimmed : null;
+		const numericId = post.id.replace('MER-', '');
+		if (!/^\d+$/.test(numericId) || Number(numericId) <= 0) {
+			toast.error('La publicación no tiene un ID válido para generar el copy.');
+			return;
+		}
 
-		copyPromptDialog = { ...copyPromptDialog, open: false };
 		geminiGeneratingReview = true;
-
 		try {
-			const numericId = post.id.replace('MER-', '');
 			const response = await fetch(`/api/content-creator/publicaciones/${numericId}/generar-copy`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ prompt: overrideToSend })
 			});
-			const data = await response.json();
+			const data = await response.json().catch(() => null);
 
-			if (data.success && data.copy) {
-				posts = posts.map(p => p.id === post.id ? { ...p, copy: data.copy, promptCopy: overrideToSend ?? p.promptCopy } : p);
-				toast.success(`Copy generado con éxito.`);
-			} else {
-				toast.error(data.error || 'Error al generar copy.');
+			if (!response.ok || !data?.success || typeof data.copy !== 'string' || !data.copy.trim()) {
+				toast.error(data?.error || 'Error al generar copy.');
+				return;
+			}
+
+			posts = posts.map(p => p.id === post.id
+				? { ...p, copy: data.copy.trim(), promptCopy: overrideToSend ?? '' }
+				: p);
+			copyPromptDialog = { open: false, customPrompt: '', postId: null };
+			toast.success('Copy generado con éxito.');
+
+			const warnings = Array.isArray(data.warnings) ? data.warnings as CopyQualityWarning[] : [];
+			if (warnings.length > 0) {
+				toast.warning('Revisa el copy generado', {
+					description: warnings.map((warning) => warning.message).join(' ')
+				});
 			}
 		} catch (error) {
 			console.error(error);
@@ -1585,7 +1611,9 @@ onclick={() => savePost(selectedPost.id)}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
 		class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-		onclick={() => { copyPromptDialog = { ...copyPromptDialog, open: false }; }}
+		onclick={() => {
+			if (!geminiGeneratingReview) copyPromptDialog = { ...copyPromptDialog, open: false };
+		}}
 	>
 		<div class="relative w-full max-w-2xl rounded-xl border bg-card p-6 shadow-2xl" onclick={(e) => e.stopPropagation()}>
 			<div class="flex items-center gap-3 mb-4">
@@ -1594,25 +1622,31 @@ onclick={() => savePost(selectedPost.id)}
 			</div>
 
 			<p class="text-xs text-muted-foreground mb-3">
-				Edita el prompt antes de generar el texto. El manual de marca se incluye siempre automáticamente; aquí añades indicaciones específicas para este copy (tono, longitud, hashtags, etc.). Si lo dejas vacío, se usa el manual tal cual.
+				El prompt de sistema y los manuales de marca se incluyen automáticamente. Aquí sólo añades indicaciones para este copy (tono, longitud, hashtags, etc.). Si lo dejas vacío, se eliminan las indicaciones anteriores y se usa la configuración de marca.
 			</p>
 
 			<textarea
 				bind:value={copyPromptDialog.customPrompt}
 				rows="8"
+				maxlength={MAX_COPY_PROMPT_LENGTH}
+				disabled={geminiGeneratingReview}
 				class="w-full rounded-lg border bg-background px-3 py-2.5 text-xs outline-none focus:border-[#253166] leading-relaxed font-sans resize-y mb-3"
-				placeholder="Ej: Usa un tono humorístico, máx. 120 palabras, sin hashtags en inglés..."
+				placeholder="Ej: Máximo 80 palabras, tono humorístico y sin hashtags en inglés..."
 			></textarea>
+			<p class="-mt-2 mb-3 text-right text-[10px] text-muted-foreground">
+				{copyPromptDialog.customPrompt.length.toLocaleString('es')} / {MAX_COPY_PROMPT_LENGTH.toLocaleString('es')}
+			</p>
 
 			<div class="flex items-center justify-between gap-2">
 				<Button
 					variant="ghost"
 					size="sm"
 					class="text-[10px] font-bold text-muted-foreground hover:text-foreground"
-					onclick={useDefaultCopyPrompt}
-					title="Rellenar con el manual de marca (system prompt)"
+					onclick={resetCopyPrompt}
+					disabled={geminiGeneratingReview || copyPromptDialog.customPrompt.length === 0}
+					title="Eliminar las instrucciones adicionales"
 				>
-					Usar manual de marca
+					Restablecer instrucciones
 				</Button>
 				<div class="flex gap-2">
 					<Button
@@ -1620,6 +1654,7 @@ onclick={() => savePost(selectedPost.id)}
 						size="sm"
 						class="text-xs font-bold"
 						onclick={() => { copyPromptDialog = { ...copyPromptDialog, open: false }; }}
+						disabled={geminiGeneratingReview}
 					>
 						Cancelar
 					</Button>
@@ -1627,7 +1662,7 @@ onclick={() => savePost(selectedPost.id)}
 						size="sm"
 						class="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold gap-1.5"
 						onclick={confirmGenerateCopy}
-						disabled={geminiGeneratingReview}
+						disabled={geminiGeneratingReview || copyPromptDialog.customPrompt.length > MAX_COPY_PROMPT_LENGTH}
 					>
 						{#if geminiGeneratingReview}
 							<span class="animate-spin text-[8px]">🌀</span> Generando...

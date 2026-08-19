@@ -3,6 +3,11 @@ import { GoogleGenAI } from '@google/genai';
 import { env } from '$env/dynamic/private';
 import { registrarUsoGemini } from './gemini-usage-service';
 import { readUploadFile } from '$lib/server/uploads-storage';
+import {
+    buildCopyGenerationPrompt,
+    CopyGenerationError,
+    normalizeCopyPrompt
+} from '$lib/features/content-creator/copy-generation';
 
 // Instantiate Gemini client
 // Note: Requires GEMINI_API_KEY in .env
@@ -175,7 +180,7 @@ Estructura tu respuesta estrictamente en Markdown con las siguientes secciones:
 
         return resumenTexto;
     }
-    static async generarCopy(publicacionId: number, userId: string, customPrompt?: string): Promise<string> {
+    static async generarCopy(publicacionId: number, userId: string, customPrompt?: string | null): Promise<string> {
         // 1. Obtener la publicación y la marca
         const pub = db
             .prepare(
@@ -188,118 +193,110 @@ Estructura tu respuesta estrictamente en Markdown con las siguientes secciones:
             )
             .get(publicacionId, userId) as any;
 
-        if (!pub) throw new Error('Publicación no encontrada');
+        if (!pub) throw new CopyGenerationError('Publicación no encontrada', 404, 'publication_not_found');
 
-        verificarManualesAnalizados(pub.marca_id);
+        if (!pub.titulo?.trim()) {
+            throw new CopyGenerationError(
+                'La publicación debe tener un título antes de generar el copy.',
+                422,
+                'missing_title'
+            );
+        }
+
+        try {
+            verificarManualesAnalizados(pub.marca_id);
+        } catch (error) {
+            throw new CopyGenerationError(
+                error instanceof Error ? error.message : 'Hay manuales de marca pendientes de análisis.',
+                409,
+                'brand_manual_pending'
+            );
+        }
 
         // 2. Verificar límite de IA
         const userConfig = db.prepare('SELECT estado_ia FROM ia_configuracion_usuarios WHERE user_id = ?').get(userId) as any;
         if (userConfig && userConfig.estado_ia === 'BLOQUEADO') {
-            throw new Error('Cuenta de IA bloqueada o límite excedido');
+            throw new CopyGenerationError('Cuenta de IA bloqueada o límite excedido', 403, 'ai_account_blocked');
         }
 
-        // 3. Construir Prompt
-        // Si el usuario envía un customPrompt puntual (modal de revisión), ese manda.
-        // Si no, caemos al prompt_copy guardado en la publicación (override persistente del calendario).
-        // Si tampoco existe, usamos el template por defecto (manual de marca + datos).
-        const override = customPrompt && customPrompt.trim() ? customPrompt.trim() : pub.prompt_copy && pub.prompt_copy.trim() ? pub.prompt_copy.trim() : null;
+        // Ausente: reutiliza el override guardado. null/vacío: usa sólo la configuración de marca.
+        const normalizedCustomPrompt = normalizeCopyPrompt(customPrompt);
+        const savedOverride = normalizeCopyPrompt(pub.prompt_copy);
+        const override = normalizedCustomPrompt === undefined ? savedOverride ?? null : normalizedCustomPrompt;
 
-        const datosPublicacion = `
-Datos de la publicación:
-- Título: ${pub.titulo}
-- Contexto/Idea principal: ${pub.contexto || 'N/A'}
-- Objetivo: ${pub.objetivo || 'Interacción y alcance'}
-- Llamado a la acción (CTA): ${pub.cta || 'Comentar o enviar mensaje'}`.trim();
-
-        let prompt: string;
-        if (override) {
-            prompt = `
-${pub.prompt_sistema || 'Eres un experto en redacción publicitaria para redes sociales.'}
-
-${override}
-
-${datosPublicacion}
-
-Instrucciones finales:
-- Devuelve SOLO el texto (copy) listo para publicar.
-- Incluye emojis y hashtags relevantes (al menos 3).
-- No incluyas notas adicionales ni texto fuera del copy.
-            `.trim();
-        } else {
-            prompt = `
-${pub.prompt_sistema || 'Eres un experto en redacción publicitaria para redes sociales.'}
-
-Por favor genera el texto (copy) para la siguiente publicación de la marca ${pub.marca_nombre}:
-- Título: ${pub.titulo}
-- Contexto/Idea principal: ${pub.contexto || 'N/A'}
-- Objetivo: ${pub.objetivo || 'Interacción y alcance'}
-- Llamado a la acción (CTA): ${pub.cta || 'Comentar o enviar mensaje'}
-
-Instrucciones:
-- Devuelve SOLO el texto (copy) listo para publicar.
-- Incluye emojis y hashtags relevantes (al menos 3).
-- No incluyas notas adicionales ni texto fuera del copy.
-            `.trim();
-        }
-
-        // 4. Incluir exclusivamente los resúmenes persistidos de los manuales.
+        // 3. Incluir exclusivamente los resúmenes persistidos de los manuales.
         const { manualParts, manualText, filenames } = getBrandManualParts(pub.marca_id);
-        if (manualText) {
-            prompt += manualText;
-        }
-        if (filenames.length > 0) {
-            prompt += `\n\nInstrucción de Marca: Se adjuntaron ${filenames.length} archivo(s) de Manual de Marca (${filenames.join(', ')}). Sigue la voz de marca, tono y guías del manual.`;
-        }
+        const prompt = buildCopyGenerationPrompt({
+            brandName: pub.marca_nombre,
+            systemPrompt: pub.prompt_sistema,
+            title: pub.titulo,
+            context: pub.contexto,
+            objective: pub.objetivo,
+            cta: pub.cta,
+            override,
+            manualText,
+            manualFilenames: filenames
+        });
 
-        // 5. Llamar a Gemini API
+        // 4. Llamar a Gemini API
+        let response: Awaited<ReturnType<typeof ai.models.generateContent>>;
         try {
             const contents: any[] = [...manualParts, { text: prompt }];
 
-            const response = await ai.models.generateContent({
+            response = await ai.models.generateContent({
                 model: MODELO_COPY,
                 contents
             });
-
-            const copyText = response.text || '';
-
-            registrarUsoGemini({
-                userId,
-                marcaId: pub.marca_id,
-                publicacionId,
-                model: MODELO_COPY,
-                task: 'Generación Copy Publicación',
-                prompt,
-                usageMetadata: response.usageMetadata,
-                fallback: {
-                    inputTokens: Math.ceil(prompt.length / 4),
-                    textOutputTokens: Math.ceil(copyText.length / 4)
-                }
-            });
-
-            // 5. Guardar resultado (y persistir el override si llegó customPrompt para re-generación futura)
-            if (override && customPrompt && customPrompt.trim()) {
-                db.prepare(
-                    `
-                    UPDATE publicaciones 
-                    SET copy_ia_original = ?, copy_final = ?, prompt_copy = ?
-                    WHERE id = ?
-                `
-                ).run(copyText, copyText, override, publicacionId);
-            } else {
-                db.prepare(
-                    `
-                    UPDATE publicaciones 
-                    SET copy_ia_original = ?, copy_final = ?
-                    WHERE id = ?
-                `
-                ).run(copyText, copyText, publicacionId);
-            }
-
-            return copyText;
         } catch (error) {
             console.error('[IAContentService] Error llamando a Gemini:', error);
-            throw new Error('Error al generar el copy con IA');
+            throw new CopyGenerationError('Error al generar el copy con IA', 502, 'ai_provider_error');
         }
+
+        const copyText = response.text?.trim() || '';
+
+        // El consumo se registra aunque el proveedor haya respondido sin texto utilizable.
+        registrarUsoGemini({
+            userId,
+            marcaId: pub.marca_id,
+            publicacionId,
+            model: MODELO_COPY,
+            task: 'Generación Copy Publicación',
+            prompt,
+            usageMetadata: response.usageMetadata,
+            fallback: {
+                inputTokens: Math.ceil(prompt.length / 4),
+                textOutputTokens: Math.ceil(copyText.length / 4)
+            }
+        });
+
+        if (!copyText) {
+            throw new CopyGenerationError(
+                'Gemini no devolvió un copy válido. El copy anterior no fue modificado.',
+                502,
+                'empty_ai_response'
+            );
+        }
+
+        // 5. Guardar sólo después de validar la respuesta y siempre limitado al propietario.
+        if (normalizedCustomPrompt !== undefined) {
+            db.prepare(
+                `
+                UPDATE publicaciones
+                SET copy_ia_original = ?, copy_final = ?, prompt_copy = ?
+                WHERE id = ? AND user_id = ? AND deleted_at IS NULL
+            `
+            ).run(copyText, copyText, normalizedCustomPrompt, publicacionId, userId);
+        } else {
+            db.prepare(
+                `
+                UPDATE publicaciones
+                SET copy_ia_original = ?, copy_final = ?
+                WHERE id = ? AND user_id = ? AND deleted_at IS NULL
+            `
+            ).run(copyText, copyText, publicacionId, userId);
+        }
+
+        return copyText;
     }
 
     /**
@@ -497,8 +494,9 @@ Reglas:
         // 2. Construir Prompt Visual basado en la marca (inyectando SIEMPRE la relación de aspecto)
         // Cada llamada genera un seed único para garantizar variedad en las regeneraciones
         const variationSeed = Math.floor(Math.random() * 99999);
-        const basePrompt = customPrompt
-            ? customPrompt.replace('[variation:0]', `[variation:${variationSeed}]`)
+        const promptPersonalizado = customPrompt?.trim();
+        const basePrompt = promptPersonalizado
+            ? promptPersonalizado.replace('[variation:0]', `[variation:${variationSeed}]`)
             : `
             ${pub.prompt_sistema || 'Aplica los estilos de marca por defecto.'}
             Contexto del producto: ${pub.titulo}. ${pub.contexto || ''}.
@@ -514,7 +512,7 @@ Reglas:
 
         const modoCrear = !!isCrear;
 
-        if (modoCrear && !customPrompt?.trim()) {
+        if (modoCrear && !promptPersonalizado) {
             throw new Error('En modo "crear" se requiere un customPrompt. No hay imagen de referencia y el prompt del post no puede estar vacío.');
         }
 
