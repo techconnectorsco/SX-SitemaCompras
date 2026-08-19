@@ -111,59 +111,18 @@
 							<h1
 								class="text-4xl lg:text-6xl font-bold text-[#0D1E3D] dark:text-white leading-tight"
 							>
-								Gestión Inteligente de
+								<span class="whitespace-nowrap">Centro de Operaciones</span>
 								<span
 									class="block text-transparent bg-clip-text bg-linear-to-r from-[#0D1E3D] to-[#1A73C2]"
 								>
-									Compras y Forecast
+									Inteligentes
 								</span>
 							</h1>
 							<p class="text-lg text-muted-foreground max-w-xl">
-								Automatización del proceso de compras para más de
-								{#if isLoading}
-									<span
-										class="inline-block w-16 h-5 bg-gray-200 dark:bg-gray-700 animate-pulse rounded align-middle"
-									></span>
-								{:else}
-									<span class="font-semibold text-[#0D1E3D] dark:text-white"
-										>{stats ? formatNumber(stats.totalSKUs) : '1,500'}</span
-									>
-								{/if}
-								SKUs con reglas de negocio estructuradas y análisis predictivo basado en datos históricos.
+								Plataforma Inteligente para el control y manejo híbrido de asistentes digitales.
 							</p>
 						</div>
 
-						<!-- Features list -->
-						<div class="space-y-3">
-							<div class="flex items-center gap-3">
-								<div
-									class="shrink-0 w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center"
-								>
-									<CheckCircle2 class="h-4 w-4 text-green-600" />
-								</div>
-								<p class="text-sm text-muted-foreground">
-									Asistente de compras con forecast predictivo
-								</p>
-							</div>
-							<div class="flex items-center gap-3">
-								<div
-									class="shrink-0 w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center"
-								>
-									<CheckCircle2 class="h-4 w-4 text-green-600" />
-								</div>
-								<p class="text-sm text-muted-foreground">Creación de contenido impulsada por IA</p>
-							</div>
-							<div class="flex items-center gap-3">
-								<div
-									class="shrink-0 w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center"
-								>
-									<CheckCircle2 class="h-4 w-4 text-green-600" />
-								</div>
-								<p class="text-sm text-muted-foreground">
-									Gestión multi-marca y publicación en redes sociales
-								</p>
-							</div>
-						</div>
 
 						<!-- CTA Buttons -->
 						<div class="flex flex-col sm:flex-row gap-4 flex-wrap">
