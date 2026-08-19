@@ -39,4 +39,4 @@ skills-lock.json
 /static/uploads
 /.codegraph
 *.ecosystem.config.cjs
-ecosystem.config.cjs
+ecosystem.config.cjs*.patch
