@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { soporteXpertoBrand } from '$lib/brand/soportexperto';
+	import { quimicasUnidasBrand } from '$lib/brand/quimicas-unidas';
 
-	const brand = soporteXpertoBrand;
+	const brand = quimicasUnidasBrand;
 
 	interface Factura {
 		documento:    string;
@@ -122,7 +122,7 @@
 		resultado  = null;
 		etapa      = 'Iniciando proceso...';
 
-		const DURACION_MS = 10_000; // 10 segundos en vez de 60 para la simulación más rápida
+		const DURACION_MS = 60_000;
 		const inicio      = Date.now();
 
 		timerInterval = setInterval(() => {
@@ -137,9 +137,15 @@
 		await new Promise(r => setTimeout(r, DURACION_MS));
 
 		try {
-			// Envio simulado
-			const destinatarios = [clienteSeleccionado.correo, ...(correoDemo.trim() ? [correoDemo.trim()] : [])].join(' y ');
-			resultado = { ok: true,  mensaje: `Correo simulado enviado exitosamente a ${destinatarios}` };
+			const res = await fetch('/api/cxc/send-email', {
+				method:  'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body:    JSON.stringify({ cliente: clienteSeleccionado, correoExtra: correoDemo.trim() || null }),
+			});
+			const data = await res.json();
+			resultado = res.ok
+				? { ok: true,  mensaje: data.mensaje ?? 'Correo enviado exitosamente.' }
+				: { ok: false, mensaje: data.message ?? 'Error al enviar el correo.' };
 		} catch {
 			resultado = { ok: false, mensaje: 'Error de conexión con el servidor.' };
 		} finally {
@@ -159,7 +165,7 @@
 </script>
 
 <div
-	class="space-y-8 animate-fade-in p-8"
+	class="space-y-8 animate-fade-in"
 	style="
 		--brand-primary:        {brand.css.primary};
 		--brand-primary-hover:  {brand.css.primaryHover};
@@ -179,7 +185,7 @@
 				Simulador Estado de Cuenta
 			</h1>
 			<p class="text-muted-foreground mt-2 text-sm max-w-lg leading-relaxed">
-				Selecciona un cliente, procesa su estado de cuenta y simula enviarlo por correo con el PDF adjunto.
+				Selecciona un cliente, procesa su estado de cuenta y envíalo automáticamente por correo con el PDF adjunto.
 			</p>
 		</div>
 		<div class="self-start sm:self-auto flex items-center gap-2 px-4 py-2 rounded-2xl flex-shrink-0 border"
@@ -310,8 +316,8 @@
 
 			<div class="bg-card border border-border rounded-2xl p-6 shadow-sm flex flex-col gap-5">
 				<div>
-					<h3 class="text-sm font-bold text-foreground">Simular Envío</h3>
-					<p class="text-xs text-muted-foreground mt-1">Simula la generación del PDF y envío de correo.</p>
+					<h3 class="text-sm font-bold text-foreground">Envío de Estado de Cuenta</h3>
+					<p class="text-xs text-muted-foreground mt-1">Genera el PDF y envía el correo al cliente seleccionado.</p>
 				</div>
 
 				<!-- Correo demo -->
@@ -346,7 +352,7 @@
 							Se enviará también a: <strong>{correoDemo.trim()}</strong>
 						</p>
 					{:else}
-						<p class="text-[11px] text-muted-foreground/60">Déjalo vacío para simular envío al correo del cliente.</p>
+						<p class="text-[11px] text-muted-foreground/60">Déjalo vacío para enviar solo al correo del cliente.</p>
 					{/if}
 				</div>
 
@@ -425,23 +431,23 @@
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
 							      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
 						</svg>
-						{clienteSeleccionado ? `Simular Envío a ${clienteSeleccionado.correo}` : 'Selecciona un cliente'}
+						{clienteSeleccionado ? `Enviar a ${clienteSeleccionado.correo}` : 'Selecciona un cliente'}
 					{/if}
 				</button>
 
 				{#if !clienteSeleccionado}
 					<p class="text-center text-xs text-muted-foreground">
-						Selecciona un cliente de la lista para habilitar la simulación.
+						Selecciona un cliente de la lista para habilitar el envío.
 					</p>
 				{/if}
 			</div>
 
 			<div class="bg-muted/40 border border-border rounded-2xl p-4 space-y-2">
-				<p class="text-[10px] uppercase tracking-widest font-bold text-muted-foreground">Configuración de envío (Simulada)</p>
+				<p class="text-[10px] uppercase tracking-widest font-bold text-muted-foreground">Configuración de envío</p>
 				<div class="space-y-1.5 text-xs text-muted-foreground">
 					<div class="flex gap-2">
 						<span class="w-20 flex-shrink-0">Protocolo</span>
-						<span class="font-medium text-foreground">Microsoft Graph API (Mock)</span>
+						<span class="font-medium text-foreground">Microsoft Graph API</span>
 					</div>
 					<div class="flex gap-2">
 						<span class="w-20 flex-shrink-0">Adjunto</span>
@@ -449,7 +455,7 @@
 					</div>
 					<div class="flex gap-2">
 						<span class="w-20 flex-shrink-0">Procesamiento</span>
-						<span class="font-medium text-foreground">~10 segundos (Demo rápida)</span>
+						<span class="font-medium text-foreground">~60 segundos</span>
 					</div>
 				</div>
 			</div>
