@@ -74,7 +74,7 @@
 
 	<main class="flex-1">
 		<!-- Hero Section -->
-		<section class="relative overflow-hidden py-20 lg:py-10">
+		<section class="relative overflow-hidden py-8 lg:py-6">
 			<!-- Background decoration -->
 			<div class="absolute inset-0 -z-10">
 				<div class="absolute top-0 right-0 w-96 h-96 bg-[#0D1E3D]/5 rounded-full blur-3xl"></div>
