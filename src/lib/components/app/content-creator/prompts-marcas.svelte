@@ -1,9 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { toast } from 'svelte-sonner';
-  import { Save, Loader2, Image, FileText, BookOpen, UploadCloud, Trash2, Download, X, Sparkles, File } from 'lucide-svelte';
+  import { Save, Loader2, Image, FileText, BookOpen, UploadCloud, Trash2, Download, X, Sparkles, File, Eye, CheckCircle2 } from 'lucide-svelte';
 
-  let { data = $bindable(), user = $bindable() } = $props();
+  let { data = $bindable(), user = $bindable(), hasUnsavedChanges = $bindable() } = $props();
 
   interface MarcaManual {
     id: number;
@@ -12,6 +12,8 @@
     file_name: string;
     mime_type: string;
     file_size: number;
+    resumen_ia?: string | null;
+    analizado_at?: number | null;
     created_at: number;
   }
 
@@ -26,11 +28,30 @@
   let loading = $state(true);
   let savingId = $state<number | null>(null);
   let editValues = $state<Record<number, string>>({});
+  let savedValues = $state<Record<number, string>>({});
+
+  const dirty = $derived(marcas.some((m) => (editValues[m.id] ?? '') !== (savedValues[m.id] ?? '')));
+
+  $effect(() => {
+    hasUnsavedChanges = dirty;
+  });
+
+  $effect(() => {
+    if (!dirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  });
 
   // Estado del Modal de Manual de Marca
   let activeModalMarca = $state<Marca | null>(null);
   let uploadingManual = $state(false);
   let deletingManualId = $state<number | null>(null);
+  let analyzingManualId = $state<number | null>(null);
+  let viewingResumenManual = $state<MarcaManual | null>(null);
   let manualFileInput = $state<HTMLInputElement | null>(null);
   let manualNameInput = $state('');
 
@@ -47,6 +68,7 @@
       marcas = data.marcas;
       for (const m of marcas) {
         editValues[m.id] = m.prompt_sistema ?? '';
+        savedValues[m.id] = m.prompt_sistema ?? '';
       }
     } catch (err: any) {
       toast.error(err.message);
@@ -65,6 +87,7 @@
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al guardar');
+      savedValues[id] = editValues[id] ?? '';
       toast.success('Prompt guardado correctamente');
     } catch (err: any) {
       toast.error(err.message);
@@ -76,11 +99,13 @@
   function openManualModal(marca: Marca) {
     activeModalMarca = marca;
     manualNameInput = '';
+    viewingResumenManual = null;
   }
 
   function closeManualModal() {
     activeModalMarca = null;
     manualNameInput = '';
+    viewingResumenManual = null;
   }
 
   async function handleManualUpload(e: Event) {
@@ -104,7 +129,7 @@
 
       if (!res.ok) throw new Error(resData.error || 'Error al subir el manual');
 
-      toast.success('Manual de marca subido correctamente');
+      toast.success(resData.manual?.resumen_ia ? 'Manual subido y analizado por IA' : 'Manual de marca subido correctamente');
       manualNameInput = '';
       if (manualFileInput) manualFileInput.value = '';
 
@@ -125,6 +150,37 @@
     }
   }
 
+  async function reanalizarManual(manualId: number) {
+    if (!activeModalMarca) return;
+    analyzingManualId = manualId;
+    try {
+      const res = await fetch(`/api/content-creator/marcas/${activeModalMarca.id}/manual/${manualId}/analizar`, {
+        method: 'POST'
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al analizar manual');
+
+      toast.success('Análisis de manual completado y registrado en ai_token_logs');
+
+      // Actualizar manual en lista local
+      const updatedManual: MarcaManual = data.manual;
+      if (activeModalMarca.manuales) {
+        const idx = activeModalMarca.manuales.findIndex(m => m.id === manualId);
+        if (idx !== -1) {
+          activeModalMarca.manuales[idx] = updatedManual;
+        }
+      }
+
+      if (viewingResumenManual?.id === manualId) {
+        viewingResumenManual = updatedManual;
+      }
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      analyzingManualId = null;
+    }
+  }
+
   async function deleteManual(manualId: number) {
     if (!activeModalMarca) return;
     deletingManualId = manualId;
@@ -136,6 +192,10 @@
       if (!res.ok) throw new Error(data.error || 'Error al eliminar');
 
       toast.success('Manual eliminado correctamente');
+
+      if (viewingResumenManual?.id === manualId) {
+        viewingResumenManual = null;
+      }
 
       // Actualizar lista local
       activeModalMarca.manuales = activeModalMarca.manuales?.filter((m) => m.id !== manualId);
@@ -166,7 +226,7 @@
     <div>
       <h2 class="text-xl font-bold text-slate-900 dark:text-white">Prompts y Manuales de Marcas</h2>
       <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-        Configura los system prompts y sube manuales de marca (PDF, TXT, MD o imágenes) que Gemini utilizará directamente como contexto.
+        Configura los system prompts y sube manuales de marca (PDF, TXT, MD o imágenes) que Gemini procesará para extraer guías visuales y de redacción.
       </p>
     </div>
   </div>
@@ -250,7 +310,7 @@
     onclick={closeManualModal}
   >
     <div 
-      class="relative w-full max-w-xl rounded-xl bg-white dark:bg-slate-900 p-6 shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col gap-5"
+      class="relative w-full max-w-2xl rounded-xl bg-white dark:bg-slate-900 p-6 shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col gap-5 max-h-[90vh] overflow-y-auto"
       onclick={(e) => e.stopPropagation()}
     >
       <!-- Botón de Cerrar Modal -->
@@ -272,7 +332,7 @@
             Manual de Marca — {activeModalMarca.nombre}
           </h3>
           <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Archivos contextuales oficiales que la IA (Gemini) leerá al generar gráficos y textos.
+            Archivos analizados por IA para extraer guías de estilo, tono y reglas de composición.
           </p>
         </div>
       </div>
@@ -281,7 +341,7 @@
       <div class="rounded-lg bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200/70 dark:border-indigo-800/50 p-3 text-xs text-indigo-900 dark:text-indigo-200 flex items-start gap-2.5">
         <Sparkles class="h-4 w-4 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
         <span>
-          <strong>Procesamiento Inteligente:</strong> Al subir un PDF, TXT, MD o imagen con las guías visuales de {activeModalMarca.nombre}, Gemini recibirá este archivo de forma nativa para respetar la paleta de colores, tipografías y reglas de composición.
+          <strong>Extracción de Marca Ligera:</strong> Al subir un manual, Gemini sintetiza las reglas clave 1 sola vez. Esas guías de texto se inyectan velozmente en la generación de imágenes y copies, manteniendo bajo costo y consumo de tokens registrado en <code class="bg-indigo-100 dark:bg-indigo-900/60 px-1 rounded">ai_token_logs</code>.
         </span>
       </div>
 
@@ -292,54 +352,102 @@
         </span>
 
         {#if activeModalMarca.manuales && activeModalMarca.manuales.length > 0}
-          <div class="space-y-2 max-h-[180px] overflow-y-auto pr-1">
+          <div class="space-y-2 max-h-[220px] overflow-y-auto pr-1">
             {#each activeModalMarca.manuales as manual (manual.id)}
-              <div class="flex items-center justify-between gap-3 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-xs">
-                <div class="flex items-center gap-2.5 min-w-0">
-                  <div class="p-1.5 rounded bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 border border-slate-200 dark:border-slate-600 shrink-0">
-                    {#if manual.mime_type?.includes('pdf')}
-                      <FileText class="h-4 w-4" />
-                    {:else if manual.mime_type?.startsWith('image/')}
-                      <Image class="h-4 w-4" />
-                    {:else}
-                      <File class="h-4 w-4" />
-                    {/if}
+              <div class="flex flex-col gap-2 p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-xs">
+                <div class="flex items-center justify-between gap-3">
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="p-1.5 rounded bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 border border-slate-200 dark:border-slate-600 shrink-0">
+                      {#if manual.mime_type?.includes('pdf')}
+                        <FileText class="h-4 w-4" />
+                      {:else if manual.mime_type?.startsWith('image/')}
+                        <Image class="h-4 w-4" />
+                      {:else}
+                        <File class="h-4 w-4" />
+                      {/if}
+                    </div>
+                    <div class="min-w-0">
+                      <div class="flex items-center gap-2">
+                        <p class="font-bold text-slate-800 dark:text-slate-200 truncate" title={manual.nombre || manual.file_name}>
+                          {manual.nombre || manual.file_name}
+                        </p>
+                        {#if manual.resumen_ia}
+                          <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-950/60 px-2 py-0.5 text-[9px] font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                            <CheckCircle2 class="h-3 w-3" />
+                            Analizado con IA
+                          </span>
+                        {:else}
+                          <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-950/60 px-2 py-0.5 text-[9px] font-bold text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                            Pendiente de Análisis
+                          </span>
+                        {/if}
+                      </div>
+                      <p class="text-[10px] text-slate-400 mt-0.5">
+                        {manual.file_name} · {formatFileSize(manual.file_size)}
+                      </p>
+                    </div>
                   </div>
-                  <div class="min-w-0">
-                    <p class="font-bold text-slate-800 dark:text-slate-200 truncate" title={manual.nombre || manual.file_name}>
-                      {manual.nombre || manual.file_name}
-                    </p>
-                    <p class="text-[10px] text-slate-400">
-                      {manual.file_name} · {formatFileSize(manual.file_size)}
-                    </p>
+
+                  <div class="flex items-center gap-1 shrink-0">
+                    {#if manual.resumen_ia}
+                      <button
+                        type="button"
+                        onclick={() => viewingResumenManual = viewingResumenManual?.id === manual.id ? null : manual}
+                        class="flex items-center gap-1 px-2 py-1 rounded bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 text-[11px] font-bold transition"
+                        title="Ver guía de marca extraída"
+                      >
+                        <Eye class="h-3.5 w-3.5" />
+                        {viewingResumenManual?.id === manual.id ? 'Ocultar' : 'Ver Guía'}
+                      </button>
+                    {/if}
+
+                    <button
+                      type="button"
+                      onclick={() => reanalizarManual(manual.id)}
+                      disabled={analyzingManualId === manual.id}
+                      class="flex items-center gap-1 px-2 py-1 rounded bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-[11px] font-bold disabled:opacity-50 transition"
+                      title="Re-analizar manual con Gemini y registrar tokens en ai_token_logs"
+                    >
+                      {#if analyzingManualId === manual.id}
+                        <Loader2 class="h-3.5 w-3.5 animate-spin text-indigo-600" />
+                      {:else}
+                        <Sparkles class="h-3.5 w-3.5 text-indigo-500" />
+                      {/if}
+                      Re-analizar
+                    </button>
+
+                    <a 
+                      href={manual.file_path} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      class="p-1.5 text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 rounded-md hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+                      title="Ver / Descargar archivo original"
+                    >
+                      <Download class="h-4 w-4" />
+                    </a>
+
+                    <button
+                      type="button"
+                      onclick={() => deleteManual(manual.id)}
+                      disabled={deletingManualId === manual.id}
+                      class="p-1.5 text-rose-500 hover:text-rose-700 rounded-md hover:bg-rose-50 dark:hover:bg-rose-950/40 disabled:opacity-50 transition"
+                      title="Eliminar manual"
+                    >
+                      {#if deletingManualId === manual.id}
+                        <Loader2 class="h-4 w-4 animate-spin" />
+                      {:else}
+                        <Trash2 class="h-4 w-4" />
+                      {/if}
+                    </button>
                   </div>
                 </div>
 
-                <div class="flex items-center gap-1 shrink-0">
-                  <a 
-                    href={manual.file_path} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    class="p-1.5 text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 rounded-md hover:bg-slate-200 dark:hover:bg-slate-700 transition"
-                    title="Ver / Descargar archivo"
-                  >
-                    <Download class="h-4 w-4" />
-                  </a>
-
-                  <button
-                    type="button"
-                    onclick={() => deleteManual(manual.id)}
-                    disabled={deletingManualId === manual.id}
-                    class="p-1.5 text-rose-500 hover:text-rose-700 rounded-md hover:bg-rose-50 dark:hover:bg-rose-950/40 disabled:opacity-50 transition"
-                    title="Eliminar manual"
-                  >
-                    {#if deletingManualId === manual.id}
-                      <Loader2 class="h-4 w-4 animate-spin" />
-                    {:else}
-                      <Trash2 class="h-4 w-4" />
-                    {/if}
-                  </button>
-                </div>
+                <!-- Visor desplegable de resumen extraído -->
+                {#if viewingResumenManual?.id === manual.id && manual.resumen_ia}
+                  <div class="mt-2 p-3 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs leading-relaxed max-h-[160px] overflow-y-auto whitespace-pre-wrap font-mono">
+                    {manual.resumen_ia}
+                  </div>
+                {/if}
               </div>
             {/each}
           </div>
@@ -368,7 +476,7 @@
             <label class="flex-1 flex items-center justify-center gap-2 border border-dashed border-indigo-300 dark:border-indigo-800 rounded-lg p-3 bg-indigo-50/40 dark:bg-indigo-950/20 hover:bg-indigo-100/50 dark:hover:bg-indigo-900/40 cursor-pointer transition text-xs font-bold text-indigo-700 dark:text-indigo-300">
               {#if uploadingManual}
                 <Loader2 class="h-4 w-4 animate-spin text-indigo-600" />
-                <span>Subiendo manual...</span>
+                <span>Subiendo y analizando manual con IA...</span>
               {:else}
                 <UploadCloud class="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                 <span>Seleccionar Archivo (PDF, TXT, MD, PNG, JPG)</span>

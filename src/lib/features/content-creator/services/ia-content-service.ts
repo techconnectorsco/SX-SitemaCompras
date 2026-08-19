@@ -1,18 +1,21 @@
 import db from '$lib/config/db-config';
 import { GoogleGenAI } from '@google/genai';
 import { env } from '$env/dynamic/private';
-import { calcularCostoIA } from './gemini-pricing';
-import fs from 'fs';
-import path from 'path';
+import { registrarUsoGemini } from './gemini-usage-service';
+import { readUploadFile } from '$lib/server/uploads-storage';
 
 // Instantiate Gemini client
 // Note: Requires GEMINI_API_KEY in .env
 const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY || '' });
 
-const MODELO_COPY  = 'gemini-2.5-flash';
+const MODELO_COPY = 'gemini-2.5-flash';
 const MODELO_IMAGEN = 'gemini-3.1-flash-image';
 
-function getBrandManualParts(marcaId: number | null | undefined, options?: { maxFileSizeBytes?: number; skipPdf?: boolean }): { manualParts: any[]; manualText: string; filenames: string[] } {
+function getBrandManualParts(marcaId: number | null | undefined): {
+    manualParts: any[];
+    manualText: string;
+    filenames: string[];
+} {
     const manualParts: any[] = [];
     let manualText = '';
     const filenames: string[] = [];
@@ -20,44 +23,19 @@ function getBrandManualParts(marcaId: number | null | undefined, options?: { max
     if (!marcaId) return { manualParts, manualText, filenames };
 
     try {
-        const manuales = db.prepare(`
+        const manuales = db
+            .prepare(
+                `
             SELECT * FROM marca_manuales WHERE marca_id = ? AND deleted_at IS NULL ORDER BY id DESC
-        `).all(marcaId) as any[];
-
-        let totalBytes = 0;
-        const maxTotalBytes = options?.maxFileSizeBytes ?? (options?.skipPdf ? 2 * 1024 * 1024 : 25 * 1024 * 1024);
+        `
+            )
+            .all(marcaId) as any[];
 
         for (const m of manuales) {
-            if (!m.file_path) continue;
-            const cleanRelPath = m.file_path.replace(/^\//, '');
-            const fullPath = path.join(process.cwd(), 'static', cleanRelPath);
-            if (fs.existsSync(fullPath)) {
-                const stat = fs.statSync(fullPath);
-                const mimeType = m.mime_type || 'application/pdf';
-                filenames.push(m.nombre || m.file_name || 'Manual');
+            filenames.push(m.nombre || m.file_name || 'Manual');
 
-                if (options?.skipPdf && mimeType === 'application/pdf') {
-                    console.log(`[IAContentService] ℹ️ Manual PDF "${m.nombre || m.file_name}" omitido como binario inline en modelo de imagen para prevenir desborde de tokens.`);
-                    continue;
-                }
-
-                if (['application/pdf', 'image/png', 'image/jpeg', 'image/webp'].includes(mimeType)) {
-                    if (totalBytes + stat.size <= maxTotalBytes) {
-                        const buffer = fs.readFileSync(fullPath);
-                        manualParts.push({
-                            inlineData: {
-                                mimeType,
-                                data: buffer.toString('base64')
-                            }
-                        });
-                        totalBytes += stat.size;
-                    } else {
-                        console.warn(`[IAContentService] ⚠️ Manual "${m.nombre || m.file_name}" omitido por límite de tamaño de adjuntos.`);
-                    }
-                } else if (mimeType.startsWith('text/') || mimeType.includes('markdown')) {
-                    const textContent = fs.readFileSync(fullPath, 'utf-8');
-                    manualText += `\n\n--- MANUAL DE MARCA OFICIAL (${m.nombre || m.file_name}) ---\n${textContent}\n--- FIN MANUAL ---`;
-                }
+            if (m.resumen_ia && m.resumen_ia.trim()) {
+                manualText += `\n\n--- MANUAL DE MARCA OFICIAL (${m.nombre || m.file_name}) ---\n${m.resumen_ia.trim()}\n--- FIN MANUAL ---`;
             }
         }
     } catch (err) {
@@ -67,17 +45,152 @@ function getBrandManualParts(marcaId: number | null | undefined, options?: { max
     return { manualParts, manualText, filenames };
 }
 
+function verificarManualesAnalizados(marcaId: number | null | undefined): void {
+    if (!marcaId) return;
+
+    const pendientes = db
+        .prepare(
+            `
+        SELECT nombre, file_name
+        FROM marca_manuales
+        WHERE marca_id = ?
+          AND deleted_at IS NULL
+          AND (resumen_ia IS NULL OR trim(resumen_ia) = '')
+    `
+        )
+        .all(marcaId) as Array<{ nombre: string | null; file_name: string | null }>;
+
+    if (pendientes.length > 0) {
+        const nombres = pendientes.map((manual) => manual.nombre || manual.file_name || 'Manual sin nombre').join(', ');
+        throw new Error(`Hay manuales de marca sin análisis válido: ${nombres}. Reanalízalos antes de generar contenido.`);
+    }
+}
+
 export class IAContentService {
+    /**
+     * Analiza un archivo de manual de marca (PDF, TXT, MD, PNG, JPG) con Gemini 2.5 Flash
+     * para extraer un resumen ejecutivo estructurado con las reglas visuales y de estilo de la marca.
+     * Registra el uso de tokens y costo en ai_token_logs y guarda el resumen en marca_manuales.
+     */
+    static async analizarManualMarca(manualId: number, userId: string): Promise<string> {
+        const manual = db
+            .prepare(
+                `
+            SELECT m.*, ma.nombre as marca_nombre
+            FROM marca_manuales m
+            JOIN marcas ma ON m.marca_id = ma.id
+            WHERE m.id = ? AND m.deleted_at IS NULL
+        `
+            )
+            .get(manualId) as any;
+
+        if (!manual) throw new Error('Manual de marca no encontrado');
+        if (!manual.file_path) throw new Error('Ruta de archivo inválida');
+
+        let fileBuffer: Buffer;
+        try {
+            fileBuffer = await readUploadFile(manual.file_path);
+        } catch (error: any) {
+            if (error?.code !== 'ENOENT') throw error;
+            throw new Error(`El archivo físico del manual no existe en el servidor (${manual.file_name})`);
+        }
+
+        const mimeType = manual.mime_type || 'application/pdf';
+
+        const promptInstruccion = `Eres un diseñador senior y director de arte de marca. Analiza exhaustivamente este documento/manual de identidad visual para la marca "${manual.marca_nombre || manual.nombre}". 
+
+Extrae un resumen ejecutivo estructurado con las directrices esenciales que cualquier IA generadora de copy o imagen deba seguir obligatoriamente para esta marca.
+
+Estructura tu respuesta estrictamente en Markdown con las siguientes secciones:
+
+### 🎨 Paleta de Colores
+- Colores primarios, secundarios, fondos y acentos (incluye códigos HEX si están en el documento).
+
+### ✒️ Tipografía y Estilo Visual
+- Fuentes principales/secundarias, jerarquía visual, estilo fotográfico/ilustraciones y composición.
+
+### 🗣️ Tono de Voz y Redacción
+- Personalidad de marca, tono (formal, amigable, técnico, jovial), uso de emojis, lenguaje y estilo.
+
+### ⚠️ Reglas y Restricciones
+- Usos prohibidos, restricciones de colores, tipografías no permitidas, palabras a evitar y límites de diseño.`;
+
+        let contents: any[] = [];
+
+        if (['application/pdf', 'image/png', 'image/jpeg', 'image/webp'].includes(mimeType)) {
+            contents = [
+                {
+                    inlineData: {
+                        mimeType,
+                        data: fileBuffer.toString('base64')
+                    }
+                },
+                { text: promptInstruccion }
+            ];
+        } else {
+            const textContent = fileBuffer.toString('utf-8');
+            contents = [
+                {
+                    text: `CONTENIDO DEL MANUAL DE MARCA:\n${textContent}\n\n---\n${promptInstruccion}`
+                }
+            ];
+        }
+
+        console.log(`[IAContentService] 🤖 Iniciando análisis de manual de marca con IA (ID: ${manualId}, Archivo: ${manual.file_name})...`);
+
+        const response = await ai.models.generateContent({
+            model: MODELO_COPY,
+            contents
+        });
+
+        const resumenTexto = response.text?.trim() || '';
+        if (!resumenTexto) {
+            throw new Error('Gemini no generó un resumen válido para este manual');
+        }
+
+        const usage = registrarUsoGemini({
+            userId,
+            marcaId: manual.marca_id,
+            model: MODELO_COPY,
+            task: 'Análisis de Manual de Marca',
+            prompt: `Análisis de manual "${manual.nombre || manual.file_name}"`,
+            usageMetadata: response.usageMetadata,
+            fallback: {
+                inputTokens: Math.ceil(fileBuffer.length / 100),
+                textOutputTokens: Math.ceil(resumenTexto.length / 4)
+            }
+        });
+
+        // Guardar resumen_ia y analizado_at en marca_manuales
+        const ahora = Math.floor(Date.now() / 1000);
+        db.prepare(
+            `
+            UPDATE marca_manuales
+            SET resumen_ia = ?, analizado_at = ?
+            WHERE id = ?
+        `
+        ).run(resumenTexto, ahora, manualId);
+
+        console.log(`[IAContentService] ✅ Análisis de manual ${manualId} completado. Tokens: ${usage.totalTokens}, Costo: $${usage.billedCost.toFixed(4)} USD.`);
+
+        return resumenTexto;
+    }
     static async generarCopy(publicacionId: number, userId: string, customPrompt?: string): Promise<string> {
         // 1. Obtener la publicación y la marca
-        const pub = db.prepare(`
+        const pub = db
+            .prepare(
+                `
             SELECT p.*, m.nombre as marca_nombre, m.prompt_sistema
             FROM publicaciones p
             JOIN marcas m ON p.marca_id = m.id
             WHERE p.id = ? AND p.user_id = ?
-        `).get(publicacionId, userId) as any;
+        `
+            )
+            .get(publicacionId, userId) as any;
 
         if (!pub) throw new Error('Publicación no encontrada');
+
+        verificarManualesAnalizados(pub.marca_id);
 
         // 2. Verificar límite de IA
         const userConfig = db.prepare('SELECT estado_ia FROM ia_configuracion_usuarios WHERE user_id = ?').get(userId) as any;
@@ -89,7 +202,7 @@ export class IAContentService {
         // Si el usuario envía un customPrompt puntual (modal de revisión), ese manda.
         // Si no, caemos al prompt_copy guardado en la publicación (override persistente del calendario).
         // Si tampoco existe, usamos el template por defecto (manual de marca + datos).
-        const override = (customPrompt && customPrompt.trim()) ? customPrompt.trim() : (pub.prompt_copy && pub.prompt_copy.trim() ? pub.prompt_copy.trim() : null);
+        const override = customPrompt && customPrompt.trim() ? customPrompt.trim() : pub.prompt_copy && pub.prompt_copy.trim() ? pub.prompt_copy.trim() : null;
 
         const datosPublicacion = `
 Datos de la publicación:
@@ -129,8 +242,8 @@ Instrucciones:
             `.trim();
         }
 
-        // 4. Obtener manuales de marca adjuntos (hasta 25MB para Gemini 2.5 Flash de texto)
-        const { manualParts, manualText, filenames } = getBrandManualParts(pub.marca_id, { maxFileSizeBytes: 25 * 1024 * 1024, skipPdf: false });
+        // 4. Incluir exclusivamente los resúmenes persistidos de los manuales.
+        const { manualParts, manualText, filenames } = getBrandManualParts(pub.marca_id);
         if (manualText) {
             prompt += manualText;
         }
@@ -144,53 +257,43 @@ Instrucciones:
 
             const response = await ai.models.generateContent({
                 model: MODELO_COPY,
-                contents,
+                contents
             });
 
             const copyText = response.text || '';
-            
-            // Usar metadata real de Gemini si está disponible
-            let inputTokens = 0;
-            let outputTokens = 0;
-            let totalTokens = 0;
 
-            if (response.usageMetadata) {
-                inputTokens = response.usageMetadata.promptTokenCount || 0;
-                outputTokens = response.usageMetadata.candidatesTokenCount || 0;
-                totalTokens = response.usageMetadata.totalTokenCount || (inputTokens + outputTokens);
-            } else {
-                // Fallback a estimación por si la API cambia
-                inputTokens = Math.ceil(prompt.length / 4);
-                outputTokens = Math.ceil(copyText.length / 4);
-                totalTokens = inputTokens + outputTokens;
-            }
-
-            // Costo real separado por input/output según tabla de precios del modelo
-            const costoEstimado = calcularCostoIA(MODELO_COPY, inputTokens, outputTokens);
+            registrarUsoGemini({
+                userId,
+                marcaId: pub.marca_id,
+                publicacionId,
+                model: MODELO_COPY,
+                task: 'Generación Copy Publicación',
+                prompt,
+                usageMetadata: response.usageMetadata,
+                fallback: {
+                    inputTokens: Math.ceil(prompt.length / 4),
+                    textOutputTokens: Math.ceil(copyText.length / 4)
+                }
+            });
 
             // 5. Guardar resultado (y persistir el override si llegó customPrompt para re-generación futura)
-            if (override && (customPrompt && customPrompt.trim())) {
-                db.prepare(`
+            if (override && customPrompt && customPrompt.trim()) {
+                db.prepare(
+                    `
                     UPDATE publicaciones 
                     SET copy_ia_original = ?, copy_final = ?, prompt_copy = ?
                     WHERE id = ?
-                `).run(copyText, copyText, override, publicacionId);
+                `
+                ).run(copyText, copyText, override, publicacionId);
             } else {
-                db.prepare(`
+                db.prepare(
+                    `
                     UPDATE publicaciones 
                     SET copy_ia_original = ?, copy_final = ?
                     WHERE id = ?
-                `).run(copyText, copyText, publicacionId);
+                `
+                ).run(copyText, copyText, publicacionId);
             }
-
-            // 6. Registrar en logs
-            db.prepare(`
-                INSERT INTO ai_token_logs (user_id, marca_id, publicacion_id, modelo_ia, tarea, prompt_utilizado, tokens_prompt, tokens_completion, tokens_totales, costo_estimado)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `).run(
-                userId, pub.marca_id, publicacionId, MODELO_COPY, 
-                'Generación Copy Publicación', prompt, inputTokens, outputTokens, totalTokens, costoEstimado
-            );
 
             return copyText;
         } catch (error) {
@@ -199,28 +302,183 @@ Instrucciones:
         }
     }
 
+    /**
+     * Analiza las métricas orgánicas reales del feed de Meta (likes, comentarios,
+     * compartidos por post) con Gemini 2.5 Flash para generar un diagnóstico de
+     * rendimiento, sugerencias de optimización de pauta y próximas recomendaciones
+     * de contenido. Registra el consumo en ai_token_logs.
+     *
+     * @param userId   ID del usuario autenticado (para log de uso)
+     * @param pageInfo Información de la Fan Page conectada (name, followers_count, ...)
+     * @param posts    Posts reales del feed de Meta Graph API (ya normalizados)
+     * @param periodLabel Etiqueta legible del período analizado (ej: "Últimos 30 días")
+     * @returns Estructura { diagnostico, sugerencias_pauta, topicos } lista para el front
+     */
+    static async analizarMetricasFeed(
+        userId: string,
+        pageInfo: { name?: string; followers_count?: number } | null,
+        posts: Array<{
+            message: string;
+            created_time: string;
+            likes: number;
+            comments: number;
+            shares: number;
+            engagement: number;
+        }>,
+        periodLabel: string
+    ): Promise<{
+        diagnostico: string;
+        sugerencias_pauta: Array<{ post: string; action: string; budget: string }>;
+        topicos: Array<{ topic: string; why: string; target: string }>;
+    }> {
+        if (!posts || posts.length === 0) {
+            throw new Error('No hay publicaciones en el período seleccionado para analizar.');
+        }
+
+        // Verificar límite de IA del usuario
+        const userConfig = db.prepare('SELECT estado_ia FROM ia_configuracion_usuarios WHERE user_id = ?').get(userId) as any;
+        if (userConfig && userConfig.estado_ia === 'BLOQUEADO') {
+            throw new Error('Cuenta de IA bloqueada o límite mensual excedido. Contactá al administrador.');
+        }
+
+        // Agregar métricas reales
+        const totalLikes = posts.reduce((s, p) => s + p.likes, 0);
+        const totalComments = posts.reduce((s, p) => s + p.comments, 0);
+        const totalShares = posts.reduce((s, p) => s + p.shares, 0);
+        const totalEng = totalLikes + totalComments + totalShares;
+        const avgEng = Math.round(totalEng / posts.length);
+        const ratioLikes = Math.round((totalLikes / Math.max(1, totalEng)) * 100);
+        const ratioComments = Math.round((totalComments / Math.max(1, totalEng)) * 100);
+        const ratioShares = Math.round((totalShares / Math.max(1, totalEng)) * 100);
+
+        // Top 5 posts reales para enviar a Gemini
+        const top = [...posts]
+            .sort((a, b) => b.engagement - a.engagement)
+            .slice(0, 5)
+            .map((p, i) => {
+                const preview = (p.message || '(sin texto)').slice(0, 200);
+                return `#${i + 1} | ${p.created_time} | likes=${p.likes} | comments=${p.comments} | shares=${p.shares} | eng=${p.engagement} | ${preview}`;
+            })
+            .join('\n');
+
+        const prompt = `Eres un analista senior de marketing digital experto en Meta (Facebook/Instagram) para empresas B2B/B2C de Costa Rica.
+
+Analizá las siguientes métricas REALES del feed orgánico de la Fan Page "${pageInfo?.name || 'N/D'}" ${pageInfo?.followers_count ? `(${pageInfo.followers_count} seguidores)` : ''} correspondientes al período "${periodLabel}".
+
+Datos consolidados:
+- Total publicaciones: ${posts.length}
+- Likes totales: ${totalLikes}
+- Comentarios totales: ${totalComments}
+- Compartidos totales: ${totalShares}
+- Engagement total: ${totalEng} (promedio ${avgEng} por post)
+- Distribución: ${ratioLikes}% likes, ${ratioComments}% comentarios, ${ratioShares}% compartidos
+
+Top 5 posts con mayor engagement (texto truncado a 200 chars):
+${top}
+
+Generá un análisis experto y accionable. Respondé ESTRICTAMENTE en formato JSON con esta estructura exacta (sin markdown adicional, sin explicaciones fuera del JSON):
+
+{
+  "diagnostico": "Texto libre de 4-7 bullets separados por \\n sobre el rendimiento observado: engagement, distribución likes/compartidos, comparación con benchmark del sector, fortalezas y debilidades observadas en los top posts.",
+  "sugerencias_pauta": [
+    { "post": "Título corto de la sugerencia", "action": "Descripción accionable específica en 1-2 oraciones", "budget": "Ajuste sugerido en colones (ej: '+¢5,000', '¢0 (Optimización)', '-¢2,500')" }
+  ],
+  "topicos": [
+    { "topic": "Tema/keyword sugerido para próximos contenidos", "why": "Justificación basada en los datos del feed (ej:alto share de X, comentarios preguntando por Y)", "target": "Público objetivo recomendado" }
+  ]
+}
+
+Reglas:
+- Basate en los datos reales provistos, no inventes métricas que no están.
+- Si el engagement es bajo (< 2% del alcance estimado), hacelo notar como debilidad.
+- Las sugerencias_pauta deben ser específicas y usar los ${ratioComments}% de comentarios para decidir si corresponde moderación activa o ajustar CTAs.
+- Devolvé entre 2 y 4 sugerencias_pauta y entre 2 y 3 topicos.
+- "diagnostico" debe ser texto plano (sin markdown, sin asteriscos), con bullets en líneas nuevas separadas por \\n.`.trim();
+
+        console.log(`[IAContentService] 📊 Iniciando análisis de métricas con Gemini (${posts.length} posts, período: ${periodLabel})...`);
+
+        try {
+            const response = await ai.models.generateContent({
+                model: MODELO_COPY,
+                contents: [{ text: prompt }]
+            });
+
+            const rawText = response.text || '';
+            // Gemini puede devolver el JSON entre ```json ... ``` o directo
+            const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) {
+                throw new Error('La IA no devolvió un JSON válido');
+            }
+            const parsed = JSON.parse(jsonMatch[0]);
+
+            // Validar que tenga los keys esperados (con defaults si faltan)
+            const diagnostico = String(parsed.diagnostico || 'Sin diagnóstico disponible.');
+            const sugerencias_pauta = Array.isArray(parsed.sugerencias_pauta)
+                ? parsed.sugerencias_pauta.map((s: any) => ({
+                      post: String(s?.post || 'Sugerencia'),
+                      action: String(s?.action || ''),
+                      budget: String(s?.budget || '¢0 (Optimización)')
+                  }))
+                : [];
+            const topicos = Array.isArray(parsed.topicos)
+                ? parsed.topicos.map((t: any) => ({
+                      topic: String(t?.topic || 'Tópico'),
+                      why: String(t?.why || ''),
+                      target: String(t?.target || 'Público general')
+                  }))
+                : [];
+
+            const usage = registrarUsoGemini({
+                userId,
+                model: MODELO_COPY,
+                task: 'Análisis de Métricas Meta Feed',
+                prompt,
+                usageMetadata: response.usageMetadata,
+                fallback: {
+                    inputTokens: Math.ceil(prompt.length / 4),
+                    textOutputTokens: Math.ceil(rawText.length / 4)
+                }
+            });
+
+            console.log(`[IAContentService] ✅ Análisis de métricas completado. Tokens: ${usage.totalTokens}, Costo: $${usage.billedCost.toFixed(4)} USD.`);
+
+            return { diagnostico, sugerencias_pauta, topicos };
+        } catch (error: any) {
+            console.error('[IAContentService] Error en análisis de métricas con Gemini:', error);
+            if (error instanceof SyntaxError) {
+                throw new Error('La IA devolvió una respuesta no parseable. Intentá nuevamente.');
+            }
+            throw new Error('Error al generar el análisis con IA: ' + (error?.message || error));
+        }
+    }
+
     static async generarImagenEditada(publicacionId: number, userId: string, base64Image: string | null, fallbackData?: any, index?: number, customPrompt?: string, brandAssets?: Array<{ nombre: string; tipo: string; mimeType: string; base64: string }>, isCrear?: boolean): Promise<string> {
         // Importación perezosa (lazy) para evitar problemas de dependencia circular
         const { SharePointService } = await import('./sharepoint-service');
 
         // 1. Intentar obtener la publicación (para el system prompt)
-        let pub = db.prepare(`
+        let pub = db
+            .prepare(
+                `
             SELECT p.*, m.nombre as marca_nombre, m.prompt_sistema, f.nombre as formato_nombre, f.aspect_ratio
             FROM publicaciones p
             JOIN marcas m ON p.marca_id = m.id
             LEFT JOIN formatos f ON p.formato_id = f.id
             WHERE p.id = ? AND p.user_id = ?
-        `).get(publicacionId, userId) as any;
+        `
+            )
+            .get(publicacionId, userId) as any;
 
         // Si no existe (estamos usando el mockup visual del front sin guardar en DB aún), usamos el fallback
         if (!pub) {
             if (fallbackData && fallbackData.brand) {
-                const marca = db.prepare('SELECT nombre as marca_nombre, prompt_sistema FROM marcas WHERE nombre = ?').get(fallbackData.brand) as any;
-                const formato = fallbackData.format ? db.prepare('SELECT nombre as formato_nombre, aspect_ratio FROM formatos WHERE nombre = ? OR aspect_ratio = ?').get(fallbackData.format, fallbackData.format) as any : null;
+                const marca = db.prepare('SELECT id as marca_id, nombre as marca_nombre, prompt_sistema FROM marcas WHERE nombre = ?').get(fallbackData.brand) as any;
+                const formato = fallbackData.format ? (db.prepare('SELECT nombre as formato_nombre, aspect_ratio FROM formatos WHERE nombre = ? OR aspect_ratio = ?').get(fallbackData.format, fallbackData.format) as any) : null;
                 pub = {
                     titulo: fallbackData.title || '',
                     contexto: fallbackData.context || '',
                     objetivo: fallbackData.objective || '',
+                    marca_id: marca?.marca_id || null,
                     marca_nombre: marca?.marca_nombre || fallbackData.brand,
                     prompt_sistema: marca?.prompt_sistema || '',
                     formato_nombre: formato?.formato_nombre || fallbackData.format || '',
@@ -231,15 +489,17 @@ Instrucciones:
             }
         }
 
+        verificarManualesAnalizados(pub.marca_id);
+
         // Preparar la instrucción de Relación de Aspecto
-        const aspectText = pub.aspect_ratio 
-            ? `Relación de Aspecto requerida: ${pub.aspect_ratio}${pub.formato_nombre ? ` (${pub.formato_nombre})` : ''}. Adapta la composición visual y el encuadre estrictamente a esta proporción.`
-            : (pub.formato_nombre ? `Relación de Aspecto/Formato requerido: ${pub.formato_nombre}. Adapta la composición.` : '');
+        const aspectText = pub.aspect_ratio ? `Relación de Aspecto requerida: ${pub.aspect_ratio}${pub.formato_nombre ? ` (${pub.formato_nombre})` : ''}. Adapta la composición visual y el encuadre estrictamente a esta proporción.` : pub.formato_nombre ? `Relación de Aspecto/Formato requerido: ${pub.formato_nombre}. Adapta la composición.` : '';
 
         // 2. Construir Prompt Visual basado en la marca (inyectando SIEMPRE la relación de aspecto)
         // Cada llamada genera un seed único para garantizar variedad en las regeneraciones
         const variationSeed = Math.floor(Math.random() * 99999);
-        const basePrompt = customPrompt ? customPrompt.replace('[variation:0]', `[variation:${variationSeed}]`) : `
+        const basePrompt = customPrompt
+            ? customPrompt.replace('[variation:0]', `[variation:${variationSeed}]`)
+            : `
             ${pub.prompt_sistema || 'Aplica los estilos de marca por defecto.'}
             Contexto del producto: ${pub.titulo}. ${pub.contexto || ''}.
             Objetivo: ${pub.objetivo || 'Interacción'}.
@@ -279,8 +539,8 @@ Instrucciones:
                 console.log('[IAContentService] mimeType detectado:', mimeType, '| cleanBase64 len:', cleanBase64.length);
             }
 
-            // Obtener manuales de marca para condicionar el diseño (omitiendo PDFs pesados para no exceder el límite de 131,072 tokens de Gemini Flash Image)
-            const { manualParts, manualText, filenames } = getBrandManualParts(pub.marca_id, { skipPdf: true, maxFileSizeBytes: 2 * 1024 * 1024 });
+            // Usar exclusivamente los resúmenes persistidos de los manuales de marca.
+            const { manualParts, manualText, filenames } = getBrandManualParts(pub.marca_id);
             if (filenames.length > 0) {
                 console.log('[IAContentService] 📄 Manuales de marca adjuntados a la generación de imagen:', filenames);
             }
@@ -294,12 +554,10 @@ Instrucciones:
             }));
 
             // En modo crear reforzamos la instrucción de generación desde cero
-            const promptVisualFinal = modoCrear
-                ? `Crea una imagen original desde cero siguiendo estrictamente las instrucciones a continuación (no edites ni transformes ninguna imagen existente).\n\n${promptVisual}`
-                : promptVisual;
+            const promptVisualFinal = modoCrear ? `Crea una imagen original desde cero siguiendo estrictamente las instrucciones a continuación (no edites ni transformes ninguna imagen existente).\n\n${promptVisual}` : promptVisual;
 
             const textPromptPart = {
-                text: `${promptVisualFinal}${modoCrear ? `\n\nGenera UNA sola imagen nueva y nítida.` : ''}${manualText ? '\n' + manualText : ''}${filenames.length ? `\n\nManual de marca adjunto (${filenames.join(', ')}): Sigue rigurosamente la paleta de colores, tipografías, guía de estilo y composición definidas en el manual.` : ''}${brandAssets?.length ? `\n\nAssets de marca incluidos: ${brandAssets.map(a => `${a.tipo} "${a.nombre}"`).join(', ')}. Intégralos en la composición.` : ''}`
+                text: `${promptVisualFinal}${modoCrear ? `\n\nGenera UNA sola imagen nueva y nítida.` : ''}${manualText ? '\n' + manualText : ''}${filenames.length ? `\n\nManual de marca adjunto (${filenames.join(', ')}): Sigue rigurosamente la paleta de colores, tipografías, guía de estilo y composición definidas en el manual.` : ''}${brandAssets?.length ? `\n\nAssets de marca incluidos: ${brandAssets.map((a) => `${a.tipo} "${a.nombre}"`).join(', ')}. Intégralos en la composición.` : ''}`
             };
 
             // Construcción de parts: la imagen de referencia solo va en modo edición
@@ -319,7 +577,7 @@ Instrucciones:
                     }
                 ],
                 config: {
-                    responseModalities: ['IMAGE', 'TEXT'],
+                    responseModalities: ['IMAGE', 'TEXT']
                 }
             });
 
@@ -335,28 +593,16 @@ Instrucciones:
                 console.warn('[IAContentService] ⚠️ Gemini no devolvió imagen. Se usará la imagen original.');
             }
 
-            // Registrar consumo de tokens directamente desde la respuesta de Gemini
-            const inputTokens  = response.usageMetadata?.promptTokenCount     ?? 0;
-            const outputTokens = response.usageMetadata?.candidatesTokenCount  ?? 0;
-            const totalTokens  = response.usageMetadata?.totalTokenCount       ?? (inputTokens + outputTokens);
-            // Costo real separado por input/output según tabla de precios del modelo
-            const costoEstimado = calcularCostoIA(MODELO_IMAGEN, inputTokens, outputTokens);
-
-            db.prepare(`
-                INSERT INTO ai_token_logs 
-                (user_id, marca_id, publicacion_id, modelo_ia, tarea, prompt_utilizado, tokens_prompt, tokens_completion, tokens_totales, costo_estimado)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `).run(
+            const usage = registrarUsoGemini({
                 userId,
-                pub.marca_id ?? null,
-                publicacionId ?? null,
-                MODELO_IMAGEN,
-                'Edición de Imagen con Prompt de Marca',
-                promptVisual,
-                inputTokens, outputTokens, totalTokens, costoEstimado
-            );
-            console.log(`[IAContentService] 🪙 Tokens registrados — prompt: ${inputTokens}, completion: ${outputTokens}, costo: $${costoEstimado.toFixed(6)}`);
-
+                marcaId: pub.marca_id,
+                publicacionId,
+                model: MODELO_IMAGEN,
+                task: 'Edición de Imagen con Prompt de Marca',
+                prompt: promptVisual,
+                usageMetadata: response.usageMetadata
+            });
+            console.log(`[IAContentService] 🪙 Tokens registrados — prompt: ${usage.inputTokens}, completion: ${usage.completionTokens}, costo: $${usage.billedCost.toFixed(6)}`);
         } catch (error) {
             console.error('[IAContentService] Error en edición de imagen con Gemini:', error);
             if (modoCrear) {
@@ -371,7 +617,7 @@ Instrucciones:
             throw new Error('No se obtuvo imagen para guardar.');
         }
 
-        // 3. Subir la imagen al SharePoint (Mock por ahora — guarda en static/uploads/)
+        // 3. Guardar la imagen en el almacenamiento persistente local (mock de SharePoint)
         const imageName = index !== undefined ? `ia_gen_pub_${publicacionId}_${index}.jpg` : `ia_gen_pub_${publicacionId}.jpg`;
         const sharepointUrl = await SharePointService.uploadImage(imageName, finalBase64);
 
@@ -391,7 +637,13 @@ Instrucciones:
 
                 // Asegurar que el array tenga el tamaño necesario
                 while (carouselData.length <= index) {
-                    carouselData.push({ imagePreview: null, imageName: '', imageBase64: '', prompt: '', modo: 'editar' });
+                    carouselData.push({
+                        imagePreview: null,
+                        imageName: '',
+                        imageBase64: '',
+                        prompt: '',
+                        modo: 'editar'
+                    });
                 }
 
                 // Actualizar la imagen en su índice correspondiente preservando prompt y modo
@@ -404,13 +656,11 @@ Instrucciones:
                     modo: prev.modo || 'editar'
                 };
 
-                db.prepare(`UPDATE publicaciones SET carousel_images = ? WHERE id = ?`)
-                  .run(JSON.stringify(carouselData), publicacionId);
+                db.prepare(`UPDATE publicaciones SET carousel_images = ? WHERE id = ?`).run(JSON.stringify(carouselData), publicacionId);
                 console.log(`[IAContentService] ✅ URL de imagen guardada en publicaciones.carousel_images (índice ${index})`);
             } else {
                 // Es una imagen única
-                db.prepare(`UPDATE publicaciones SET sharepoint_item_id = ?, image_name = ? WHERE id = ?`)
-                  .run(sharepointUrl, imageName, publicacionId);
+                db.prepare(`UPDATE publicaciones SET sharepoint_item_id = ?, image_name = ? WHERE id = ?`).run(sharepointUrl, imageName, publicacionId);
                 console.log(`[IAContentService] ✅ URL de imagen guardada en publicaciones.sharepoint_item_id`);
             }
         } catch (e) {

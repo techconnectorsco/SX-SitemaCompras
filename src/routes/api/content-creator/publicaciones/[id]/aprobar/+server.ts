@@ -9,6 +9,17 @@ export const POST: RequestHandler = async ({ params, locals }) => {
         }
 
         const id = parseInt(params.id);
+        if (isNaN(id)) {
+            return json({ error: 'ID de publicación inválido' }, { status: 400 });
+        }
+
+        const publicacion = PublicacionService.getById(id, locals.user.id);
+        if (!publicacion) {
+            return json({ error: 'Publicación no encontrada' }, { status: 404 });
+        }
+        if (!publicacion.copy_final?.trim()) {
+            return json({ error: 'La publicación debe tener un copy final antes de aprobarse para Meta.' }, { status: 400 });
+        }
         
         PublicacionService.aprobar(id, locals.user.id);
         

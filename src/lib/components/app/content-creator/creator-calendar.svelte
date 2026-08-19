@@ -1,6 +1,7 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import type { MarcaAsset } from '$lib/features/content-creator/types';
+	import type { MarcaAsset, RedSocial } from '$lib/features/content-creator/types';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Button } from '$lib/components/ui/button';
 	import {
@@ -22,7 +23,8 @@
 		ImageIcon,
 		Package,
 		RefreshCw,
-		Warehouse
+		Warehouse,
+		FileText
 	} from 'lucide-svelte';
 
 	interface ExcelPost {
@@ -33,7 +35,8 @@
 		objective: string;   // Objetivo en RRSS
 		audience: string;    // Público (Amplio, etc.)
 		budget: number;      // Presupuesto
-		network: string;     // Red Social
+		network: string;     // Red Social (display, string separado por coma)
+		redes_ids?: number[]; // IDs numéricos de redes destino (resueltos desde catálogo)
 		designed: boolean;
 		published: boolean;
 		promoted: boolean;
@@ -45,6 +48,7 @@
 		references: string;  // Referencias
 		trend: string;       // Contexto trend
 		date: string;        // Formato YYYY-MM-DD
+		time?: string;       // Formato HH:MM (24h)
 		imagePreview: string | null;
 		imageName?: string;
 		imageBase64?: string;
@@ -67,10 +71,43 @@
 		prompt?: string;
 		promptCopy?: string;
 		esCarrusel?: boolean;
+		modo?: 'editar' | 'crear';
+		cuentaId?: number | null;
 	}
 
 	// Props Svelte 5
 	let { posts = $bindable(), catalogos } = $props<{ posts: ExcelPost[], catalogos: any }>();
+
+	// Cuentas Meta disponibles (cargadas desde /api/content-creator/meta/auth/list)
+	interface CuentaMeta {
+		id: number;
+		nombre: string;
+		meta_instagram_id: string | null;
+		token_valid: boolean;
+		redes_activas: number[];
+	}
+	let cuentasMeta = $state<CuentaMeta[]>([]);
+	let isLoadingCuentas = $state(false);
+
+	async function loadCuentasMeta() {
+		isLoadingCuentas = true;
+		try {
+			const res = await fetch('/api/content-creator/meta/auth/list');
+			const data = await res.json();
+			if (data.success && Array.isArray(data.accounts)) {
+				// Solo cuentas con token válido (filtro client-side, el server ya quitó las deleted)
+				cuentasMeta = data.accounts.filter((a: CuentaMeta) => a.token_valid);
+			}
+		} catch (err) {
+			console.error('[creator-calendar] loadCuentasMeta:', err);
+		} finally {
+			isLoadingCuentas = false;
+		}
+	}
+
+	onMount(() => {
+		loadCuentasMeta();
+	});
 
 	// Estado del Calendario
 	let currentDate = $state(new Date()); // Siempre inicia en el mes actual
@@ -87,7 +124,7 @@
 		objective: 'Conseguir más mensajes',
 		audience: 'Amplio',
 		budget: 7500,
-		network: 'Facebook e Instagram',
+		network: 'Facebook, Instagram',
 		designed: false,
 		published: false,
 		promoted: false,
@@ -99,6 +136,7 @@
 		references: '',
 		trend: '',
 		date: '',
+		time: '12:00',
 		imagePreview: null,
 		imageName: '',
 		imageBase64: '',
@@ -114,11 +152,56 @@
 			metaEndDate: '',
 			prompt: '',
 			promptCopy: '',
-			esCarrusel: true
+			esCarrusel: true,
+			modo: 'editar',
+			cuentaId: null
 		});
 
 	let carouselImageCount = $state(2);
 	let imageInput = $state<HTMLInputElement | null>(null);
+
+	// Confirmación de salida del modal con datos sin guardar
+	let showExitConfirm = $state(false);
+	let exitConfirmed = $state(false);
+
+	// Detecta si el usuario ya cargó datos en el draft que difieren de un borrador vacío
+	function hasDraftData(): boolean {
+		if (draftPost.title?.trim()) return true;
+		if (draftPost.context?.trim()) return true;
+		if (draftPost.copy?.trim()) return true;
+		if (draftPost.references?.trim()) return true;
+		if (draftPost.trend?.trim()) return true;
+		if (draftPost.links?.trim()) return true;
+		if (draftPost.ecommerceUrl?.trim()) return true;
+		if (draftPost.prompt?.trim()) return true;
+		if (draftPost.imageBase64 || draftPost.imageName) return true;
+		if (draftPost.metaStartDate || draftPost.metaEndDate) return true;
+		if (Array.isArray(draftPost.carouselImages)) {
+			for (const img of draftPost.carouselImages) {
+				if (img?.imageBase64 || img?.imageName || img?.prompt?.trim()) return true;
+			}
+		}
+		return false;
+	}
+
+	// Cierra el modal solo si no hay datos sin guardar; si los hay, pide confirmación
+	function requestCloseModal() {
+		if (hasDraftData() && !exitConfirmed) {
+			showExitConfirm = true;
+		} else {
+			dialogOpen = false;
+		}
+	}
+
+	function confirmExitModal() {
+		showExitConfirm = false;
+		exitConfirmed = true;
+		dialogOpen = false;
+	}
+
+	function cancelExitModal() {
+		showExitConfirm = false;
+	}
 
 	// Modo carrusel (independiente del nombre del formato)
 	const isCarruselMode = $derived(!!draftPost.esCarrusel);
@@ -147,6 +230,44 @@
 	let loadingAssets = $state(false);
 	let assetPickerOpen = $state(false);
 	let assetFilterType = $state<'todos' | 'logo' | 'isotipo' | 'sello' | 'fondo' | 'other'>('todos');
+
+	// Estado para Fichas Técnicas
+	let showFichasSelectorModal = $state(false);
+	let fichasDisponibles = $state<any[]>([]);
+	let loadingFichasSelector = $state(false);
+
+	async function openFichasSelector() {
+		showFichasSelectorModal = true;
+		loadingFichasSelector = true;
+		try {
+			const marcaObj = catalogos.marcas.find((m: any) => m.nombre === draftPost.brand);
+			const marcaId = marcaObj ? marcaObj.id : undefined;
+			const query = marcaId ? `?marcaId=${marcaId}` : '';
+			const res = await fetch(`/api/content-creator/fichas-tecnicas${query}`);
+			const data = await res.json();
+			if (res.ok && data.success) {
+				fichasDisponibles = data.fichas;
+			} else {
+				fichasDisponibles = [];
+			}
+		} catch (err) {
+			console.error('Error cargando fichas selector:', err);
+			fichasDisponibles = [];
+		} finally {
+			loadingFichasSelector = false;
+		}
+	}
+
+	function attachFichaToContext(ficha: any) {
+		const textoFicha = `\n\n--- FICHA TÉCNICA: ${ficha.nombre_producto} (${ficha.marca_nombre}) ---\n${ficha.especificaciones_texto}\n--- FIN FICHA TÉCNICA ---`;
+		if (draftPost.context) {
+			draftPost.context = `${draftPost.context.trim()}${textoFicha}`;
+		} else {
+			draftPost.context = `Especificaciones del producto ${ficha.nombre_producto}${textoFicha}`;
+		}
+		toast.success(`Ficha técnica de "${ficha.nombre_producto}" adjuntada al contexto.`);
+		showFichasSelectorModal = false;
+	}
 
 	$effect(() => {
 		const marca = catalogos.marcas.find((m: any) => m.nombre === draftPost.brand);
@@ -320,6 +441,18 @@
 		productSelectorOpen = false;
 	}
 
+	// Fecha de hoy en formato YYYY-MM-DD (ignorando timezone, en hora local)
+	function getTodayStr(): string {
+		const d = new Date();
+		return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+	}
+
+	// Devuelve true si la fecha (YYYY-MM-DD) es anterior al día de hoy
+	function isPastDate(dateStr: string | undefined | null): boolean {
+		if (!dateStr) return false;
+		return dateStr < getTodayStr();
+	}
+
 	// Formatear mes en base a fecha
 	function getMonthNameFormatted(dateStr: string): string {
 		if (!dateStr) return '';
@@ -397,6 +530,30 @@
 		return posts.filter(p => p.date === dateStr);
 	}
 
+	// Clases de color (borde + fondo suave + texto) para las celdas del calendario
+	function getStatusCellColor(status?: string): string {
+		switch (status) {
+			case 'Publicado':   return 'border-green-200 bg-green-50/40 text-green-800 dark:border-green-950 dark:bg-green-950/20 dark:text-green-400';
+			case 'Aprobado':    return 'border-indigo-200 bg-indigo-50/40 text-indigo-800 dark:border-indigo-950/20 dark:bg-indigo-950/10 dark:text-indigo-400';
+			case 'En revisión': return 'border-amber-200 bg-amber-50/40 text-amber-800 dark:border-amber-950/20 dark:bg-amber-950/10 dark:text-amber-400';
+			case 'Guardado':    return 'border-sky-200 bg-sky-50/40 text-sky-800 dark:border-sky-950/20 dark:bg-sky-950/10 dark:text-sky-400';
+			case 'Error API':   return 'border-rose-200 bg-rose-50/40 text-rose-800 dark:border-rose-950/20 dark:bg-rose-950/10 dark:text-rose-400';
+			default:            return 'border-slate-200 bg-white text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300';
+		}
+	}
+
+	// Clases de color (relleno sólido) para las pastillas de la leyenda y la lista de revisión
+	function getStatusBadgeColor(status?: string): string {
+		switch (status) {
+			case 'Publicado':   return 'bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400';
+			case 'Aprobado':    return 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400';
+			case 'En revisión': return 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400';
+			case 'Guardado':    return 'bg-sky-100 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400';
+			case 'Error API':   return 'bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400';
+			default:            return 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400';
+		}
+	}
+
 	// Abrir modal de creación
 	function openCreateModal(dateStr?: string) {
 		isEditing = false;
@@ -414,12 +571,28 @@
 			}
 		}
 
+		// No permitir programar publicaciones en días pasados
+		if (isPastDate(actualDateStr)) {
+			toast.error('No se pueden programar publicaciones en días pasados', {
+				description: 'Selecciona una fecha de hoy en adelante.'
+			});
+			return;
+		}
+
 		// Determinar semana a programar
 		const dateObj = new Date(actualDateStr + 'T00:00:00'); // Evitar timezone issues
 		const dayNum = dateObj.getDate();
 		const weekNum = Math.ceil(dayNum / 7);
 
-		selectedNetworks = ['Facebook', 'Instagram'];
+		// Preseleccionar redes: solo las habilitadas para la cuenta default (cuentasMeta[0]).
+		// Si no hay info de redes_activas, fallback a FB+IG.
+		const cuentaDefault = cuentasMeta[0];
+		const redesPermitidas = cuentaDefault?.redes_activas ?? null;
+		selectedNetworks = (redesPermitidas == null)
+			? ['Facebook', 'Instagram']
+			: catalogos.redes
+				.filter((r: RedSocial) => redesPermitidas.includes(r.id))
+				.map((r: RedSocial) => r.nombre);
 
 		draftPost = {
 			id: `MER-${String(posts.length + 1).padStart(3, '0')}`,
@@ -455,17 +628,32 @@
 			metaStartDate: '',
 			metaEndDate: '',
 			prompt: '',
-			esCarrusel: true
+			esCarrusel: true,
+			modo: 'editar',
+			// Default: primera cuenta Meta disponible con token válido
+			cuentaId: cuentasMeta[0]?.id ?? null
 		};
 		carouselImageCount = 2;
+		exitConfirmed = false;
 		dialogOpen = true;
 	}
 
 	// Actualizar fecha y semana dinámicamente
 	function handleDateChange(newDateStr: string) {
 		if (!newDateStr) return;
+
+		// Rechazar fechas pasadas (solo se permite hoy en adelante)
+		if (isPastDate(newDateStr)) {
+			toast.error('La fecha no puede ser anterior a hoy', {
+				description: 'Selecciona una fecha de hoy en adelante.'
+			});
+			// Revertir el valor del input
+			setTimeout(() => { draftPost.date = getTodayStr(); }, 0);
+			return;
+		}
+
 		draftPost.date = newDateStr;
-		
+
 		const dateObj = new Date(newDateStr + 'T00:00:00'); // Evitar timezone issues
 		const dayNum = dateObj.getDate();
 		const weekNum = Math.ceil(dayNum / 7);
@@ -502,6 +690,7 @@
 			metaEndDate: post.metaEndDate || '',
 			prompt: post.prompt || '',
 			promptCopy: post.promptCopy || '',
+			modo: post.modo === 'crear' ? 'crear' : 'editar',
 			carouselImages: (post.carouselImages || []).map((img: any) => ({
 				imagePreview: img.imagePreview ?? null,
 				imageName: img.imageName || '',
@@ -513,11 +702,26 @@
 				? !!post.esCarrusel
 				: (Array.isArray(post.carouselImages) && post.carouselImages.length > 0)
 		};
+
+		// Filtrar selectedNetworks contra las redes habilitadas para la cuenta del post.
+		// Sanea posts legados con IG en el string aunque la cuenta no lo soporte.
+		const cuentaPost = draftPost.cuentaId != null
+			? cuentasMeta.find((c) => c.id === draftPost.cuentaId)
+			: null;
+		if (cuentaPost && Array.isArray(cuentaPost.redes_activas)) {
+			selectedNetworks = selectedNetworks.filter((nombre) => {
+				const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
+				return red && cuentaPost.redes_activas.includes(red.id);
+			});
+		}
+		draftPost.network = selectedNetworks.join(', ');
+
 		carouselImageCount = draftPost.esCarrusel && draftPost.carouselImages?.length
 			? draftPost.carouselImages.length
 			: 2;
 		if (carouselImageCount === 0) carouselImageCount = 2;
 
+		exitConfirmed = false;
 		dialogOpen = true;
 	}
 
@@ -664,6 +868,18 @@
 		if (imageInput) imageInput.value = '';
 	}
 
+	function toggleSingleModo() {
+		if (draftPost.modo === 'crear') {
+			draftPost.modo = 'editar';
+		} else {
+			draftPost.modo = 'crear';
+			draftPost.imageName = '';
+			draftPost.imagePreview = null;
+			draftPost.imageBase64 = '';
+			if (imageInput) imageInput.value = '';
+		}
+	}
+
 	// Guardar formulario
 	async function savePost() {
 		if (!draftPost.title.trim()) {
@@ -671,11 +887,93 @@
 			return;
 		}
 
+		if (!draftPost.date) {
+			toast.error('La fecha de publicación es requerida');
+			return;
+		}
+
+		if (!draftPost.time || !draftPost.time.trim()) {
+			toast.error('La hora de publicación es requerida', {
+				description: 'Seleccioná una hora para poder guardar la ficha.'
+			});
+			return;
+		}
+
+		// Validar vigencia en Meta: la fecha de finalización no puede ser anterior a la de inicio
+		if (draftPost.metaStartDate && draftPost.metaEndDate && draftPost.metaEndDate < draftPost.metaStartDate) {
+			toast.error('La fecha de finalización no puede ser anterior a la fecha de inicio', {
+				description: 'Ajustá las fechas de vigencia en Meta.'
+			});
+			return;
+		}
+
+		// Al crear una publicación nueva, no permitir fechas pasadas.
+		// En edición, handleDateChange ya bloquea mover la fecha al pasado.
+		if (!isEditing && isPastDate(draftPost.date)) {
+			toast.error('No se puede programar una publicación en una fecha pasada', {
+				description: 'Ajusta la fecha a hoy o una fecha futura.'
+			});
+			return;
+		}
+
+		// Validar que se haya seleccionado al menos una red social de destino
+		if (selectedNetworks.length === 0) {
+			toast.error('Selecciona al menos una red social de destino', {
+				description: 'Marca Facebook, Instagram u otra red disponible para esta cuenta.'
+			});
+			return;
+		}
+
+		// Validar que las redes seleccionadas estén habilitadas para la cuenta Meta elegida
+		if (draftPost.cuentaId != null) {
+			const cuentaSel = cuentasMeta.find((c) => c.id === draftPost.cuentaId);
+			if (cuentaSel && Array.isArray(cuentaSel.redes_activas)) {
+				const redesInvalidas = selectedNetworks.filter((nombre) => {
+					const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
+					return !red || !cuentaSel.redes_activas.includes(red.id);
+				});
+				if (redesInvalidas.length > 0) {
+					toast.error(`La cuenta "${cuentaSel.nombre}" no tiene habilitada(s): ${redesInvalidas.join(', ')}`, {
+						description: 'Conecta esa red en la cuenta o elige otra cuenta.'
+					});
+					return;
+				}
+			}
+		}
+
+		// Mapear nombres → IDs numéricos para enviar al backend (evita parseo frágil del string network)
+		const redes_ids: number[] = selectedNetworks
+			.map((nombre) => catalogos.redes.find((r: RedSocial) => r.nombre === nombre)?.id)
+			.filter((id): id is number => typeof id === 'number');
+
 		if (!draftPost.copy) {
 			draftPost.copy = '';
 		}
 
-		const postToProcess = { ...draftPost };
+		const promptGeneral = draftPost.prompt?.trim() || '';
+		if (draftPost.esCarrusel) {
+			const missingSlide = (draftPost.carouselImages || []).findIndex((img) => {
+				const hasReference = Boolean(img.imageBase64?.trim() || img.imagePreview?.trim());
+				const hasPrompt = Boolean(img.prompt?.trim() || promptGeneral);
+				return !hasReference && !hasPrompt;
+			});
+			if (missingSlide >= 0) {
+				toast.error(`El slide #${missingSlide + 1} requiere una imagen de referencia o un prompt.`, {
+					description: 'Activa «Crear (sin ref)» y usa el prompt del slide o el prompt general.'
+				});
+				return;
+			}
+		}
+		const carouselImages = draftPost.esCarrusel
+			? (draftPost.carouselImages || []).map((img) => {
+				const hasReference = Boolean(img.imageBase64?.trim() || img.imagePreview?.trim());
+				const hasPrompt = Boolean(img.prompt?.trim() || promptGeneral);
+				return !hasReference && hasPrompt ? { ...img, modo: 'crear' as const } : img;
+			})
+			: draftPost.carouselImages;
+
+		const postToProcess = { ...draftPost, carouselImages, redes_ids };
+		exitConfirmed = true;
 		dialogOpen = false;
 
 		// ==========================================
@@ -733,7 +1031,7 @@
 		if (isEditing) {
 			posts = posts.map(p => p.id === postToProcess.id ? postConIdReal : p);
 		} else {
-			posts = [...posts, postConIdReal];
+			posts = [postConIdReal, ...posts];
 		}
 
 		// ==========================================
@@ -814,27 +1112,46 @@
 					}
 				});
 			}
-		} else if (postToProcess.imageBase64) {
-			toast.info('Gemini está editando y aplicando el estilo de marca a tu imagen...', {
-				description: 'Esto tomará unos segundos.'
-			});
-			
+} else {
+			// Post individual: modo editar (con imagen de referencia) o modo crear (text-to-image)
+			const isSingleCrear = postToProcess.modo === 'crear';
+			const hasRefImage = !!postToProcess.imageBase64 || !!postToProcess.imagePreview;
+
+			if (!isSingleCrear && !hasRefImage) {
+				toast.error('Sube una imagen de referencia o activá «Crear sin referencia» para generar con IA', {
+					description: 'Sin imagen no se puede generar el contenido visual de la ficha.'
+				});
+				return;
+			}
+
+			if (isSingleCrear) {
+				toast.info('Gemini está generando una imagen desde cero (text-to-image)...', {
+					description: 'Esto tomará unos segundos.'
+				});
+			} else {
+				toast.info('Gemini está editando y aplicando el estilo de marca a tu imagen...', {
+					description: 'Esto tomará unos segundos.'
+				});
+			}
+
 			try {
 				const response = await fetch(`/api/content-creator/publicaciones/${realId}/generar-imagen`, {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({
-						base64Image: postToProcess.imageBase64,
+						base64Image: isSingleCrear ? null : (postToProcess.imageBase64 || null),
+						imageUrl: isSingleCrear ? null : (postToProcess.imagePreview || undefined),
 						brand: postToProcess.brand,
 						title: postToProcess.title,
 						context: postToProcess.context,
 						objective: postToProcess.objective,
 						customPrompt: postToProcess.prompt || undefined,
+						modo: isSingleCrear ? 'crear' : 'editar',
 						selectedAssetIds: Array.from(selectedAssetIds)
 					})
 				});
 				const data = await response.json();
-				
+
 				if (data.success && data.imageUrl) {
 					posts = posts.map(p => {
 						if (p.id === realId) {
@@ -847,15 +1164,15 @@
 						}
 						return p;
 					});
-					toast.success('¡Edición de imagen terminada!', {
+					toast.success(isSingleCrear ? '¡Imagen generada desde cero!' : '¡Edición de imagen terminada!', {
 						description: 'Revisa el resultado en la pestaña de Revisión.'
 					});
 				} else {
-					toast.error('Error al editar la imagen automáticamente.');
+					toast.error('Error al generar la imagen automáticamente.');
 				}
 			} catch (error) {
 				console.error(error);
-				toast.error('Fallo en la conexión al intentar editar la imagen.');
+				toast.error('Fallo en la conexión al intentar generar la imagen.');
 			}
 		}
 	}
@@ -871,6 +1188,7 @@
 			}
 			posts = posts.filter(p => p.id !== id);
 			toast.success('Publicación eliminada correctamente');
+			exitConfirmed = true;
 			dialogOpen = false;
 		} catch (e) {
 			console.error(e);
@@ -950,14 +1268,16 @@
 						</span>
 						
 						<!-- Botón agregar post rápido -->
-						<button 
-							type="button" 
-							onclick={() => openCreateModal(dateString)}
-							class="opacity-40 group-hover:opacity-100 transition-all rounded bg-orange-500 hover:bg-orange-600 text-white p-0.5 shadow-sm"
-							title="Programar post este día"
-						>
-							<Plus class="h-3 w-3" />
-						</button>
+						{#if !isPastDate(dateString)}
+							<button
+								type="button"
+								onclick={() => openCreateModal(dateString)}
+								class="opacity-40 group-hover:opacity-100 transition-all rounded bg-orange-500 hover:bg-orange-600 text-white p-0.5 shadow-sm"
+								title="Programar post este día"
+							>
+								<Plus class="h-3 w-3" />
+							</button>
+						{/if}
 					</div>
 
 					<!-- Lista de Posts en el día -->
@@ -966,14 +1286,8 @@
 							<button 
 								type="button" 
 								onclick={() => openEditModal(post)}
-								class="w-full text-left rounded p-1.5 text-[10px] leading-tight border transition flex flex-col gap-0.5 hover:shadow-sm hover:scale-[1.01] duration-150
-									{post.status === 'Aprobado' 
-										? 'border-green-200 bg-green-50/40 text-green-800 dark:border-green-950 dark:bg-green-950/20 dark:text-green-400' 
-										: post.status === 'En revisión' 
-											? 'border-amber-200 bg-amber-50/40 text-amber-800 dark:border-amber-950/20 dark:bg-amber-950/10 dark:text-amber-400' 
-											: post.status === 'Guardado'
-												? 'border-sky-200 bg-sky-50/40 text-sky-800 dark:border-sky-950/20 dark:bg-sky-950/10 dark:text-sky-400'
-												: 'border-slate-200 bg-white text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300'}"
+class="w-full text-left rounded p-1.5 text-[10px] leading-tight border transition flex flex-col gap-0.5 hover:shadow-sm hover:scale-[1.01] duration-150
+								{getStatusCellColor(post.status)}"
 							>
 								<div class="flex items-center justify-between gap-1 w-full">
 									<span class="font-bold truncate max-w-[80%]">{post.title}</span>
@@ -997,12 +1311,64 @@
 			{/each}
 		</div>
 	</div>
+
+	<!-- Leyenda de estados -->
+	<div class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border bg-card px-4 py-3 shadow-sm">
+		<span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mr-1">Estados:</span>
+		{#each [['Borrador'], ['En revisión'], ['Guardado'], ['Aprobado'], ['Publicado'], ['Error API']] as [st]}
+			<div class="flex items-center gap-1.5">
+				<span class="h-3 w-3 rounded {getStatusBadgeColor(st)}"></span>
+				<span class="text-[10px] font-medium text-muted-foreground">{st}</span>
+			</div>
+		{/each}
+	</div>
 </div>
 
 <!-- Modal Dialog de Configuración Completa Formulario Directo -->
-<Dialog.Root bind:open={dialogOpen}>
+<Dialog.Root bind:open={dialogOpen} onOpenChange={(open) => {
+		if (open) {
+			dialogOpen = true;
+		} else {
+			// Intento de cierre (X, overlay, Escape, o código)
+			if (exitConfirmed || !hasDraftData()) {
+				exitConfirmed = false;
+				// dialogOpen se pone en false vía bind
+				return;
+			}
+			// Hay datos sin guardar: el bind ya cerró el dialog.
+			// Reabrir inmediatamente + pedir confirmación.
+			showExitConfirm = true;
+			dialogOpen = true;
+		}
+	}}>
 	<Dialog.Content class="max-w-4xl border bg-background p-0 shadow-lg text-foreground rounded-xl overflow-hidden">
-		
+		<!-- Confirmación de salida con datos sin guardar (dentro del Dialog para respetar el focus trap) -->
+		{#if showExitConfirm}
+			<div
+				class="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+				onclick={(e) => e.stopPropagation()}
+				role="alertdialog"
+				aria-modal="true"
+				aria-labelledby="exit-confirm-title"
+				aria-describedby="exit-confirm-desc"
+			>
+				<div class="w-full max-w-sm rounded-xl border bg-background p-5 shadow-2xl space-y-4">
+					<div class="space-y-2">
+						<h2 id="exit-confirm-title" class="text-base font-bold text-foreground">¿Salir sin guardar?</h2>
+						<p id="exit-confirm-desc" class="text-xs text-muted-foreground">
+							Hay cambios sin guardar en la ficha. Si cerrás ahora se perderán. ¿Seguro que querés salir?
+						</p>
+					</div>
+					<div class="flex justify-end gap-2.5 pt-2">
+						<Button variant="outline" onclick={cancelExitModal}>Cancelar</Button>
+						<Button class="bg-rose-600 hover:bg-rose-700 text-white font-bold" onclick={confirmExitModal}>
+							Sí, salir sin guardar
+						</Button>
+					</div>
+				</div>
+			</div>
+		{/if}
+
 		<!-- Cabecera modal -->
 		<div class="flex items-center justify-between border-b p-5 bg-muted/40">
 			<div>
@@ -1117,21 +1483,41 @@
 				{:else}
 					<!-- Uploader de imagen -->
 					<div class="rounded-xl border border-dashed bg-card p-3 shadow-inner">
-						<label class="flex min-h-[140px] cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/30 px-3 py-6 text-center hover:bg-muted/60 transition">
-							{#if draftPost.imagePreview}
-								<img src={draftPost.imagePreview} alt="Preview" class="h-28 w-full rounded-md object-cover" />
-							{:else}
-								<UploadCloud class="h-6 w-6 text-muted-foreground animate-bounce" />
-								<div class="space-y-0.5">
-									<p class="text-[10px] font-semibold text-slate-700 dark:text-slate-200">Subir imagen desde PC</p>
-									<p class="text-[8px] text-muted-foreground">Click o arrastra (JPG/PNG)</p>
-								</div>
-							{/if}
-							<input bind:this={imageInput} type="file" accept="image/*" class="hidden" onchange={handleImageUpload} />
-						</label>
+						<div class="flex items-center justify-end mb-2">
+							<label class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-600 dark:text-slate-300 cursor-pointer">
+								<input
+									type="checkbox"
+									checked={draftPost.modo === 'crear'}
+									onchange={toggleSingleModo}
+									class="rounded border-slate-200 text-[#253166] focus:ring-[#253166] dark:border-slate-700"
+								/>
+								<span>✨ Crear (sin ref)</span>
+							</label>
+						</div>
+
+						{#if draftPost.modo === 'editar'}
+							<label class="flex min-h-[140px] cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/30 px-3 py-6 text-center hover:bg-muted/60 transition">
+								{#if draftPost.imagePreview}
+									<img src={draftPost.imagePreview} alt="Preview" class="h-28 w-full rounded-md object-cover" />
+								{:else}
+									<UploadCloud class="h-6 w-6 text-muted-foreground animate-bounce" />
+									<div class="space-y-0.5">
+										<p class="text-[10px] font-semibold text-slate-700 dark:text-slate-200">Subir imagen desde PC</p>
+										<p class="text-[8px] text-muted-foreground">Click o arrastra (JPG/PNG)</p>
+									</div>
+								{/if}
+								<input bind:this={imageInput} type="file" accept="image/*" class="hidden" onchange={handleImageUpload} />
+							</label>
+						{:else}
+							<div class="flex min-h-[140px] flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-[#253166]/40 bg-[#253166]/5 px-3 py-6 text-center">
+								<Sparkles class="h-6 w-6 text-[#253166]" />
+								<p class="text-[10px] font-semibold text-slate-700 dark:text-slate-200">Generar imagen desde cero con IA</p>
+								<p class="text-[8px] text-muted-foreground">Se usará el prompt de la IA de abajo</p>
+							</div>
+						{/if}
 					</div>
 
-					{#if draftPost.imageName}
+					{#if draftPost.modo === 'editar' && draftPost.imageName}
 						<div class="flex items-center justify-between rounded-lg border bg-card p-2 text-[10px]">
 							<span class="truncate font-semibold max-w-[150px]">{draftPost.imageName}</span>
 							<button type="button" class="text-rose-500 hover:text-rose-600 p-0.5" onclick={clearImage}>
@@ -1139,18 +1525,29 @@
 							</button>
 						</div>
 					{/if}
-					{/if}
+				{/if}
 
 					<!-- Detalles de Calendario -->
 					<div class="border-t pt-3 space-y-3.5 text-xs">
-						<div>
-							<label class="text-[9px] font-bold text-slate-400 uppercase block mb-1">Fecha de Publicación</label>
-							<input 
-								type="date" 
-								value={draftPost.date} 
-								onchange={(e) => handleDateChange(e.currentTarget.value)}
-								class="w-full px-2 py-1.5 text-xs rounded-md border border-slate-200 bg-background text-foreground shadow-xs focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 dark:border-slate-800" 
-							/>
+						<div class="grid grid-cols-2 gap-3">
+							<div>
+								<label class="text-[9px] font-bold text-slate-400 uppercase block mb-1">Fecha de Publicación</label>
+								<input
+									type="date"
+									min={getTodayStr()}
+									value={draftPost.date}
+									onchange={(e) => handleDateChange(e.currentTarget.value)}
+									class="w-full px-2 py-1.5 text-xs rounded-md border border-slate-200 bg-background text-foreground shadow-xs focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 dark:border-slate-800"
+								/>
+							</div>
+							<div>
+								<label class="text-[9px] font-bold text-slate-400 uppercase block mb-1">Hora de Publicación</label>
+								<input 
+									type="time" 
+									bind:value={draftPost.time} 
+									class="w-full px-2 py-1.5 text-xs rounded-md border border-slate-200 bg-background text-foreground shadow-xs focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 dark:border-slate-800" 
+								/>
+							</div>
 						</div>
 						<div>
 							<span class="text-[9px] font-bold text-slate-400 uppercase">Día Programado</span>
@@ -1172,8 +1569,8 @@
 							<span>🎨 Diseñado (Manual Adobe)</span>
 						</label>
 						<label class="flex items-center gap-2 text-xs font-semibold cursor-pointer">
-							<input type="checkbox" bind:checked={draftPost.published} class="rounded border-slate-200" />
-							<span>📤 Publicada en Meta</span>
+							<input type="checkbox" checked={draftPost.published} disabled class="rounded border-slate-200" />
+							<span class:text-slate-400={!draftPost.published}>📤 Publicada en Meta (se actualiza al enviar)</span>
 						</label>
 						<label class="flex items-center gap-2 text-xs font-semibold cursor-pointer">
 							<input type="checkbox" bind:checked={draftPost.promoted} class="rounded border-slate-200" />
@@ -1197,9 +1594,20 @@
 			<!-- Columna Derecha: Configuración Técnica del Post y Gemini AI -->
 			<div class="p-6 space-y-4">
 				
-				<p class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 border-b pb-1.5">Configuración e Instrucciones para la IA</p>
+<p class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 border-b pb-1.5">Configuración e Instrucciones para la IA</p>
 
-				<!-- Producto y Marca -->
+			<!-- Modo Carrusel (toggle independiente del formato) -->
+			<label class="flex items-center gap-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
+				<input
+					type="checkbox"
+					checked={isCarruselMode}
+					onchange={toggleCarruselMode}
+					class="rounded border-slate-200 text-[#253166] focus:ring-[#253166] dark:border-slate-700"
+				/>
+				<span>🖼️ Es carrusel (varias imágenes)</span>
+			</label>
+
+			<!-- Producto y Marca -->
 				<div class="grid gap-4 sm:grid-cols-2">
 					<div class="space-y-1">
 						<label class="text-[10px] font-bold uppercase text-muted-foreground block mb-1" for="post-title">
@@ -1223,6 +1631,41 @@
 								<span class="hidden sm:inline">Catálogo</span>
 							</Button>
 						</div>
+					</div>
+					<div class="space-y-1">
+						<label class="text-[10px] font-bold uppercase text-muted-foreground" for="post-cuenta-meta">
+							Cuenta Meta (destino de publicación)
+						</label>
+						<select
+							id="post-cuenta-meta"
+							bind:value={draftPost.cuentaId}
+							onchange={() => {
+								// Al cambiar de cuenta, quitar de selectedNetworks las redes que la nueva cuenta no soporta
+								const cta = cuentasMeta.find((c) => c.id === draftPost.cuentaId);
+								if (cta && Array.isArray(cta.redes_activas)) {
+									selectedNetworks = selectedNetworks.filter((nombre) => {
+const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
+										return red && cta.redes_activas.includes(red.id);
+									});
+									draftPost.network = selectedNetworks.join(', ');
+								}
+							}}
+							class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166] font-bold"
+							disabled={cuentasMeta.length === 0}
+						>
+							{#if cuentasMeta.length === 0}
+								<option value={null}>Sin cuentas conectadas — abrí Meta Hub → Conectar</option>
+							{:else}
+								{#each cuentasMeta as cta}
+									<option value={cta.id}>{cta.nombre}{cta.redes_activas?.includes(2) ? ' (+IG)' : ''}</option>
+								{/each}
+							{/if}
+						</select>
+						{#if cuentasMeta.length === 0}
+							<p class="text-[9px] text-amber-600 font-medium">
+								Conectá una cuenta Meta en el sidebar para poder publicar.
+							</p>
+						{/if}
 					</div>
 					<div class="space-y-1">
 						<label class="text-[10px] font-bold uppercase text-muted-foreground" for="post-brand">Marca (Dispara el System Prompt)</label>
@@ -1297,11 +1740,22 @@
 
 				<!-- Contexto / Tópico central -->
 				<div class="space-y-1">
-					<label class="text-[10px] font-bold uppercase text-muted-foreground" for="post-context">Contexto para post (Tópico central)</label>
+					<div class="flex items-center justify-between">
+						<label class="text-[10px] font-bold uppercase text-muted-foreground" for="post-context">Contexto para post (Tópico central)</label>
+						<button
+							type="button"
+							onclick={openFichasSelector}
+							class="inline-flex items-center gap-1.5 rounded-md border border-[#253166]/30 bg-[#253166]/5 px-2 py-1 text-[10px] font-bold text-[#253166] hover:bg-[#253166]/10 transition"
+							title="Adjuntar especificaciones de una ficha técnica de esta marca"
+						>
+							<FileText class="h-3 w-3" />
+							Adjuntar Ficha Técnica
+						</button>
+					</div>
 					<textarea
 						id="post-context"
 						bind:value={draftPost.context}
-						rows="2"
+						rows="3"
 						class="w-full rounded-md border bg-background px-3 py-2 text-xs outline-none focus:border-[#253166] leading-relaxed font-sans resize-y"
 						placeholder="ej: Especificaciones técnicas: Haga de su excavación algo fácil y rápido"
 					></textarea>
@@ -1344,32 +1798,42 @@
 					<p class="text-[9px] text-muted-foreground">Sobreescribe el manual de marca solo para el texto de esta publicación.</p>
 				</div>
 
-				<!-- Redes Sociales de Destino -->
-				<div class="space-y-1.5">
-					<label class="text-[10px] font-bold uppercase text-muted-foreground block">Redes Sociales de Destino</label>
-					<div class="flex flex-wrap gap-2">
-						{#each catalogos.redes as red}
-							<button 
-								type="button"
-								onclick={() => toggleNetwork(red.nombre)}
-								class={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer
-									${selectedNetworks.includes(red.nombre) 
-										? 'bg-[#253166]/10 border-[#253166] text-[#253166] dark:bg-blue-950/40 dark:text-blue-400 font-bold' 
-										: 'bg-background hover:bg-slate-50 dark:hover:bg-slate-800 border-slate-200 text-slate-600 dark:text-slate-400'}`}
-							>
-								<span>{red.nombre}</span>
-							</button>
-						{/each}
-					</div>
+<!-- Redes Sociales de Destino -->
+			<div class="space-y-1.5">
+				<label class="text-[10px] font-bold uppercase text-muted-foreground block">Redes Sociales de Destino</label>
+				<div class="flex flex-wrap gap-2">
+					{#each catalogos.redes as red}
+						{@const redesActivasCuenta = (draftPost.cuentaId != null)
+							? (cuentasMeta.find((c) => c.id === draftPost.cuentaId)?.redes_activas ?? null)
+							: null}
+						{@const redHabilitada = redesActivasCuenta == null ? true : redesActivasCuenta.includes(red.id)}
+						<button 
+							type="button"
+							onclick={() => redHabilitada && toggleNetwork(red.nombre)}
+							disabled={!redHabilitada}
+							class={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all
+								${redHabilitada ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'}
+								${selectedNetworks.includes(red.nombre) 
+									? 'bg-[#253166]/10 border-[#253166] text-[#253166] dark:bg-blue-950/40 dark:text-blue-400 font-bold' 
+									: 'bg-background hover:bg-slate-50 dark:hover:bg-slate-800 border-slate-200 text-slate-600 dark:text-slate-400'}`}
+							title={redHabilitada ? red.nombre : `${red.nombre} no está habilitada para esta cuenta`}
+						>
+							<span>{red.nombre}</span>
+						</button>
+					{/each}
 				</div>
+				{#if draftPost.cuentaId != null && cuentasMeta.find((c) => c.id === draftPost.cuentaId)?.redes_activas?.length === 0}
+					<p class="text-[9px] text-amber-600 dark:text-amber-400">Esta cuenta no tiene redes habilitadas. Conéctalas desde el panel de cuentas Meta.</p>
+				{/if}
+			</div>
 
 <!-- Relación de Aspecto, Público y Presupuesto -->
 			<div class="grid gap-4 sm:grid-cols-3">
 				<div class="space-y-1">
 					<label class="text-[10px] font-bold uppercase text-muted-foreground" for="post-format">Relación de Aspecto</label>
-					<select 
+					<select
 						id="post-format"
-						bind:value={draftPost.format} 
+						bind:value={draftPost.format}
 						class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166]"
 					>
 						{#each catalogos.formatos as formato}
@@ -1379,9 +1843,9 @@
 				</div>
 				<div class="space-y-1">
 					<label class="text-[10px] font-bold uppercase text-muted-foreground" for="post-audience">Público Objetivo</label>
-					<select 
+					<select
 						id="post-audience"
-						bind:value={draftPost.audience} 
+						bind:value={draftPost.audience}
 						class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166]"
 					>
 						{#each catalogos.audiencias as audiencia}
@@ -1391,25 +1855,14 @@
 				</div>
 				<div class="space-y-1">
 					<label class="text-[10px] font-bold uppercase text-muted-foreground" for="post-budget">Presupuesto de pauta (¢)</label>
-					<input 
+					<input
 						id="post-budget"
-						type="number" 
-						bind:value={draftPost.budget} 
-						class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166] text-right font-mono" 
+						type="number"
+						bind:value={draftPost.budget}
+						class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166] text-right font-mono"
 					/>
 				</div>
 			</div>
-
-			<!-- Modo Carrusel (toggle independiente del formato) -->
-			<label class="flex items-center gap-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
-				<input
-					type="checkbox"
-					checked={isCarruselMode}
-					onchange={toggleCarruselMode}
-					class="rounded border-slate-200 text-[#253166] focus:ring-[#253166] dark:border-slate-700"
-				/>
-				<span>🖼️ Es carrusel (varias imágenes)</span>
-			</label>
 
 				<!-- CTA y KPI -->
 				<div class="grid gap-4 sm:grid-cols-2">
@@ -1462,11 +1915,93 @@
 
 				<!-- Botones Finales de Guardado -->
 				<div class="flex justify-end gap-2.5 pt-6 border-t">
-					<Button variant="outline" onclick={() => dialogOpen = false}>Cancelar</Button>
+					<Button variant="outline" onclick={requestCloseModal}>Cancelar</Button>
 					<Button class="bg-[#253166] hover:bg-[#253166]/90 text-white font-bold cursor-pointer" onclick={savePost}>Guardar Ficha</Button>
 				</div>
 
 			</div>
+
+
+			<!-- Submodal: Seleccionar Ficha Técnica (Dentro del Dialog.Content para capturar puntero) -->
+			{#if showFichasSelectorModal}
+				<div 
+					class="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-in fade-in duration-150 pointer-events-auto"
+					onclick={(e) => { e.stopPropagation(); }}
+				>
+					<div 
+						class="w-full max-w-xl rounded-xl border bg-background p-5 shadow-2xl space-y-4 max-h-[85vh] flex flex-col pointer-events-auto"
+						onclick={(e) => e.stopPropagation()}
+					>
+						<div class="flex items-center justify-between border-b pb-3">
+							<div class="flex items-center gap-2">
+								<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#253166] text-white">
+									<FileText class="h-4 w-4" />
+								</div>
+								<div>
+									<h3 class="text-sm font-bold">Seleccionar Ficha Técnica</h3>
+									<p class="text-[11px] text-muted-foreground">Marca actual: <strong class="text-[#253166]">{draftPost.brand}</strong></p>
+								</div>
+							</div>
+							<button
+								type="button"
+								onclick={(e) => { e.stopPropagation(); showFichasSelectorModal = false; }}
+								class="rounded-md p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground transition cursor-pointer"
+							>
+								<X class="h-4.5 w-4.5" />
+							</button>
+						</div>
+
+						<div class="flex-1 overflow-y-auto space-y-3 pr-1">
+							{#if loadingFichasSelector}
+								<div class="flex flex-col items-center justify-center py-10 gap-2">
+									<RefreshCw class="h-6 w-6 animate-spin text-[#253166]" />
+									<p class="text-xs text-muted-foreground">Cargando fichas de la marca...</p>
+								</div>
+							{:else if fichasDisponibles.length === 0}
+								<div class="flex flex-col items-center justify-center py-10 gap-2 text-center border rounded-lg bg-muted/20 p-4">
+									<FileText class="h-8 w-8 text-muted-foreground/50" />
+									<p class="text-xs font-semibold">No hay fichas técnicas registradas para {draftPost.brand}</p>
+									<p class="text-[11px] text-muted-foreground">Puedes crear nuevas fichas técnicas desde la pestaña «Fichas Técnicas» en el menú principal.</p>
+								</div>
+							{:else}
+								<div class="grid grid-cols-1 gap-2.5">
+									{#each fichasDisponibles as ficha}
+										<div class="flex flex-col gap-2 p-3 border rounded-lg hover:border-[#253166]/50 bg-card transition">
+											<div class="flex items-center justify-between">
+												<h4 class="font-bold text-xs text-foreground">{ficha.nombre_producto}</h4>
+												<button
+													type="button"
+													onclick={(e) => { e.stopPropagation(); attachFichaToContext(ficha); }}
+													class="inline-flex items-center gap-1 rounded-md bg-[#253166] px-2.5 py-1 text-[11px] font-bold text-white shadow-sm hover:bg-[#1a234a] transition cursor-pointer"
+												>
+													<Plus class="h-3 w-3" />
+													<span>Adjuntar al Contexto</span>
+												</button>
+											</div>
+											{#if ficha.descripcion}
+												<p class="text-[11px] text-muted-foreground line-clamp-1">{ficha.descripcion}</p>
+											{/if}
+											<div class="bg-muted/40 p-2 rounded text-[10px] font-mono line-clamp-3 text-muted-foreground border">
+												{ficha.especificaciones_texto}
+											</div>
+										</div>
+									{/each}
+								</div>
+							{/if}
+						</div>
+
+						<div class="flex items-center justify-end border-t pt-3">
+							<button
+								type="button"
+								onclick={(e) => { e.stopPropagation(); showFichasSelectorModal = false; }}
+								class="rounded-md border px-4 py-1.5 text-xs font-medium hover:bg-muted cursor-pointer"
+							>
+								Cerrar
+							</button>
+						</div>
+					</div>
+				</div>
+			{/if}
 
 		</div>
 	</Dialog.Content>

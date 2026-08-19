@@ -1,6 +1,6 @@
 <script>
   // Puedes pasarle el título y la altura como propiedades al componente
-  let { titulo = 'Gestión de Pedidos — SoporteXperto', altura = 600 } = $props();
+  let { titulo = 'Gestión de Pedidos — Vedova & Obando', altura = 600 } = $props();
 
   // La URL segura que acabas de generar
   const embedUrl = 'https://app.powerbi.com/reportEmbed?reportId=ac073396-36e4-42d0-bfde-a0cc76b0a33b&autoAuth=true&ctid=22985f7d-d7a0-418b-b75d-2c99c9e1ad8c&actionBarEnabled=true';
@@ -28,7 +28,7 @@
   .titulo-reporte {
     font-size: 1.25rem;
     font-weight: bold;
-    color: #0D1E3D; /* Azul corporativo, cámbialo según tu diseño */
+    color: #1e3a8a; /* Azul corporativo, cámbialo según tu diseño */
     margin-bottom: 1rem;
   }
 

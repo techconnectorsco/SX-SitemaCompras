@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * MOTOR DE IA SoporteXperto — TARIFAS Y CÁLCULO DE COSTO
+ * MOTOR DE IA VYOWEB — TARIFAS Y CÁLCULO DE COSTO
  * ============================================================================
  * Tabla de precios por modelo y cálculo del costo de cada interacción, con el
  * factor de cobro (markup) que se le suma al cliente.

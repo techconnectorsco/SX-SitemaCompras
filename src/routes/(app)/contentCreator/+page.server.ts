@@ -12,15 +12,16 @@ export const load: PageServerLoad = async ({ locals }) => {
     const catalogos = CatalogoService.getAllCatalogos();
     const publicaciones = PublicacionService.getByUser(locals.user.id);
 
-    // Costo real acumulado desde ai_token_logs (no calculado, leído directo de BD)
+    // El total principal excluye registros históricos que no se pueden reconstruir por modalidad.
     const tokenStats = db.prepare(`
         SELECT 
-            COALESCE(SUM(costo_estimado), 0)  AS costo_total,
+            COALESCE(SUM(CASE WHEN billing_status != 'legacy_approximate' THEN costo_estimado ELSE 0 END), 0) AS costo_total,
+            COALESCE(SUM(CASE WHEN billing_status = 'legacy_approximate' THEN costo_estimado ELSE 0 END), 0) AS costo_historico_aproximado,
             COALESCE(SUM(tokens_totales), 0)   AS tokens_total,
             COUNT(*)                           AS llamadas_total
         FROM ai_token_logs
         WHERE user_id = ?
-    `).get(locals.user.id) as { costo_total: number; tokens_total: number; llamadas_total: number };
+    `).get(locals.user.id) as { costo_total: number; costo_historico_aproximado: number; tokens_total: number; llamadas_total: number };
 
     return {
         catalogos,

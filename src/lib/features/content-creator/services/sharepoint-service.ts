@@ -1,5 +1,4 @@
-import fs from 'fs';
-import path from 'path';
+import { deleteUploadFile, writeUploadFile } from '$lib/server/uploads-storage';
 
 /**
  * Servicio Mock de SharePoint.
@@ -17,59 +16,40 @@ export class SharePointService {
         // En el futuro, aquí irá la lógica de fetch a https://graph.microsoft.com/...
 
         // Simulación de retraso de red
-        await new Promise(resolve => setTimeout(resolve, 800));
+        await new Promise((resolve) => setTimeout(resolve, 800));
 
         // Remover el encabezado 'data:image/jpeg;base64,' si existe
         const base64Content = base64Data.replace(/^data:image\/\w+;base64,/, '');
         const buffer = Buffer.from(base64Content, 'base64');
 
-        // Definir la ruta de guardado (static/uploads)
-        const uploadDir = subPath 
-            ? path.join(process.cwd(), 'static', 'uploads', ...subPath.split('/'))
-            : path.join(process.cwd(), 'static', 'uploads');
-        
-        // Crear carpeta si no existe
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-        }
-
         const safeFileName = `${Date.now()}_${fileName.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-        const filePath = path.join(uploadDir, safeFileName);
-
-        // Guardar el archivo físicamente
-        fs.writeFileSync(filePath, buffer);
-
-        // Devolver la URL relativa que SvelteKit puede servir
-        const relativeUrlPath = subPath ? `/uploads/${subPath}/${safeFileName}` : `/uploads/${safeFileName}`;
-        return relativeUrlPath;
+        return writeUploadFile(subPath || '.', safeFileName, buffer);
     }
 
     /**
      * Sube un archivo Buffer a SharePoint (Simulado), usado para multipart/form-data
      */
-    static async uploadFile(
-        fileName: string,
-        buffer: Buffer,
-        mimeType: string,
-        subPath: string
-    ): Promise<{ url: string; size: number }> {
+    static async uploadFile(fileName: string, buffer: Buffer, mimeType: string, subPath: string): Promise<{ url: string; size: number }> {
         // Simulación de retraso de red
-        await new Promise(resolve => setTimeout(resolve, 600));
-
-        const uploadDir = path.join(process.cwd(), 'static', 'uploads', ...subPath.split('/'));
-        
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-        }
+        await new Promise((resolve) => setTimeout(resolve, 600));
 
         const safeFileName = `${Date.now()}_${fileName.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-        const filePath = path.join(uploadDir, safeFileName);
-
-        fs.writeFileSync(filePath, buffer);
+        const url = await writeUploadFile(subPath, safeFileName, buffer);
 
         return {
-            url: `/uploads/${subPath}/${safeFileName}`,
+            url,
             size: buffer.length
         };
+    }
+
+    /** Elimina un archivo guardado por la implementación local de SharePoint. */
+    static async deleteFile(url: string): Promise<void> {
+        // Cuando se reemplace esta simulación por SharePoint real, esta operación
+        // debe delegarse a Microsoft Graph usando la URL/ID almacenado.
+        if (!url.startsWith('/uploads/')) {
+            throw new Error('La ruta del archivo no pertenece al almacenamiento local');
+        }
+
+        await deleteUploadFile(url);
     }
 }

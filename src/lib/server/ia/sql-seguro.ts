@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * MOTOR DE IA SoporteXperto — CONSULTA SQL SEGURA (SOLO LECTURA)
+ * MOTOR DE IA VYOWEB — CONSULTA SQL SEGURA (SOLO LECTURA)
  * ============================================================================
  * Permite que la IA arme sus propias consultas para responder preguntas que
  * las herramientas fijas no cubren (conteos, agrupaciones, totales, rankings).

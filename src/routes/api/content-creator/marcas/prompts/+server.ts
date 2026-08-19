@@ -10,7 +10,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 
     for (const m of marcas) {
       m.manuales = db.prepare(
-        'SELECT id, nombre, file_path, file_name, mime_type, file_size, created_at FROM marca_manuales WHERE marca_id = ? AND deleted_at IS NULL ORDER BY id DESC'
+        'SELECT id, nombre, file_path, file_name, mime_type, file_size, resumen_ia, analizado_at, created_at FROM marca_manuales WHERE marca_id = ? AND deleted_at IS NULL ORDER BY id DESC'
       ).all(m.id);
     }
 

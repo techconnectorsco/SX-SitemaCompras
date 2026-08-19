@@ -1,9 +1,9 @@
 import { json } from '@sveltejs/kit';
 import { IAContentService } from '$lib/features/content-creator/services/ia-content-service';
-import fs from 'fs';
 import path from 'path';
 import db from '$lib/config/db-config';
 import { AssetService } from '$lib/features/content-creator/services/asset-service';
+import { readUploadFile } from '$lib/server/uploads-storage';
 
 export async function POST({ params, request, locals }) {
     try {
@@ -23,16 +23,14 @@ export async function POST({ params, request, locals }) {
         // Si no hay base64 pero sí hay una URL local (/uploads/...), leer el archivo del disco
         if (!isCrear && !base64Image && imageUrl) {
             try {
-                const filePath = path.join(process.cwd(), 'static', imageUrl.replace(/^\//, ''));
-                if (fs.existsSync(filePath)) {
-                    const fileBuffer = fs.readFileSync(filePath);
-                    const ext = path.extname(filePath).replace('.', '') || 'jpeg';
-                    const mime = ext === 'jpg' ? 'jpeg' : ext;
-                    base64Image = `data:image/${mime};base64,${fileBuffer.toString('base64')}`;
-                } else {
+                const fileBuffer = await readUploadFile(imageUrl);
+                const ext = path.extname(imageUrl).replace('.', '') || 'jpeg';
+                const mime = ext === 'jpg' ? 'jpeg' : ext;
+                base64Image = `data:image/${mime};base64,${fileBuffer.toString('base64')}`;
+            } catch (e: any) {
+                if (e?.code === 'ENOENT') {
                     return json({ success: false, error: `Imagen no encontrada en disco: ${imageUrl}` }, { status: 404 });
                 }
-            } catch (e) {
                 return json({ success: false, error: 'Error al leer la imagen del servidor' }, { status: 500 });
             }
         }
@@ -46,14 +44,15 @@ export async function POST({ params, request, locals }) {
         // Leer assets del disco y convertir a base64
         let brandAssets: any[] = [];
         if (selectedAssetIds && Array.isArray(selectedAssetIds) && selectedAssetIds.length > 0) {
-            brandAssets = selectedAssetIds
-                .map(id => db.prepare('SELECT * FROM marca_assets WHERE id = ? AND deleted_at IS NULL').get(id))
-                .filter(Boolean)
-                .map((asset: any) => {
-                    const b64 = AssetService.readAsBase64(asset);
-                    return b64 ? { nombre: asset.nombre, tipo: asset.tipo, mimeType: asset.mime_type, base64: b64 } : null;
-                })
-                .filter(Boolean);
+            const assets = selectedAssetIds.map((id) => db.prepare('SELECT * FROM marca_assets WHERE id = ? AND deleted_at IS NULL').get(id)).filter(Boolean) as any[];
+            brandAssets = (
+                await Promise.all(
+                    assets.map(async (asset: any) => {
+                        const b64 = await AssetService.readAsBase64(asset);
+                        return b64 ? { nombre: asset.nombre, tipo: asset.tipo, mimeType: asset.mime_type, base64: b64 } : null;
+                    })
+                )
+            ).filter(Boolean);
         }
 
         const sharepointUrl = await IAContentService.generarImagenEditada(publicacionId, userId, isCrear ? null : base64Image, fallbackData, index, customPrompt, brandAssets, isCrear);
@@ -64,4 +63,3 @@ export async function POST({ params, request, locals }) {
         return json({ success: false, error: error.message || 'Error interno al generar imagen' }, { status: 500 });
     }
 }
-

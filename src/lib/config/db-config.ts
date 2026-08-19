@@ -14,6 +14,10 @@ const DB_PATH = path.join(DB_DIR, 'app.db');
 // 🔐 Clave de encriptación (solo producción)
 const DB_ENCRYPTION_KEY = process.env.DB_ENCRYPTION_KEY || '';
 const USE_ENCRYPTION = !dev && DB_ENCRYPTION_KEY.length > 0;
+const configuredBillingMultiplier = Number(process.env.IA_FACTOR_COBRO ?? '1.10');
+const IA_BILLING_MULTIPLIER = Number.isFinite(configuredBillingMultiplier) && configuredBillingMultiplier > 0
+  ? configuredBillingMultiplier
+  : 1.10;
 
 // Crear directorio
 if (!existsSync(DB_DIR)) {
@@ -147,7 +151,7 @@ export function initializeDatabase() {
   CREATE INDEX IF NOT EXISTS idx_audit_created_at ON audit_logs(created_at);
   CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_logs(user_id);
 `);
-  // ===== TABLAS DE NEGOCIO =====
+  // ===== VEDOVA & OBANDO =====
 
   // SKUs
   db.exec(`
@@ -311,6 +315,65 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_forecast_usuario_mod ON forecast_procesamiento(usuario_modificacion);
 `);
 
+  // ===== LEAD TIME POR MARCA (config del motor de forecast) =====
+  // Vivía solo en la base; se agrega al código para que sea reproducible.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS marcas_lt_config (
+      clave               TEXT PRIMARY KEY,        -- llave de match que arma el motor
+      marca_exactus       TEXT,                    -- CLASIFICACION_4 real que matchea (informativo)
+      etiqueta            TEXT NOT NULL,           -- nombre amigable para el cliente
+      lt_courier          REAL NOT NULL,           -- horizonte courier (sin meses_pedido, sin S.S.)
+      lt_aereo            REAL NOT NULL,           -- L.T. aéreo    (se le suma meses_pedido + S.S.)
+      lt_maritimo         REAL NOT NULL,           -- L.T. marítimo (se le suma meses_pedido + S.S.)
+      meses_pedido        REAL NOT NULL DEFAULT 0, -- se suma SOLO a aéreo y marítimo
+      activo              INTEGER NOT NULL DEFAULT 1,
+      nota                TEXT,
+      actualizado_por     TEXT,
+      fecha_actualizacion TEXT
+    );
+  `);
+
+  // ===== MIGRACIÓN: columnas agregadas a forecast_procesamiento con el tiempo =====
+  // Costos, lane marítimo, categoría/fechas y auditoría de lead time. En prod ya
+  // existen (no-op); en una máquina nueva se agregan para reproducir el esquema.
+  try {
+    const colsFp = db.prepare('PRAGMA table_info(forecast_procesamiento)').all() as any[];
+    const existentes = new Set(colsFp.map((c) => c.name));
+    const nuevas: [string, string][] = [
+      ['codigo_procesamiento', 'TEXT'],
+      ['costo_prom_loc', 'REAL'],
+      ['costo_prom_dol', 'REAL'],
+      ['costo_ult_loc', 'REAL'],
+      ['costo_ult_dol', 'REAL'],
+      ['costo_std_loc', 'REAL'],
+      ['costo_std_dol', 'REAL'],
+      ['costo_comparativo', 'REAL'],
+      ['costo_fiscal', 'REAL'],
+      ['costo_prom_comparativo_loc', 'REAL'],
+      ['cantidad_maritimo', 'REAL'],
+      ['mensaje_maritimo', 'TEXT'],
+      ['cantidad_final_maritimo', 'REAL'],
+      ['categoria', 'TEXT'],
+      ['fecha_creacion', 'TEXT'],
+      ['ultima_salida', 'TEXT'],
+      ['ultimo_movimiento', 'TEXT'],
+      ['sugerido_analista_maritimo', 'REAL'],
+      ['comentario_analista', "TEXT DEFAULT ''"],
+      ['meses_pedido_usado', 'REAL DEFAULT 0'],
+      ['lt_maritimo_usado', 'REAL DEFAULT 0'],
+      ['lt_courier_usado', 'REAL DEFAULT 0'],
+      ['lt_aereo_usado', 'REAL DEFAULT 0']
+    ];
+    for (const [nombre, tipo] of nuevas) {
+      if (!existentes.has(nombre)) {
+        db.exec(`ALTER TABLE forecast_procesamiento ADD COLUMN ${nombre} ${tipo}`);
+        console.log(`[db] ➕ Columna ${nombre} añadida a forecast_procesamiento`);
+      }
+    }
+  } catch (e) {
+    console.error('[db] ⚠️ Migración columnas forecast_procesamiento:', e);
+  }
+
   // ASSETS POR MARCA (logos, isotipos, sellos, fondos)
   db.exec(`
     CREATE TABLE IF NOT EXISTS marca_assets (
@@ -339,11 +402,24 @@ db.exec(`
       file_name TEXT,
       mime_type TEXT,
       file_size INTEGER,
+      resumen_ia TEXT,
+      analizado_at INTEGER,
       created_at INTEGER DEFAULT (strftime('%s','now')),
       deleted_at INTEGER
     );
     CREATE INDEX IF NOT EXISTS idx_marca_manuales_marca ON marca_manuales(marca_id);
   `);
+
+  try {
+    db.exec('ALTER TABLE marca_manuales ADD COLUMN resumen_ia TEXT');
+  } catch (e) {
+    // Columna ya existe
+  }
+  try {
+    db.exec('ALTER TABLE marca_manuales ADD COLUMN analizado_at INTEGER');
+  } catch (e) {
+    // Columna ya existe
+  }
 
   // BODEGAS (gestión de inventario Exactus)
   // 1) Crear tabla (no-op si ya existe). Para DBs nuevas, cc_incluida nace incluida.
@@ -378,6 +454,30 @@ db.exec(`
       razon TEXT,
       FOREIGN KEY (bodega_codigo) REFERENCES bodegas(bodega_codigo)
     );
+  `);
+
+  // FICHAS TÉCNICAS DE PRODUCTOS
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS fichas_tecnicas (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      marca_id INTEGER NOT NULL,
+      user_id TEXT NOT NULL,
+      nombre_producto TEXT NOT NULL,
+      descripcion TEXT,
+      especificaciones_texto TEXT NOT NULL,
+      file_path TEXT NOT NULL,
+      file_name TEXT NOT NULL,
+      mime_type TEXT NOT NULL,
+      size_bytes INTEGER NOT NULL,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      deleted_at INTEGER DEFAULT NULL,
+      FOREIGN KEY (marca_id) REFERENCES marcas(id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_fichas_marca ON fichas_tecnicas(marca_id);
+    CREATE INDEX IF NOT EXISTS idx_fichas_user ON fichas_tecnicas(user_id);
+    CREATE INDEX IF NOT EXISTS idx_fichas_deleted ON fichas_tecnicas(deleted_at);
   `);
 
   // 2) Migración: añadir columna cc_incluida si la tabla existía sin ella
@@ -510,6 +610,67 @@ db.exec(`
   } catch (e) {
     console.error('[db] ⚠️ Índice idx_bodegas_cc_incluida:', e);
   }
+
+  // Registro de consumo de IA y desglose contable de Gemini.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS ai_token_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT NOT NULL REFERENCES users(id),
+      marca_id INTEGER REFERENCES marcas(id),
+      publicacion_id INTEGER REFERENCES publicaciones(id) ON DELETE SET NULL,
+      modelo_ia TEXT NOT NULL,
+      tarea TEXT NOT NULL,
+      prompt_utilizado TEXT,
+      tokens_prompt INTEGER NOT NULL DEFAULT 0,
+      tokens_completion INTEGER NOT NULL DEFAULT 0,
+      tokens_thinking INTEGER NOT NULL DEFAULT 0,
+      tokens_tool INTEGER NOT NULL DEFAULT 0,
+      tokens_image INTEGER NOT NULL DEFAULT 0,
+      tokens_totales INTEGER NOT NULL DEFAULT 0,
+      costo_proveedor REAL DEFAULT 0,
+      costo_estimado REAL DEFAULT 0,
+      billing_status TEXT NOT NULL DEFAULT 'legacy_approximate',
+      created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_ai_logs_user ON ai_token_logs(user_id);
+    CREATE INDEX IF NOT EXISTS idx_ai_logs_pub ON ai_token_logs(publicacion_id);
+    CREATE INDEX IF NOT EXISTS idx_ai_logs_marca ON ai_token_logs(marca_id);
+    CREATE INDEX IF NOT EXISTS idx_ai_logs_fecha ON ai_token_logs(created_at);
+  `);
+
+  // Las migraciones son idempotentes para bases existentes.
+  for (const column of [
+    'tokens_thinking INTEGER NOT NULL DEFAULT 0',
+    'tokens_tool INTEGER NOT NULL DEFAULT 0',
+    'tokens_image INTEGER NOT NULL DEFAULT 0',
+    'costo_proveedor REAL DEFAULT 0',
+    "billing_status TEXT NOT NULL DEFAULT 'legacy_approximate'"
+  ]) {
+    try {
+      db.exec(`ALTER TABLE ai_token_logs ADD COLUMN ${column}`);
+    } catch {
+      // La columna ya existe.
+    }
+  }
+
+  // Gemini 2.5 Flash permite reconstruir exactamente el razonamiento histórico:
+  // total = prompt + candidates + thoughts + tool use. Estos flujos no usaron herramientas.
+  db.prepare(`
+    UPDATE ai_token_logs
+    SET tokens_thinking = MAX(0, tokens_totales - tokens_prompt - tokens_completion),
+        tokens_tool = 0,
+        tokens_image = 0,
+        costo_proveedor = (
+          (tokens_prompt * 0.30) +
+          ((tokens_completion + MAX(0, tokens_totales - tokens_prompt - tokens_completion)) * 2.50)
+        ) / 1000000.0,
+        costo_estimado = (
+          (tokens_prompt * 0.30) +
+          ((tokens_completion + MAX(0, tokens_totales - tokens_prompt - tokens_completion)) * 2.50)
+        ) / 1000000.0 * ?,
+        billing_status = 'verified'
+    WHERE modelo_ia = 'gemini-2.5-flash'
+  `).run(IA_BILLING_MULTIPLIER);
 
   console.log('[db] ✅ Database schema initialized');
   ensureFirstUserLogic();

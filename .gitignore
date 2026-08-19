@@ -37,6 +37,10 @@ vite.config.ts.timestamp-*
 /.agents
 skills-lock.json
 /static/uploads
+/uploads
 /.codegraph
 *.ecosystem.config.cjs
-ecosystem.config.cjs*.patch
+ecosystem.config.cjs
+
+# Database backups
+backups/

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
@@ -62,7 +63,7 @@
 	}
 
 	// Props - Recibe los posts compartidos del planificador para evaluar
-	let { posts = $bindable(), catalogos } = $props<{ posts: ExcelPost[], catalogos: any }>();
+	let { posts = $bindable(), catalogos, cuentaId = $bindable<number | null>(null) } = $props<{ posts: ExcelPost[], catalogos: any, cuentaId?: number | null }>();
 
 	// Sub-pestaña activa dentro del Meta Hub
 	let activeSubTab = $state<'status' | 'competitors' | 'audience' | 'leads' | 'predictor'>('status');
@@ -111,16 +112,58 @@
 		{ id: 'L-004', name: 'Juan Carlos Vargas', email: 'jcvargas@hotmail.com', phone: '+506 8521-0045', date: '2026-06-08 18:22', brand: 'Toyama', product: 'Multifuncional TBC26MTX', status: 'No responde', notes: 'Formulario enviado desde anuncio de video en Instagram' }
 	]);
 
-	// Simular reconexión de token Meta OAuth
-	function reconnectMeta() {
+	// Reconexión y estado de Meta OAuth API
+	let pageInfo = $state<{ name?: string; id?: string; category?: string; followers_count?: number; tasks?: string[]; link?: string } | null>(null);
+
+	onMount(() => {
+		reconnectMeta();
+	});
+
+	// Re-ejecutar cuando cambia la cuenta seleccionada
+	$effect(() => {
+		if (cuentaId != null) reconnectMeta();
+	});
+
+	async function reconnectMeta() {
 		isConnecting = true;
-		setTimeout(() => {
-			isConnecting = false;
-			isTokenActive = true;
-			toast.success('¡Token de Meta Business Suite actualizado!', {
-				description: 'Conexión verificada con la API de Graph v19.0. Acceso extendido por 60 días.'
+		try {
+			// Si hay cuenta seleccionada, pide info de UNA cuenta ({success, page}).
+			// Si no, pide la lista ({success, accounts, default}) y usa fallback .env.
+			const url = cuentaId != null
+				? `/api/content-creator/meta/status?cuentaId=${cuentaId}`
+				: `/api/content-creator/meta/status`;
+			const res = await fetch(url);
+			const data = await res.json();
+			if (data.success && data.page) {
+				isTokenActive = true;
+				pageInfo = data.page;
+				toast.success(`¡Conexión en vivo con Meta Graph API!`, {
+					description: `Página de negocio: "${data.page.name}" (ID: ${data.page.id})`
+				});
+			} else if (data.success && Array.isArray(data.accounts)) {
+				// Modo lista (sin cuentaId): si hay default válido lo usamos.
+				const def = data.accounts.find((a: any) => a.id === data.default);
+				if (def?.token_valid) {
+					isTokenActive = true;
+					pageInfo = { name: def.nombre, id: def.meta_facebook_page_id };
+				} else {
+					isTokenActive = false;
+					pageInfo = null;
+				}
+			} else {
+				isTokenActive = false;
+				toast.error('Error de conexión con Meta API', {
+					description: data.error || 'Sin cuenta Meta conectada ni fallback .env'
+				});
+			}
+		} catch (err: any) {
+			isTokenActive = false;
+			toast.error('Error de red al consultar Meta API', {
+				description: err.message || ''
 			});
-		}, 1800);
+		} finally {
+			isConnecting = false;
+		}
 	}
 
 	// Simular auditoría de competidor con Gemini
@@ -293,32 +336,34 @@
 					<div class="flex items-center justify-between p-4 rounded-xl bg-slate-50 border dark:bg-slate-900/40">
 						<div>
 							<h5 class="text-xs font-bold text-slate-800 dark:text-slate-200">Meta API Graph</h5>
-							<p class="text-[10px] text-muted-foreground mt-0.5">Versión actual: v19.0 (Producción)</p>
+							<p class="text-[10px] text-muted-foreground mt-0.5">Versión activa: v26.0 (Producción)</p>
 						</div>
 						{#if isTokenActive}
-							<Badge class="bg-emerald-50 text-emerald-600 border border-emerald-200/50 hover:bg-emerald-50 text-[10px] font-bold">ACTIVO</Badge>
+							<Badge class="bg-emerald-50 text-emerald-600 border border-emerald-200/50 hover:bg-emerald-50 text-[10px] font-bold">CONECTADO</Badge>
 						{:else}
-							<Badge class="bg-rose-50 text-rose-600 border border-rose-200/50 hover:bg-rose-50 text-[10px] font-bold">EXPIRADO</Badge>
+							<Badge class="bg-rose-50 text-rose-600 border border-rose-200/50 hover:bg-rose-50 text-[10px] font-bold">DESCONECTADO</Badge>
 						{/if}
 					</div>
 
-					<!-- Datos del Business Manager conectado -->
+					<!-- Datos de la página de negocio conectada en vivo -->
 					<div class="space-y-3.5 text-xs">
 						<div class="flex justify-between border-b pb-2">
-							<span class="text-slate-500 font-semibold">Organización:</span>
-							<span class="font-bold text-slate-900 dark:text-slate-100">Corporación Vedoba & Obando S.A.</span>
+							<span class="text-slate-500 font-semibold">Página de negocio conectada:</span>
+							<span class="font-bold text-slate-900 dark:text-slate-100">{pageInfo?.name || (isConnecting ? 'Cargando...' : 'No detectada')}</span>
 						</div>
 						<div class="flex justify-between border-b pb-2">
-							<span class="text-slate-500 font-semibold">Identificador BM:</span>
-							<span class="font-mono text-slate-700 dark:text-slate-300">bm_923847293847291</span>
+							<span class="text-slate-500 font-semibold">ID de página de negocio:</span>
+							<span class="font-mono text-slate-700 dark:text-slate-300">{pageInfo?.id || '1299891079868628'}</span>
 						</div>
 						<div class="flex justify-between border-b pb-2">
-							<span class="text-slate-500 font-semibold">Cuentas publicitarias:</span>
-							<span class="font-bold text-slate-900 dark:text-slate-100">3 activas (Toyama, Husqvarna, General)</span>
+							<span class="text-slate-500 font-semibold">Categoría:</span>
+							<span class="font-bold text-slate-900 dark:text-slate-100">{pageInfo?.category || 'General / Producto'}</span>
 						</div>
 						<div class="flex justify-between border-b pb-2">
-							<span class="text-slate-500 font-semibold">Expira en:</span>
-							<span class="font-bold text-amber-600">54 días (10 de Agosto de 2026)</span>
+							<span class="text-slate-500 font-semibold">Tareas / Roles de Token:</span>
+							<span class="font-bold text-emerald-600 text-[11px] truncate max-w-[200px]" title={pageInfo?.tasks?.join(', ') || 'CREATE_CONTENT, MODERATE, ANALYZE'}>
+								{pageInfo?.tasks?.length ? pageInfo.tasks.join(', ') : 'CREATE_CONTENT, MODERATE, ANALYZE'}
+							</span>
 						</div>
 					</div>
 
@@ -332,16 +377,8 @@
 								<span class="animate-spin mr-1">🌀</span> Conectando...
 							{:else}
 								<RefreshCw class="h-3.5 w-3.5 mr-1.5" />
-								Re-autenticar con Meta
+								Probar Conexión Meta API
 							{/if}
-						</Button>
-						
-						<Button 
-							variant="outline"
-							class="text-xs font-bold"
-							onclick={() => isTokenActive = !isTokenActive}
-						>
-							Simular caída de Token
 						</Button>
 					</div>
 				</div>

@@ -78,7 +78,7 @@ export interface CreatePublicacionDTO {
     meta_pauta_inicio?: number | null;
     meta_pauta_fin?: number | null;
     redes_ids?: number[];
-    estado?: 'Borrador' | 'En revisión' | 'Guardado';
+    estado?: 'Borrador' | 'En revisión' | 'Guardado' | 'Aprobado' | 'Publicado';
 }
 
 export interface UpdatePublicacionDTO extends Partial<CreatePublicacionDTO> {

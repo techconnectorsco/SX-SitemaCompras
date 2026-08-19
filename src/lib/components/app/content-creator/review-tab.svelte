@@ -50,7 +50,7 @@
 		imageBase64?: string;
 		
 		brand?: string;
-		status?: 'Borrador' | 'En revisión' | 'Guardado' | 'Aprobado' | 'Publicado';
+		status?: 'Borrador' | 'En revisión' | 'Guardado' | 'Aprobado' | 'Publicado' | 'Error API';
 		ecommerceImage?: boolean;
 		ecommerceUrl?: string;
 		sellerEmail?: string;
@@ -73,8 +73,58 @@
 	let { posts = $bindable(), catalogos } = $props<{ posts: ExcelPost[], catalogos: any }>();
 
 	// Filtros de la lista
-	let filterStatus = $state<'Todos' | 'Borrador' | 'En revisión' | 'Guardado' | 'Aprobado'>('En revisión');
+	let filterStatus = $state<'Todos' | 'Borrador' | 'En revisión' | 'Guardado' | 'Aprobado' | 'Publicado' | 'Error API'>('Borrador');
 	let filterBrand = $state<string>('Todas');
+	let filterMonth = $state<string>('Todos');
+	let filterYear = $state<string>('Todos');
+
+	// Clases de color (borde + fondo suave + texto) para celdas y bloques de estado
+	function getStatusCellColor(status?: string): string {
+		switch (status) {
+			case 'Publicado':   return 'border-green-200 bg-green-50/40 text-green-800 dark:border-green-950 dark:bg-green-950/20 dark:text-green-400';
+			case 'Aprobado':    return 'border-indigo-200 bg-indigo-50/40 text-indigo-800 dark:border-indigo-950/20 dark:bg-indigo-950/10 dark:text-indigo-400';
+			case 'En revisión': return 'border-amber-200 bg-amber-50/40 text-amber-800 dark:border-amber-950/20 dark:bg-amber-950/10 dark:text-amber-400';
+			case 'Guardado':    return 'border-sky-200 bg-sky-50/40 text-sky-800 dark:border-sky-950/20 dark:bg-sky-950/10 dark:text-sky-400';
+			case 'Error API':   return 'border-rose-200 bg-rose-50/40 text-rose-800 dark:border-rose-950/20 dark:bg-rose-950/10 dark:text-rose-400';
+			default:            return 'border-slate-200 bg-white text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300';
+		}
+	}
+
+	// Clases de color (relleno sólido) para pastillas de lista y leyenda
+	function getStatusBadgeColor(status?: string): string {
+		switch (status) {
+			case 'Publicado':   return 'bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400';
+			case 'Aprobado':    return 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400';
+			case 'En revisión': return 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400';
+			case 'Guardado':    return 'bg-sky-100 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400';
+			case 'Error API':   return 'bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400';
+			default:            return 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400';
+		}
+	}
+
+	// Color de texto del estado (para el bloque "Estado Actual" del panel de detalle)
+	function getStatusTextColor(status?: string): string {
+		switch (status) {
+			case 'Publicado':   return 'text-green-600';
+			case 'Aprobado':    return 'text-indigo-600';
+			case 'En revisión': return 'text-amber-500 animate-pulse';
+			case 'Guardado':    return 'text-sky-600';
+			case 'Error API':   return 'text-rose-600';
+			default:            return 'text-slate-500';
+		}
+	}
+
+	// Texto descriptor del estado del flujo
+	function getStatusLabel(status?: string): string {
+		switch (status) {
+			case 'Publicado':   return '✓ Publicado en Meta';
+			case 'Aprobado':    return '✓ Aprobado y Programado';
+			case 'En revisión': return '⏳ Pendiente de Aprobación';
+			case 'Guardado':    return '💾 Guardado (Aprobación Desactivada)';
+			case 'Error API':   return '⚠️ Error de publicación';
+			default:            return '⚙️ Borrador Local';
+		}
+	}
 	
 	// ID de pieza seleccionada
 	let selectedPostId = $state<string | null>(null);
@@ -85,6 +135,10 @@
 	let finalizingPost = $state(false);
 	let savingPost = $state(false);
 	let deletingPost = $state(false);
+
+	// Estado del autoguardado silencioso del copy (no cambia el estado de la publicación)
+	let copySaveStatus = $state<'idle' | 'saving' | 'saved' | 'error'>('idle');
+	let copySaveTimer: ReturnType<typeof setTimeout> | null = null;
 	let viewerState = $state<{ images: Array<{ preview: string; name: string }>; index: number } | null>(null);
 	let promptDialog = $state<{ open: boolean; customPrompt: string }>({ open: false, customPrompt: '' });
 	let lastCustomPrompts = $state<Record<string, string>>({});
@@ -117,7 +171,7 @@
 
 	async function openRegenerationFlow(slideIndex?: number) {
 		if (!selectedPost) return;
-		regeneratingSlideIndex = (slideIndex !== undefined && !Number.isNaN(slideIndex)) ? slideIndex : null;
+		regeneratingSlideIndex = (typeof slideIndex === 'number' && !Number.isNaN(slideIndex)) ? slideIndex : null;
 		await loadLastPrompt(selectedPost);
 
 		// Prompt por defecto: el del slide (si estamos regenerando uno), si no el último usado, si no el del post
@@ -241,12 +295,59 @@
 	// Marcas para el filtro
 	const brands = $derived(['Todas', ...catalogos.marcas.map((m: any) => m.nombre)]);
 
+	const MESES = [
+		{ value: 'Todos', label: 'Todos los meses' },
+		{ value: '01', label: 'Enero' },
+		{ value: '02', label: 'Febrero' },
+		{ value: '03', label: 'Marzo' },
+		{ value: '04', label: 'Abril' },
+		{ value: '05', label: 'Mayo' },
+		{ value: '06', label: 'Junio' },
+		{ value: '07', label: 'Julio' },
+		{ value: '08', label: 'Agosto' },
+		{ value: '09', label: 'Septiembre' },
+		{ value: '10', label: 'Octubre' },
+		{ value: '11', label: 'Noviembre' },
+		{ value: '12', label: 'Diciembre' }
+	];
+
+	const availableYears = $derived.by(() => {
+		const set = new Set<string>();
+		for (const p of posts) {
+			if (p.date && p.date.includes('-')) {
+				const year = p.date.split('-')[0];
+				if (year && year.length === 4) set.add(year);
+			}
+		}
+		const currentYear = new Date().getFullYear().toString();
+		set.add(currentYear);
+		return ['Todos', ...Array.from(set).sort((a, b) => b.localeCompare(a))];
+	});
+
 	// Filtrar posts reactivamente
 	const filteredPosts = $derived.by(() => {
 		return posts.filter(p => {
 			const matchesStatus = filterStatus === 'Todos' || p.status === filterStatus;
 			const matchesBrand = filterBrand === 'Todas' || p.brand === filterBrand;
-			return matchesStatus && matchesBrand;
+
+			let matchesDate = true;
+			if (p.date && p.date.includes('-')) {
+				const [year, month] = p.date.split('-');
+				if (filterYear !== 'Todos' && year !== filterYear) {
+					matchesDate = false;
+				}
+				if (filterMonth !== 'Todos' && month !== filterMonth) {
+					matchesDate = false;
+				}
+			} else if (filterMonth !== 'Todos' || filterYear !== 'Todos') {
+				matchesDate = false;
+			}
+
+			return matchesStatus && matchesBrand && matchesDate;
+		}).sort((a, b) => {
+			const idA = parseInt(a.id.replace(/\D/g, '')) || 0;
+			const idB = parseInt(b.id.replace(/\D/g, '')) || 0;
+			return idB - idA;
 		});
 	});
 
@@ -268,6 +369,10 @@
 	const hasCarouselImages = $derived(isCarousel && selectedPost && Array.isArray(selectedPost.carouselImages) && selectedPost.carouselImages.length > 0);
 	const activeCarouselImages = $derived(hasCarouselImages && selectedPost?.carouselImages ? selectedPost.carouselImages : []);
 
+	// Publicación bloqueada para edición: ya está Aprobada/Publicada en Meta.
+	// Para modificarla, primero hay que «Devolver a Ajustes» (status -> Borrador).
+	const isPostLocked = $derived(selectedPost?.status === 'Aprobado' || selectedPost?.status === 'Publicado');
+
 	function buildPromptPreview(post: ExcelPost): string {
 		if (lastCustomPrompts[post.id]) return lastCustomPrompts[post.id];
 		if (post.prompt && post.prompt.trim()) return post.prompt;
@@ -278,7 +383,7 @@
 	// Generar o Re-generar imagen con la IA de Gemini/Imagen
 	// Si slideIndex está definido, regenera solo ese slide del carrusel.
 	async function regenerateImageIA(post: ExcelPost, customPrompt?: string, assetIds?: number[], slideIndex?: number) {
-		const isSlide = slideIndex !== undefined && slideIndex !== null && !Number.isNaN(slideIndex);
+		const isSlide = typeof slideIndex === 'number' && !Number.isNaN(slideIndex);
 
 		let body: any;
 
@@ -536,6 +641,86 @@
 		}
 	}
 
+	// Acción: Reemplazar un slide individual del carrusel por el diseño final (Adobe)
+	async function handleSlideFinalDesignUpload(event: Event, id: string, slideIndex: number) {
+		const input = event.currentTarget as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file) return;
+
+		const post = posts.find(p => p.id === id);
+		if (!post || !Array.isArray(post.carouselImages)) return;
+
+		// Preview provisional inmediato en el slide
+		posts = posts.map(p => {
+			if (p.id === id && Array.isArray(p.carouselImages)) {
+				const updated = [...p.carouselImages];
+				if (updated[slideIndex]) {
+					updated[slideIndex] = {
+						...updated[slideIndex],
+						imageName: `DISEÑO_FINAL_${slideIndex}_${file.name}`,
+						imagePreview: URL.createObjectURL(file)
+					};
+				}
+				return { ...p, carouselImages: updated, designed: true };
+			}
+			return p;
+		});
+
+		try {
+			const fd = new FormData();
+			fd.append('file', file);
+			fd.append('subPath', `designs/${id}`);
+			const res = await fetch('/api/content-creator/upload-imagen', { method: 'POST', body: fd });
+			const data = await res.json();
+			if (!res.ok || !data.success || !data.imageUrl) {
+				toast.error(`No se pudo subir el diseño final: ${data.error || 'error desconocido'}`);
+				return;
+			}
+
+			const imageUrl = data.imageUrl as string;
+			const imageName = (data.fileName as string) || `DISEÑO_FINAL_${slideIndex}_${file.name}`;
+
+			// Actualizar estado local con la URL persistente
+			posts = posts.map(p => {
+				if (p.id === id && Array.isArray(p.carouselImages)) {
+					const updated = [...p.carouselImages];
+					if (updated[slideIndex]) {
+						updated[slideIndex] = { ...updated[slideIndex], imageName, imagePreview: imageUrl };
+					}
+					return { ...p, carouselImages: updated, designed: true };
+				}
+				return p;
+			});
+
+			// Persistir en la BD con slideIndex
+			const numericId = id.replace('MER-', '');
+			if (/^\d+$/.test(numericId)) {
+				const putResp = await fetch(`/api/content-creator/publicaciones/${numericId}/design-final`, {
+					method: 'PUT',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ imageUrl, imageName, slideIndex })
+				});
+				if (!putResp.ok) {
+					const errData = await putResp.json().catch(() => ({}));
+					toast.error(`El archivo se subió pero no se pudo guardar en la BD: ${errData.error || 'error'}`);
+				} else {
+					toast.success(`¡Sustitución Exitosa! (Slide #${slideIndex + 1})`, {
+						description: 'El diseño del diseñador reemplazó la imagen de la IA en este slide.'
+					});
+				}
+			} else {
+				toast.success(`Diseño final subido (Slide #${slideIndex + 1})`, {
+					description: 'La publicación aún no está guardada en la BD.'
+				});
+			}
+		} catch (e) {
+			console.error('[handleSlideFinalDesignUpload]', e);
+			toast.error('Error de red al subir el diseño final.');
+		} finally {
+			if (input) input.value = '';
+		}
+	}
+
 	// Acción: Solicitar ajustes (devuelve a borrador)
 	async function requestAdjusts(id: string) {
 		try {
@@ -560,6 +745,42 @@
 		} catch (error) {
 			console.error(error);
 			toast.error('Error de red');
+		}
+	}
+
+	// Autoguardado silencioso del copy en blur.
+	// Persiste SOLO copy_final en la BD, sin cambiar el estado de la publicación,
+	// de modo que el botón "Aprobar y Programar" siga disponible.
+	async function autosaveCopy(post: ExcelPost | null) {
+		if (!post) return;
+		if (post.status === 'Aprobado' || post.status === 'Publicado') return;
+		const numericId = post.id.replace('MER-', '');
+		if (!/^\d+$/.test(numericId)) return; // publicación aún no persistida
+
+		if (copySaveTimer) {
+			clearTimeout(copySaveTimer);
+			copySaveTimer = null;
+		}
+
+		copySaveStatus = 'saving';
+		try {
+			const response = await fetch(`/api/content-creator/publicaciones/${numericId}`, {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ copy_final: post.copy })
+			});
+			if (!response.ok) {
+				copySaveStatus = 'error';
+				return;
+			}
+			copySaveStatus = 'saved';
+			copySaveTimer = setTimeout(() => {
+				copySaveStatus = 'idle';
+				copySaveTimer = null;
+			}, 2000);
+		} catch (error) {
+			console.error('[autosaveCopy]', error);
+			copySaveStatus = 'error';
 		}
 	}
 
@@ -611,13 +832,37 @@
 		}
 	}
 
+	// Determina si un post está listo para aprobación.
+	// - Carrusel: TODOS los slides con imagePreview válido (IA original o diseño final reemplazado).
+	// - Imagen única: diseñada por humano O con imagePreview IA válido (caso "IA perfecta tal cual").
+	function isPostReadyForApproval(post: ExcelPost): { ready: boolean; reason?: string } {
+		const isCarrusel = post.esCarrusel !== undefined
+			? !!post.esCarrusel
+			: (Array.isArray(post.carouselImages) && post.carouselImages.length > 0);
+
+		if (isCarrusel && Array.isArray(post.carouselImages) && post.carouselImages.length > 0) {
+			const missing = post.carouselImages.findIndex(img => !img.imagePreview || img.imagePreview.trim() === '');
+			if (missing >= 0) {
+				return { ready: false, reason: `No se puede aprobar: el slide #${missing + 1} no tiene imagen generada todavía.` };
+			}
+			return { ready: true };
+		}
+
+		// Imagen única: diseñada por humano, o con imagen IA válida (caso IA perfecta tal cual).
+		if (!post.designed && !post.imagePreview) {
+			return { ready: false, reason: 'No se puede aprobar: cargá el diseño final editado por el diseñador (Adobe) o generá la imagen de IA.' };
+		}
+		return { ready: true };
+	}
+
 	// Acción: Aprobar y programar en Meta
 	async function approveAndSchedule(id: string) {
 		const post = posts.find(p => p.id === id);
 		if (!post) return;
 
-		if (!post.designed) {
-			toast.error('No se puede aprobar para publicación sin cargar el diseño final editado por el diseñador (Adobe).');
+		const approvalCheck = isPostReadyForApproval(post);
+		if (!approvalCheck.ready) {
+			toast.error(approvalCheck.reason || 'No se puede aprobar la publicación.');
 			return;
 		}
 
@@ -629,6 +874,17 @@
 		finalizingPost = true;
 		try {
 			const numericId = id.replace('MER-', '');
+			const copyResponse = await fetch(`/api/content-creator/publicaciones/${numericId}`, {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ copy_final: post.copy.trim() })
+			});
+			if (!copyResponse.ok) {
+				const data = await copyResponse.json().catch(() => ({}));
+				toast.error(data.error || 'No se pudo guardar el copy antes de aprobar.');
+				return;
+			}
+
 			const response = await fetch(`/api/content-creator/publicaciones/${numericId}/aprobar`, {
 				method: 'POST'
 			});
@@ -639,7 +895,7 @@
 						return { 
 							...p, 
 							status: 'Aprobado',
-							published: true // Se marca como lista y programada
+							published: p.published || false
 						};
 					}
 					return p;
@@ -648,7 +904,8 @@
 					description: 'Configuración enviada a Meta Business Suite. Programación de publicación lista.'
 				});
 			} else {
-				toast.error('Error al aprobar publicación');
+				const data = await response.json().catch(() => ({}));
+				toast.error(data.error || 'Error al aprobar publicación');
 			}
 		} catch (error) {
 			console.error(error);
@@ -704,7 +961,7 @@
 			<div class="flex items-center justify-between">
 				<span class="text-xs font-bold uppercase text-slate-500">Filtrar Estado</span>
 				<div class="flex gap-1 flex-wrap justify-end">
-					{#each ['Todos', 'Borrador', 'En revisión', 'Guardado', 'Aprobado'] as st}
+					{#each ['Todos', 'Borrador', 'En revisión', 'Guardado', 'Aprobado', 'Publicado', 'Error API'] as st}
 						<button 
 							type="button"
 							onclick={() => filterStatus = st as any}
@@ -729,6 +986,28 @@
 						<option value={b}>{b}</option>
 					{/each}
 				</select>
+			</div>
+
+			<div class="flex items-center justify-between border-t pt-2.5 gap-2">
+				<span class="text-xs font-bold uppercase text-slate-500">Fecha</span>
+				<div class="flex gap-1.5">
+					<select 
+						bind:value={filterMonth}
+						class="h-8 rounded-md border bg-background px-2 text-[10px] font-bold outline-none"
+					>
+						{#each MESES as m}
+							<option value={m.value}>{m.label}</option>
+						{/each}
+					</select>
+					<select 
+						bind:value={filterYear}
+						class="h-8 rounded-md border bg-background px-2 text-[10px] font-bold outline-none"
+					>
+						{#each availableYears as y}
+							<option value={y}>{y === 'Todos' ? 'Año (Todos)' : y}</option>
+						{/each}
+					</select>
+				</div>
 			</div>
 		</div>
 
@@ -756,15 +1035,7 @@
 							<span class="rounded bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[8px] font-extrabold tracking-wider text-slate-600 uppercase">
 								{post.brand || 'V&O'}
 							</span>
-							<span class={`rounded-full px-2 py-0.5 text-[8px] font-bold
-								${post.status === 'Aprobado' 
-									? 'bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400' 
-									: post.status === 'En revisión' 
-										? 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400' 
-										: post.status === 'Guardado'
-											? 'bg-sky-100 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400'
-											: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}
-							>
+							<span class={`rounded-full px-2 py-0.5 text-[8px] font-bold ${getStatusBadgeColor(post.status)}`}>
 								{post.status || 'Borrador'}
 							</span>
 						</div>
@@ -825,6 +1096,12 @@
 				</Card.Header>
 				
 				<Card.Content class="p-5 space-y-5">
+					{#if isPostLocked}
+						<div class="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/40 px-3 py-2 text-slate-500 dark:text-slate-400">
+							<span class="text-sm">🔒</span>
+							<span class="text-[11px] font-medium">Publicación aprobada/publicada en Meta. Pulsá «Devolver a Ajustes» para editarla.</span>
+						</div>
+					{/if}
 					<div class="grid gap-5 md:grid-cols-2">
 						
 						<!-- Columna Izquierda: Flujo Visual de la Imagen (IA vs. Adobe Humano) -->
@@ -848,20 +1125,35 @@
 													<span class="text-xs text-muted-foreground">Generando...</span>
 												</div>
 											{/if}
-											<!-- Acción por slide -->
-											<button
-												type="button"
-												title={`Regenerar imagen ${i+1}`}
-												class="absolute bottom-2 right-2 inline-flex items-center justify-center h-7 w-7 rounded-md bg-background/90 border border-slate-200 text-[#253166] hover:bg-[#253166] hover:text-white transition opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
-												onclick={(e) => { e.stopPropagation(); openRegenerationFlow(i); }}
-												disabled={nanoBananaGenerating}
-											>
-												{#if nanoBananaGenerating && regeneratingSlideIndex === i}
-													<span class="animate-spin">🌀</span>
-												{:else}
-													<RefreshCw class="h-3.5 w-3.5" />
-												{/if}
-											</button>
+<!-- Acción por slide: Regenerar este slide con IA -->
+										<button
+											type="button"
+										title={`Regenerar slide ${i+1} con IA`}
+										class="absolute bottom-2 right-2 inline-flex items-center justify-center h-7 w-7 rounded-md bg-background/90 border border-slate-200 text-[#253166] hover:bg-[#253166] hover:text-white transition opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+										onclick={(e) => { e.stopPropagation(); openRegenerationFlow(i); }}
+										disabled={nanoBananaGenerating || isPostLocked}
+									>
+											{#if nanoBananaGenerating && regeneratingSlideIndex === i}
+												<span class="animate-spin">🌀</span>
+											{:else}
+												<Sparkles class="h-3.5 w-3.5" />
+											{/if}
+										</button>
+<!-- Reemplazar slide con diseño final (Adobe) -->
+									<label
+										title={isPostLocked ? 'Devolver a Ajustes primero' : `Reemplazar slide ${i+1} con diseño final`}
+										class={`absolute bottom-2 left-2 inline-flex items-center justify-center h-7 w-7 rounded-md bg-background/90 border border-slate-200 text-indigo-600 hover:bg-indigo-600 hover:text-white transition ${isPostLocked ? 'opacity-40 cursor-not-allowed pointer-events-none' : 'cursor-pointer opacity-0 group-hover:opacity-100 focus-visible:opacity-100'}`}
+									>
+										<UploadCloud class="h-3.5 w-3.5" />
+										{#if !isPostLocked}
+											<input
+												type="file"
+												accept="image/*"
+												class="hidden"
+												onchange={(e) => handleSlideFinalDesignUpload(e, selectedPost.id, i)}
+											/>
+										{/if}
+									</label>
 										</div>
 									{/each}
 								</div>
@@ -893,12 +1185,18 @@
 							<div class="flex flex-col gap-2">
 								<div class="flex gap-2">
 									<!-- Re-generar con IA (Nano Banana) -->
+								{#if isCarousel}
+									<div class="flex-1 flex items-center justify-center gap-2 rounded-md border border-dashed border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/50 px-3 py-2 text-[11px] text-slate-600 dark:text-slate-300 font-medium">
+										<Sparkles class="h-3.5 w-3.5 text-[#253166] shrink-0" />
+										<span>Cada slide se regenera individualmente con el botón <Sparkles class="inline-block h-3 w-3 align-text-bottom text-[#253166]" /> sobre cada imagen.</span>
+									</div>
+								{:else}
 									<Button 
 										variant="outline" 
 										size="sm"
 										class="flex-1 text-[11px] font-bold"
-										onclick={openRegenerationFlow}
-										disabled={nanoBananaGenerating || (!selectedPost.imageBase64 && !selectedPost.imagePreview && !hasCarouselImages)}
+										onclick={() => openRegenerationFlow()}
+										disabled={nanoBananaGenerating || isPostLocked || (!selectedPost.imageBase64 && !selectedPost.imagePreview && !hasCarouselImages)}
 									>
 										{#if nanoBananaGenerating}
 											<span class="animate-spin mr-1">🌀</span> Generando...
@@ -907,6 +1205,7 @@
 											Regenerar IA
 										{/if}
 									</Button>
+								{/if}
 
 									<!-- Descargar Base IA -->
 									<Button 
@@ -948,20 +1247,29 @@
 								</div>
 
 								<!-- Reemplazar con el diseño final de Adobe (Manual Humano) -->
+								{#if hasCarouselImages}
+									<div class="border border-dashed rounded-lg p-2.5 bg-slate-50 dark:bg-slate-900/30 flex flex-col items-center justify-center text-center">
+										<span class="text-[9px] font-bold text-slate-400 uppercase mb-1">Subir Pieza Final por Slide</span>
+										<span class="text-[10px] text-slate-500 dark:text-slate-400">Usá el botón <UploadCloud class="inline h-3 w-3 align-middle" /> en cada slide de arriba para reemplazar su diseño.</span>
+									</div>
+{:else}
 								<div class="border border-dashed rounded-lg p-2.5 bg-slate-50 dark:bg-slate-900/30 flex flex-col items-center justify-center text-center">
 									<span class="text-[9px] font-bold text-slate-400 uppercase mb-1">Subir Pieza Final (Photoshop / Illustrator)</span>
-									<label class="flex items-center gap-1 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-md cursor-pointer font-bold text-[10px] shadow-sm transition">
+									<label class={`flex items-center gap-1 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-md font-bold text-[10px] shadow-sm transition ${isPostLocked ? 'opacity-40 cursor-not-allowed pointer-events-none' : 'cursor-pointer'}`}>
 										<UploadCloud class="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
 										<span>Reemplazar con Diseño Final (Adobe)</span>
-										<input 
-											bind:this={finalDesignInput} 
-											type="file" 
-											accept="image/*" 
-											class="hidden" 
-											onchange={(e) => handleFinalDesignUpload(e, selectedPost.id)} 
-										/>
+										{#if !isPostLocked}
+											<input
+												bind:this={finalDesignInput}
+												type="file"
+												accept="image/*"
+												class="hidden"
+												onchange={(e) => handleFinalDesignUpload(e, selectedPost.id)}
+											/>
+										{/if}
 									</label>
 								</div>
+							{/if}
 							</div>
 						</div>
 
@@ -970,19 +1278,28 @@
 							<div class="space-y-3">
 								<div class="flex items-center justify-between">
 									<span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Copy y Hashtags Generados</span>
-									<Button 
-										size="xs"
-										class="bg-orange-500 hover:bg-orange-600 text-white font-bold h-7 gap-1 text-[10px] cursor-pointer"
-onclick={() => openCopyPromptDialog(selectedPost)}
-									disabled={geminiGeneratingReview}
-									>
-										{#if geminiGeneratingReview}
-											<span class="animate-spin text-[8px]">🌀</span> Generando...
-										{:else}
-											<Sparkles class="h-3 w-3" />
-											Generar Copy con IA
+									<div class="flex items-center gap-2">
+										{#if copySaveStatus === 'saving'}
+											<span class="text-[9px] text-slate-400 italic">guardando…</span>
+										{:else if copySaveStatus === 'saved'}
+											<span class="text-[9px] text-emerald-600 italic">guardado ✓</span>
+										{:else if copySaveStatus === 'error'}
+											<span class="text-[9px] text-red-500 italic">error al guardar</span>
 										{/if}
-									</Button>
+										<Button
+											size="xs"
+											class="bg-orange-500 hover:bg-orange-600 text-white font-bold h-7 gap-1 text-[10px] cursor-pointer"
+onclick={() => openCopyPromptDialog(selectedPost)}
+										disabled={geminiGeneratingReview || isPostLocked}
+									>
+											{#if geminiGeneratingReview}
+												<span class="animate-spin text-[8px]">🌀</span> Generando...
+											{:else}
+												<Sparkles class="h-3 w-3" />
+												Generar Copy con IA
+											{/if}
+										</Button>
+									</div>
 								</div>
 								
 								<!-- Visualización y Modificación del Copy -->
@@ -990,7 +1307,9 @@ onclick={() => openCopyPromptDialog(selectedPost)}
 									<textarea 
 										bind:value={selectedPost.copy} 
 										rows="8"
-										class="w-full rounded-lg border bg-background px-3 py-2.5 text-xs outline-none focus:border-[#253166] leading-relaxed font-sans"
+										onblur={() => autosaveCopy(selectedPost)}
+										disabled={isPostLocked}
+										class="w-full rounded-lg border bg-background px-3 py-2.5 text-xs outline-none focus:border-[#253166] leading-relaxed font-sans disabled:opacity-60 disabled:cursor-not-allowed"
 										placeholder="Ingresa o edita el copy definitivo..."
 									></textarea>
 								</div>
@@ -999,19 +1318,21 @@ onclick={() => openCopyPromptDialog(selectedPost)}
 								<div class="grid gap-3 sm:grid-cols-2">
 									<div class="space-y-1">
 										<span class="text-[9px] font-bold uppercase text-slate-400">Llamado a la acción (CTA)</span>
-										<input 
-											type="text" 
-											bind:value={selectedPost.cta} 
-											class="h-8.5 w-full rounded-md border bg-background px-2 text-xs outline-none focus:border-[#253166]" 
-										/>
+<input 
+										type="text" 
+										bind:value={selectedPost.cta} 
+										disabled={isPostLocked}
+										class="h-8.5 w-full rounded-md border bg-background px-2 text-xs outline-none focus:border-[#253166] disabled:opacity-60 disabled:cursor-not-allowed" 
+									/>
 									</div>
 									<div class="space-y-1">
 										<span class="text-[9px] font-bold uppercase text-slate-400">Objetivo</span>
-										<input 
-											type="text" 
-											bind:value={selectedPost.objective} 
-											class="h-8.5 w-full rounded-md border bg-background px-2 text-xs outline-none focus:border-[#253166]" 
-										/>
+<input 
+										type="text" 
+										bind:value={selectedPost.objective} 
+										disabled={isPostLocked}
+										class="h-8.5 w-full rounded-md border bg-background px-2 text-xs outline-none focus:border-[#253166] disabled:opacity-60 disabled:cursor-not-allowed" 
+									/>
 									</div>
 								</div>
 							</div>
@@ -1044,22 +1365,8 @@ onclick={() => openCopyPromptDialog(selectedPost)}
 						<!-- Status del flujo actual -->
 						<div class="text-xs">
 							<span class="text-[9px] text-slate-400 uppercase font-bold block">Estado Actual</span>
-							<span class={`font-bold uppercase tracking-wide
-								${selectedPost.status === 'Aprobado' 
-									? 'text-green-600' 
-									: selectedPost.status === 'En revisión' 
-										? 'text-amber-500 animate-pulse' 
-										: selectedPost.status === 'Guardado'
-											? 'text-sky-600'
-											: 'text-slate-500'}`}
-							>
-								{selectedPost.status === 'Aprobado' 
-									? '✓ Aprobado y Programado' 
-									: selectedPost.status === 'En revisión' 
-										? '⏳ Pendiente de Aprobación' 
-										: selectedPost.status === 'Guardado'
-											? '💾 Guardado (Aprobación Desactivada)'
-											: '⚙️ Borrador Local'}
+							<span class={`font-bold uppercase tracking-wide ${getStatusTextColor(selectedPost.status)}`}>
+								{getStatusLabel(selectedPost.status)}
 							</span>
 						</div>
 
@@ -1068,9 +1375,9 @@ onclick={() => openCopyPromptDialog(selectedPost)}
 							<Button 
 								variant="outline" 
 								class="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900/60 dark:text-red-400 dark:hover:bg-red-950/50 font-bold"
-								onclick={() => deletePost(selectedPost.id)}
-								disabled={deletingPost}
-							>
+onclick={() => deletePost(selectedPost.id)}
+							disabled={deletingPost || isPostLocked}
+						>
 								{#if deletingPost}
 									<span class="animate-spin mr-1">🌀</span> Descartando...
 								{:else}
@@ -1095,9 +1402,9 @@ onclick={() => openCopyPromptDialog(selectedPost)}
 							<Button 
 								variant="outline"
 								class="border-sky-300 text-sky-700 hover:bg-sky-50 dark:border-sky-800 dark:text-sky-400 dark:hover:bg-sky-950/50 font-bold"
-								onclick={() => savePost(selectedPost.id)}
-								disabled={savingPost}
-							>
+onclick={() => savePost(selectedPost.id)}
+							disabled={savingPost || isPostLocked}
+						>
 								{#if savingPost}
 									<span class="animate-spin mr-1">🌀</span> Guardando...
 								{:else}

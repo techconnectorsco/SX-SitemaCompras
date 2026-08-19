@@ -25,7 +25,7 @@
 	let { posts = $bindable(), catalogos, tokenStats } = $props<{ 
 		posts: any[], 
 		catalogos: any,
-		tokenStats: { costo_total: number; tokens_total: number; llamadas_total: number }
+		tokenStats: { costo_total: number; costo_historico_aproximado: number; tokens_total: number; llamadas_total: number }
 	}>();
 
 	// Lista de marcas filtradas
@@ -155,7 +155,6 @@
 					<div class="flex flex-col gap-1">
 						<p class="text-sm font-medium text-muted-foreground">Costo Estimado</p>
 						<p class="text-3xl font-bold text-emerald-600">${stats.cost}</p>
-						<p class="text-xs text-muted-foreground">SLA Corporativo</p>
 					</div>
 					<div class="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-950/50">
 						<TrendingUp class="h-6 w-6 text-emerald-600 dark:text-emerald-400" />

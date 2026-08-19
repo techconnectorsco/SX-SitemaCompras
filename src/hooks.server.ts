@@ -8,6 +8,19 @@ import { env } from '$env/dynamic/private';
 // Initialize database on server start
 import '$lib/config/db-config';
 
+// Initialize schedulers (Publishing & Cleanup)
+import { PublishScheduler } from '$lib/features/content-creator/services/publish-scheduler';
+import { scheduleCleanup } from '$lib/features/auth/services/cleanup-scheduler';
+import { startMetaTokenRefreshCron } from '$lib/server/cron/meta-token-refresh';
+
+try {
+  PublishScheduler.startScheduler(60 * 1000); // Revisa cada 60 segundos
+  scheduleCleanup();
+  startMetaTokenRefreshCron(); // Refresca tokens Meta ≈ 7 días antes de expirar
+} catch (err) {
+  console.error('[Scheduler Init Error]', err);
+}
+
 // =====================================================================
 // 🔑 AUTENTICACIÓN POR API KEY (Power BI / Consumidores Externos M2M)
 // =====================================================================
@@ -127,7 +140,7 @@ const apiKeyAuth: Handle = async ({ event, resolve }) => {
   event.locals.session = { id: 'api-key-session' };
   event.locals.user = {
     id: 'service-powerbi',
-    email: 'powerbi-service@soportexperto.local',
+    email: 'powerbi-service@vyo.local',
     email_verified: 1,
     display_name: 'Power BI Service',
     photo_url: null,
@@ -162,7 +175,7 @@ const restoreApiUser: Handle = async ({ event, resolve }) => {
     event.locals.session = { id: 'api-key-session' };
     event.locals.user = {
       id: 'service-powerbi',
-      email: 'powerbi-service@soportexperto.local',
+      email: 'powerbi-service@vyo.local',
       email_verified: 1,
       display_name: 'Power BI Service',
       photo_url: null,

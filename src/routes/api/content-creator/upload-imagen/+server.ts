@@ -1,11 +1,11 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import fs from 'fs';
 import path from 'path';
+import { writeUploadFile } from '$lib/server/uploads-storage';
 
 /**
  * Sube una imagen de referencia (o diseño final) del creador de contenido
- * al disco local (static/uploads/refs) y devuelve la URL pública y el path.
+ * al almacenamiento persistente y devuelve la URL pública y el path.
  * En el futuro, este mismo contrato puede reemplazarse por SharePoint/Graph.
  */
 export const POST: RequestHandler = async ({ request, locals }) => {
@@ -27,25 +27,19 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             return json({ error: `Tipo de archivo no permitido: ${contentType}` }, { status: 400 });
         }
 
-        // Limpiar subPath y construir ruta física
+        // Limpiar subPath y construir la ruta lógica dentro de /uploads
         const safeSub = subPath.replace(/[^a-zA-Z0-9/_-]/g, '_').replace(/^\/+|\/+$/g, '');
-        const uploadDir = path.join(process.cwd(), 'static', 'uploads', 'content-creator', ...safeSub.split('/'));
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-        }
 
         // Nombre seguro + timestamp para evitar colisiones
         const ext = path.extname(file.name) || `.${contentType.split('/')[1] || 'jpg'}`;
-        const safeBase = path.basename(file.name, ext).replace(/[^a-zA-Z0-9-_]/g, '_').slice(0, 40) || 'ref';
+        const safeBase =
+            path
+                .basename(file.name, ext)
+                .replace(/[^a-zA-Z0-9-_]/g, '_')
+                .slice(0, 40) || 'ref';
         const safeFileName = `${Date.now()}_${safeBase}${ext}`;
-        const filePath = path.join(uploadDir, safeFileName);
-
-        // Escribir a disco
         const buffer = Buffer.from(await file.arrayBuffer());
-        fs.writeFileSync(filePath, buffer);
-
-        // URL pública relativa (SvelteKit sirve /static/* en /)
-        const publicPath = `/uploads/content-creator/${safeSub}/${safeFileName}`;
+        const publicPath = await writeUploadFile(`content-creator/${safeSub}`, safeFileName, buffer);
 
         return json({
             success: true,

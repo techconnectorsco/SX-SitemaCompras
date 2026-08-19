@@ -17,5 +17,10 @@ export default defineConfig({
 	],
 	optimizeDeps: {
 		exclude: ['chunk-GLY4YRBI', 'chunk-LEB4YL72', 'chunk-ZM77ZDA2']
+	},
+	server: {
+		// Permitir túneles cloudflared/ngrok para OAuth en dev.
+		// En prod esto se ignora (Vite no corre).
+		allowedHosts: true
 	}
 });

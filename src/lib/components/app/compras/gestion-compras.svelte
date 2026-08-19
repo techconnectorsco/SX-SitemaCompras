@@ -898,7 +898,7 @@
 					onclick={() => exportarPedidos('husqvarna')}
 					disabled={exportandoHusqvarna || !procesamientoSeleccionado}
 					class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg
-                 bg-[#1A73C2] hover:bg-[#155e9e] text-white
+                 bg-orange-500 hover:bg-orange-600 text-white
                  disabled:opacity-50 disabled:cursor-not-allowed
                  transition-colors shadow-sm"
 				>

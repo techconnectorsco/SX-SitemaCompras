@@ -2,6 +2,7 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import db from '$lib/config/db-config';
 import { SharePointService } from '$lib/features/content-creator/services/sharepoint-service';
+import { IAContentService } from '$lib/features/content-creator/services/ia-content-service';
 
 // GET /api/content-creator/marcas/[id]/manual
 export const GET: RequestHandler = async ({ params, locals }) => {
@@ -14,7 +15,7 @@ export const GET: RequestHandler = async ({ params, locals }) => {
     }
 
     const manuales = db.prepare(
-      'SELECT id, nombre, file_path, file_name, mime_type, file_size, created_at FROM marca_manuales WHERE marca_id = ? AND deleted_at IS NULL ORDER BY id DESC'
+      'SELECT id, nombre, file_path, file_name, mime_type, file_size, resumen_ia, analizado_at, created_at FROM marca_manuales WHERE marca_id = ? AND deleted_at IS NULL ORDER BY id DESC'
     ).all(marcaId);
 
     return json({ success: true, manuales });
@@ -47,11 +48,6 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
       return json({ error: 'Debes seleccionar un archivo para subir' }, { status: 400 });
     }
 
-    // Límite de 50MB para manuales (PDFs, docs)
-    if (file.size > 50 * 1024 * 1024) {
-      return json({ error: 'El archivo excede el límite de 50MB' }, { status: 400 });
-    }
-
     const allowedTypes = [
       'application/pdf',
       'text/plain',
@@ -79,16 +75,25 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
       VALUES (?, ?, ?, ?, ?, ?)
     `).run(marcaId, nombre, url, file.name, file.type, size);
 
-    const nuevoManual = {
-      id: result.lastInsertRowid,
-      marca_id: marcaId,
-      nombre,
-      file_path: url,
-      file_name: file.name,
-      mime_type: file.type,
-      file_size: size,
-      created_at: Math.floor(Date.now() / 1000)
-    };
+    const manualId = Number(result.lastInsertRowid);
+    // Un manual solo se conserva si Gemini deja un resumen persistido y válido.
+    try {
+      await IAContentService.analizarManualMarca(manualId, locals.user.id);
+    } catch (aiErr: any) {
+      db.prepare('DELETE FROM marca_manuales WHERE id = ?').run(manualId);
+      try {
+        await SharePointService.deleteFile(url);
+      } catch (cleanupErr) {
+        console.error(`[API POST marca manual] No se pudo eliminar el archivo sin análisis ${url}:`, cleanupErr);
+      }
+
+      console.warn(`[API POST marca manual] Análisis IA falló para manual ${manualId}; carga revertida:`, aiErr.message);
+      return json({ error: `No se pudo analizar el manual. No fue guardado: ${aiErr.message}` }, { status: 422 });
+    }
+
+    const nuevoManual = db.prepare(
+      'SELECT id, marca_id, nombre, file_path, file_name, mime_type, file_size, resumen_ia, analizado_at, created_at FROM marca_manuales WHERE id = ?'
+    ).get(manualId);
 
     return json({ success: true, manual: nuevoManual });
   } catch (error: any) {

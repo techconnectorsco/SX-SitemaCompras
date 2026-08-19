@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * MOTOR DE IA SoporteXperto — NÚCLEO
+ * MOTOR DE IA VYOWEB — NÚCLEO
  * ============================================================================
  * Agnóstico al módulo y al proveedor. Su trabajo:
  *  1. Resolver qué módulos puede usar el usuario (compuerta de permisos).

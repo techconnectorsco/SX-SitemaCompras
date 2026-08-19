@@ -132,10 +132,10 @@
 	<div class="flex items-center justify-between border-b pb-6">
 		<div>
 			<div
-				class="inline-flex items-center gap-2 rounded-full bg-[#1A73C2]/10 dark:bg-[#1A73C2]/20 px-3 py-1 mb-2"
+				class="inline-flex items-center gap-2 rounded-full bg-orange-100 dark:bg-orange-900/30 px-3 py-1 mb-2"
 			>
 				<span
-					class="text-[10px] font-bold tracking-wider text-[#1A73C2] dark:text-blue-300 uppercase"
+					class="text-[10px] font-bold tracking-wider text-orange-700 dark:text-orange-300 uppercase"
 					>Admin Zone</span
 				>
 			</div>

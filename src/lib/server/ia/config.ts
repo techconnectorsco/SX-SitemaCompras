@@ -1,9 +1,9 @@
 /**
  * ============================================================================
- * MOTOR DE IA SoporteXperto — CONFIGURACIÓN Y PROMPT DE SISTEMA
+ * MOTOR DE IA VYOWEB — CONFIGURACIÓN Y PROMPT DE SISTEMA
  * ============================================================================
  * Constantes de negocio (umbrales) y el armado del prompt de sistema que
- * codifica las reglas del cliente.
+ * codifica las reglas del cliente Vedova.
  */
 
 import type { ContextoUsuario, ContextoPantalla, ModuloIA } from './tipos';
@@ -50,7 +50,7 @@ export const NEGOCIO = {
 // Prompt de sistema
 // ----------------------------------------------------------------------------
 
-/** Reglas fijas del cliente para el comportamiento de la IA. */
+/** Reglas fijas del cliente Vedova para el comportamiento de la IA. */
 const REGLAS_CLIENTE = `
 REGLAS DE RESPUESTA (obligatorias):
 - Respondé corto, estructurado y listo para usar en la operación. Nada de párrafos largos ni ambiguos.
@@ -117,7 +117,7 @@ CONTEXTO ACTUAL DE PANTALLA: ninguno.
 Si el usuario no especifica un procesamiento, usá el procesamiento más reciente (las herramientas lo hacen por defecto).`;
 	}
 
-	return `Sos Bitta, la asistente de IA de SoporteXperto, un apoyo para DECIDIR, no un visor de reportes.
+	return `Sos el asistente de IA de VYOWEB (Grupo Vedova & Obando), un apoyo para DECIDIR, no un visor de reportes.
 Hablás con ${usuario.nombre}. Respondés en español.
 
 ${REGLAS_CLIENTE}

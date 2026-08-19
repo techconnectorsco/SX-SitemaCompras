@@ -1,4 +1,4 @@
-// data-source.interface.ts
+//D:\Users\Usuario\Desktop\VedovaWEB\VYOWEB\src\lib\services\data-source.interface.ts
 export interface VentaMensual {
   articulo: string;
   año: number;

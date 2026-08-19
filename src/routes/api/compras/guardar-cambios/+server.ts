@@ -20,7 +20,7 @@ import { db } from '$lib/config/db-config';
 import { AuditService } from '$lib/features/security/services/audit-service';
 
 const ip = 'unknown';
-const userAgent = 'SoporteXperto-App';
+const userAgent = 'VYOWEB-App';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
   const user = locals.user || locals.session?.user;
