@@ -4,7 +4,7 @@ export const soporteXpertoBrand: BrandConfig = {
   nombreCliente: 'SoporteXperto',
   subtitulo:     'Departamento de Crédito y Cobro',
   // Reutilizamos la misma imagen del hero u otra, o lo dejamos sin logo para el mockup
-  logoUrl:       '/logo_color.png', 
+  logoUrl:       '/logo-soportexperto.png', 
 
   correoRevisionDefault: 'credito@soportexperto.com',
   correoLogsDefault:     'logs@soportexperto.com',

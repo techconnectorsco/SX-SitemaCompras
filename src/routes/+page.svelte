@@ -151,7 +151,7 @@
 								Community Manager
 							</Button>
 							<Button
-								href="/cxc"
+								href="/cuentasxcobrar"
 								size="lg"
 								class="text-base px-8 py-6 bg-[#1A73C2] hover:bg-[#1A73C2]/90 text-white"
 							>
