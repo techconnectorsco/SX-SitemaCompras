@@ -157,7 +157,7 @@
 					<h2 class="text-xs font-bold tracking-tight text-foreground uppercase">
 						Creador Contenido
 					</h2>
-					<p class="text-[9px] font-semibold text-orange-500 uppercase tracking-widest">SX AI</p>
+					<p class="text-[9px] font-semibold text-orange-500 uppercase tracking-widest">SX IA</p>
 				</div>
 			</div>
 

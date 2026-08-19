@@ -1,0 +1,293 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
+@import "tailwindcss";
+@import "tw-animate-css";
+
+:root {
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.145 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.145 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.145 0 0);
+  --secondary: oklch(0.205 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.205 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.205 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.205 0 0);
+  --input: oklch(0.205 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.145 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.985 0 0);
+  --sidebar-primary-foreground: oklch(0.145 0 0);
+  --sidebar-accent: oklch(0.205 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(0.205 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+}
+
+/*
+  ============================================================
+  FIX DEFINITIVO — Paleta Tailwind para Tailwind v4 + @theme inline
+  
+  Tailwind v4 con @theme inline reemplaza el tema y NO genera
+  automáticamente las clases text-slate-*, bg-slate-*, border-*,
+  text-blue-*, bg-blue-*, bg-white, etc.
+  
+  Solución: declarar LIGHT y DARK por separado usando
+  :root:not(.dark) y .dark como selectores para que las variantes
+  no se pisen entre sí.
+  ============================================================
+*/
+
+/* ============================================================
+   LIGHT MODE — :root:not(.dark)
+   ============================================================ */
+@layer utilities {
+
+  /* --- text --- */
+  :root:not(.dark) .text-white        { color: oklch(1 0 0); }
+  :root:not(.dark) .text-black        { color: oklch(0 0 0); }
+
+  :root:not(.dark) .text-slate-50     { color: oklch(0.984 0.003 247.858); }
+  :root:not(.dark) .text-slate-100    { color: oklch(0.968 0.007 247.896); }
+  :root:not(.dark) .text-slate-200    { color: oklch(0.929 0.013 255.508); }
+  :root:not(.dark) .text-slate-300    { color: oklch(0.869 0.022 252.894); }
+  :root:not(.dark) .text-slate-400    { color: oklch(0.704 0.040 256.788); }
+  :root:not(.dark) .text-slate-500    { color: oklch(0.554 0.046 257.417); }
+  :root:not(.dark) .text-slate-600    { color: oklch(0.446 0.043 257.281); }
+  :root:not(.dark) .text-slate-700    { color: oklch(0.372 0.044 257.287); }
+  :root:not(.dark) .text-slate-800    { color: oklch(0.279 0.041 260.031); }
+  :root:not(.dark) .text-slate-900    { color: oklch(0.208 0.042 265.755); }
+  :root:not(.dark) .text-slate-950    { color: oklch(0.129 0.042 264.695); }
+
+  :root:not(.dark) .text-blue-50      { color: oklch(0.970 0.014 254.604); }
+  :root:not(.dark) .text-blue-100     { color: oklch(0.932 0.032 255.585); }
+  :root:not(.dark) .text-blue-200     { color: oklch(0.882 0.059 254.128); }
+  :root:not(.dark) .text-blue-300     { color: oklch(0.809 0.105 251.813); }
+  :root:not(.dark) .text-blue-400     { color: oklch(0.707 0.165 254.624); }
+  :root:not(.dark) .text-blue-500     { color: oklch(0.623 0.214 259.815); }
+  :root:not(.dark) .text-blue-600     { color: oklch(0.546 0.245 262.881); }
+  :root:not(.dark) .text-blue-700     { color: oklch(0.488 0.243 264.376); }
+  :root:not(.dark) .text-blue-800     { color: oklch(0.424 0.199 265.638); }
+  :root:not(.dark) .text-blue-900     { color: oklch(0.379 0.146 265.522); }
+  :root:not(.dark) .text-blue-950     { color: oklch(0.282 0.091 267.935); }
+
+  /* --- background --- */
+  :root:not(.dark) .bg-white          { background-color: oklch(1 0 0); }
+  :root:not(.dark) .bg-black          { background-color: oklch(0 0 0); }
+
+  :root:not(.dark) .bg-slate-50       { background-color: oklch(0.984 0.003 247.858); }
+  :root:not(.dark) .bg-slate-100      { background-color: oklch(0.968 0.007 247.896); }
+  :root:not(.dark) .bg-slate-200      { background-color: oklch(0.929 0.013 255.508); }
+  :root:not(.dark) .bg-slate-300      { background-color: oklch(0.869 0.022 252.894); }
+  :root:not(.dark) .bg-slate-400      { background-color: oklch(0.704 0.040 256.788); }
+  :root:not(.dark) .bg-slate-800      { background-color: oklch(0.279 0.041 260.031); }
+  :root:not(.dark) .bg-slate-900      { background-color: oklch(0.208 0.042 265.755); }
+  :root:not(.dark) .bg-slate-950      { background-color: oklch(0.129 0.042 264.695); }
+
+  :root:not(.dark) .bg-blue-50        { background-color: oklch(0.970 0.014 254.604); }
+  :root:not(.dark) .bg-blue-100       { background-color: oklch(0.932 0.032 255.585); }
+  :root:not(.dark) .bg-blue-700       { background-color: oklch(0.488 0.243 264.376); }
+  :root:not(.dark) .bg-blue-800       { background-color: oklch(0.424 0.199 265.638); }
+  :root:not(.dark) .bg-blue-900       { background-color: oklch(0.379 0.146 265.522); }
+  :root:not(.dark) .bg-blue-950       { background-color: oklch(0.282 0.091 267.935); }
+
+  /* --- border --- */
+  :root:not(.dark) .border-slate-200  { border-color: oklch(0.929 0.013 255.508); }
+  :root:not(.dark) .border-slate-300  { border-color: oklch(0.869 0.022 252.894); }
+  :root:not(.dark) .border-slate-400  { border-color: oklch(0.704 0.040 256.788); }
+  :root:not(.dark) .border-slate-600  { border-color: oklch(0.446 0.043 257.281); }
+  :root:not(.dark) .border-slate-700  { border-color: oklch(0.372 0.044 257.287); }
+  :root:not(.dark) .border-slate-800  { border-color: oklch(0.279 0.041 260.031); }
+
+  :root:not(.dark) .border-blue-300   { border-color: oklch(0.809 0.105 251.813); }
+  :root:not(.dark) .border-blue-400   { border-color: oklch(0.707 0.165 254.624); }
+  :root:not(.dark) .border-blue-500   { border-color: oklch(0.623 0.214 259.815); }
+  :root:not(.dark) .border-blue-600   { border-color: oklch(0.546 0.245 262.881); }
+  :root:not(.dark) .border-blue-700   { border-color: oklch(0.488 0.243 264.376); }
+  :root:not(.dark) .border-blue-800   { border-color: oklch(0.424 0.199 265.638); }
+  :root:not(.dark) .border-blue-900   { border-color: oklch(0.379 0.146 265.522); }
+
+  /* divide hereda de border */
+  :root:not(.dark) .divide-slate-200 > :not([hidden]) ~ :not([hidden]) { border-color: oklch(0.929 0.013 255.508); }
+  :root:not(.dark) .divide-slate-300 > :not([hidden]) ~ :not([hidden]) { border-color: oklch(0.869 0.022 252.894); }
+}
+
+/* ============================================================
+   DARK MODE — .dark
+   ============================================================ */
+@layer utilities {
+
+  /* --- text --- */
+  .dark .text-white        { color: oklch(1 0 0); }
+  .dark .text-black        { color: oklch(0 0 0); }
+
+  .dark .text-slate-50     { color: oklch(0.984 0.003 247.858); }
+  .dark .text-slate-100    { color: oklch(0.968 0.007 247.896); }
+  .dark .text-slate-200    { color: oklch(0.929 0.013 255.508); }
+  .dark .text-slate-300    { color: oklch(0.869 0.022 252.894); }
+  .dark .text-slate-400    { color: oklch(0.704 0.040 256.788); }
+  .dark .text-slate-500    { color: oklch(0.554 0.046 257.417); }
+  .dark .text-slate-600    { color: oklch(0.446 0.043 257.281); }
+  .dark .text-slate-700    { color: oklch(0.372 0.044 257.287); }
+  .dark .text-slate-800    { color: oklch(0.279 0.041 260.031); }
+  .dark .text-slate-900    { color: oklch(0.208 0.042 265.755); }
+  .dark .text-slate-950    { color: oklch(0.129 0.042 264.695); }
+
+  .dark .text-blue-50      { color: oklch(0.970 0.014 254.604); }
+  .dark .text-blue-100     { color: oklch(0.932 0.032 255.585); }
+  .dark .text-blue-200     { color: oklch(0.882 0.059 254.128); }
+  .dark .text-blue-300     { color: oklch(0.809 0.105 251.813); }
+  .dark .text-blue-400     { color: oklch(0.707 0.165 254.624); }
+  .dark .text-blue-500     { color: oklch(0.623 0.214 259.815); }
+  .dark .text-blue-600     { color: oklch(0.546 0.245 262.881); }
+  .dark .text-blue-700     { color: oklch(0.488 0.243 264.376); }
+  .dark .text-blue-800     { color: oklch(0.424 0.199 265.638); }
+  .dark .text-blue-900     { color: oklch(0.379 0.146 265.522); }
+  .dark .text-blue-950     { color: oklch(0.282 0.091 267.935); }
+
+  /* --- background --- */
+  .dark .bg-white          { background-color: oklch(1 0 0); }
+  .dark .bg-black          { background-color: oklch(0 0 0); }
+
+  .dark .bg-slate-50       { background-color: oklch(0.984 0.003 247.858); }
+  .dark .bg-slate-100      { background-color: oklch(0.968 0.007 247.896); }
+  .dark .bg-slate-200      { background-color: oklch(0.929 0.013 255.508); }
+  .dark .bg-slate-800      { background-color: oklch(0.279 0.041 260.031); }
+  .dark .bg-slate-900      { background-color: oklch(0.208 0.042 265.755); }
+  .dark .bg-slate-950      { background-color: oklch(0.129 0.042 264.695); }
+
+  .dark .bg-blue-50        { background-color: oklch(0.970 0.014 254.604); }
+  .dark .bg-blue-100       { background-color: oklch(0.932 0.032 255.585); }
+  .dark .bg-blue-700       { background-color: oklch(0.488 0.243 264.376); }
+  .dark .bg-blue-800       { background-color: oklch(0.424 0.199 265.638); }
+  .dark .bg-blue-900       { background-color: oklch(0.379 0.146 265.522); }
+  .dark .bg-blue-950       { background-color: oklch(0.282 0.091 267.935); }
+
+  /* --- border --- */
+  .dark .border-slate-200  { border-color: oklch(0.929 0.013 255.508); }
+  .dark .border-slate-300  { border-color: oklch(0.869 0.022 252.894); }
+  .dark .border-slate-400  { border-color: oklch(0.704 0.040 256.788); }
+  .dark .border-slate-600  { border-color: oklch(0.446 0.043 257.281); }
+  .dark .border-slate-700  { border-color: oklch(0.372 0.044 257.287); }
+  .dark .border-slate-800  { border-color: oklch(0.279 0.041 260.031); }
+
+  .dark .border-blue-300   { border-color: oklch(0.809 0.105 251.813); }
+  .dark .border-blue-400   { border-color: oklch(0.707 0.165 254.624); }
+  .dark .border-blue-500   { border-color: oklch(0.623 0.214 259.815); }
+  .dark .border-blue-600   { border-color: oklch(0.546 0.245 262.881); }
+  .dark .border-blue-700   { border-color: oklch(0.488 0.243 264.376); }
+  .dark .border-blue-800   { border-color: oklch(0.424 0.199 265.638); }
+  .dark .border-blue-900   { border-color: oklch(0.379 0.146 265.522); }
+
+  .dark .divide-slate-700 > :not([hidden]) ~ :not([hidden]) { border-color: oklch(0.372 0.044 257.287); }
+  .dark .divide-slate-800 > :not([hidden]) ~ :not([hidden]) { border-color: oklch(0.279 0.041 260.031); }
+}
+
+/*
+  Las variantes dark: de Tailwind (dark:text-white, dark:bg-slate-900, etc.)
+  generan selectores .dark .dark\:text-white con especificidad (0,2,0).
+  Nuestras declaraciones .dark .text-white también son (0,2,0),
+  por lo que el orden en el CSS decide — las variantes dark: de Tailwind
+  deben ir DESPUÉS de estas reglas base para ganar.
+  Al estar en @layer utilities al final, Tailwind respeta el orden de cascada.
+*/
