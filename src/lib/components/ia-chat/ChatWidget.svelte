@@ -4,11 +4,14 @@
 	import ChatBubble from './ChatBubble.svelte';
 	import ChatInput from './ChatInput.svelte';
 	import { chatStore } from './chat-store.svelte';
-	import type { MensajeUI, RespuestaApi } from './tipos';
+	import type { MensajeUI, RespuestaApi, ContextoPantalla } from './tipos';
 
 	interface Props {
 		/** Si el usuario está autenticado. Si es false, el chat no se muestra. */
 		autenticado?: boolean;
+		/** Contexto opcional: si el popup se abre dentro de un PROC o SKU. */
+		codigoProcesamiento?: string;
+		codigoSku?: string;
 		titulo?: string;
 		saludoPrincipal?: string;
 		saludoHtml?: string;
@@ -17,13 +20,15 @@
 	}
 	let {
 		autenticado = true,
+		codigoProcesamiento,
+		codigoSku,
 		titulo = 'SoporteXperto IA',
 		saludoPrincipal = '¡Hola! Soy el asistente virtual de SoporteXperto 👋',
-		saludoHtml = '<p>Puedo ayudarte con preguntas generales, explicaciones, redacción e ideas. No tengo acceso a datos internos ni a información en tiempo real.</p>',
+		saludoHtml = '<p>Puedo ayudarte con soporte y consultas generales, además de información interna autorizada de Compras y Creador de Contenido.</p>',
 		saludoSub = '¿En qué te puedo ayudar?',
 		opcionesSugeridas = [
 			{ texto: 'Explicame este tema de forma sencilla', enviar: false },
-			{ texto: 'Ayudame a redactar un correo profesional', enviar: false }
+			{ texto: '¿Qué publicaciones están pendientes?', enviar: true }
 		]
 	}: Props = $props();
 
@@ -38,7 +43,24 @@
 	let controlador: AbortController | null = null;
 
 	// El estado de los mensajes vive en el store (sobrevive cambios de ruta).
-	const sugerencias = $derived(opcionesSugeridas);
+	const contexto: ContextoPantalla = $derived({
+		codigoProcesamiento,
+		codigoSku,
+		ruta: typeof window !== 'undefined' ? window.location.pathname : undefined
+	});
+
+	// Sugerencias combinadas
+	const sugerencias = $derived.by(() => {
+		const fijas = opcionesSugeridas;
+		if (codigoSku) {
+			// Contextual: rellena el campo (no envía) para que el usuario confirme.
+			return [
+				{ texto: `Analizá el SKU ${codigoSku} y dame tu recomendación`, enviar: false },
+				...fijas
+			];
+		}
+		return fijas;
+	});
 
 	function toggle() {
 		abierto = !abierto;
@@ -132,6 +154,7 @@
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					mensaje: texto,
+					contexto,
 					historial,
 					conversacionId: chatStore.conversacionId
 				}),

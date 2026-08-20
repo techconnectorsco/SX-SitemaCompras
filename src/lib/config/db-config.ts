@@ -135,6 +135,20 @@ export function initializeDatabase() {
     );
   `);
 
+  // Permisos del asistente por módulo. Es idempotente para instalaciones que
+  // ya tenían el esquema de IA y evita que una instalación nueva falle al
+  // resolver las capacidades del usuario.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS ia_permisos_usuario (
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      modulo TEXT NOT NULL,
+      otorgado_por TEXT REFERENCES users(id) ON DELETE SET NULL,
+      fecha INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+      PRIMARY KEY (user_id, modulo)
+    );
+    CREATE INDEX IF NOT EXISTS idx_ia_permisos_modulo ON ia_permisos_usuario(modulo);
+  `);
+
   // AUDITORÍA
  db.exec(`
   CREATE TABLE IF NOT EXISTS audit_logs (

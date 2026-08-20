@@ -12,9 +12,18 @@
  */
 
 import { construirPromptSistema } from './config';
+import { modulosPermitidos, modulosNoPermitidos } from './registro';
 import { calcularCosto } from './costos';
 import { registrarUso } from './auditoria';
-import type { DB, EntradaChat, SalidaChat, ProveedorIA } from './tipos';
+import type {
+	DB,
+	EntradaChat,
+	SalidaChat,
+	HerramientaIA,
+	ContextoHerramienta,
+	ProveedorIA,
+	DeclaracionHerramienta
+} from './tipos';
 
 export interface OpcionesMotor {
 	db: DB;
@@ -31,18 +40,54 @@ export class MotorIA {
 	}
 
 	async responder(entrada: EntradaChat): Promise<SalidaChat> {
-		const { usuario, mensaje, historial, conversacionId } = entrada;
-		const instruccionSistema = construirPromptSistema({ usuario });
+		const { usuario, mensaje, contexto, historial, conversacionId } = entrada;
+
+		const permitidos = modulosPermitidos(usuario.modulos);
+		const noPermitidos = modulosNoPermitidos(usuario.modulos);
+
+		if (permitidos.length === 0) {
+			return {
+				ok: true,
+				respuesta:
+					'No tenés módulos habilitados para consultas. Comunicate con el administrador.',
+				herramientasUsadas: [],
+				modulosDisponibles: []
+			};
+		}
+
+		const herramientasPorNombre = new Map<string, HerramientaIA>();
+		const declaraciones: DeclaracionHerramienta[] = [];
+		for (const modulo of permitidos) {
+			for (const h of modulo.herramientas) {
+				herramientasPorNombre.set(h.nombre, h);
+				declaraciones.push({ nombre: h.nombre, descripcion: h.descripcion, parametros: h.parametros });
+			}
+		}
+
+		const ctxHerramienta: ContextoHerramienta = { db: this.db, usuario, pantalla: contexto };
+
+		const ejecutarHerramienta = async (nombre: string, args: Record<string, unknown>) => {
+			const herramienta = herramientasPorNombre.get(nombre);
+			if (!herramienta) {
+				return { error: `Herramienta no disponible o no autorizada: ${nombre}.` };
+			}
+			return herramienta.ejecutar(args, ctxHerramienta);
+		};
+
+		const instruccionSistema = construirPromptSistema({
+			usuario,
+			modulosDisponibles: permitidos,
+			modulosNoDisponibles: noPermitidos,
+			pantalla: contexto
+		});
 
 		try {
 			const resp = await this.proveedor.responder({
 				instruccionSistema,
 				mensaje,
 				historial,
-				herramientas: [],
-				ejecutarHerramienta: async () => ({
-					error: 'El chat general no tiene herramientas internas.'
-				})
+				herramientas: declaraciones,
+				ejecutarHerramienta
 			});
 
 			// Costo de la interacción (tokens acumulados de todas las llamadas).
@@ -53,10 +98,10 @@ export class MotorIA {
 				userId: usuario.userId,
 				usuarioNombre: usuario.nombre,
 				conversacionId,
-				modulos: [],
+				modulos: permitidos.map((m) => m.id),
 				mensaje,
 				respuesta: resp.texto,
-				herramientasUsadas: [],
+				herramientasUsadas: resp.herramientasUsadas,
 				iteraciones: resp.iteraciones,
 				costo
 			});
@@ -64,6 +109,8 @@ export class MotorIA {
 			return {
 				ok: true,
 				respuesta: resp.texto,
+				herramientasUsadas: resp.herramientasUsadas,
+				modulosDisponibles: permitidos.map((m) => m.id),
 				costo
 			};
 		} catch (e) {
@@ -73,38 +120,21 @@ export class MotorIA {
 			if (e instanceof Error && e.stack) console.error(e.stack);
 
 			// Mensaje al usuario según el tipo de error.
-			let mensajeUsuario =
-				'Tuve un problema procesando tu consulta. Intentá de nuevo en un momento.';
+			let mensajeUsuario = 'Tuve un problema procesando tu consulta. Intentá de nuevo en un momento.';
 			const txt = detalle.toLowerCase();
-			if (
-				txt.includes('429') ||
-				txt.includes('rate') ||
-				txt.includes('quota') ||
-				txt.includes('resource_exhausted')
-			) {
-				mensajeUsuario =
-					'El asistente está recibiendo muchas consultas seguidas. Esperá unos segundos y volvé a preguntar.';
-			} else if (
-				txt.includes('api key') ||
-				txt.includes('apikey') ||
-				txt.includes('permission') ||
-				txt.includes('401') ||
-				txt.includes('403')
-			) {
-				mensajeUsuario =
-					'Hay un problema con la configuración del asistente (clave de IA). Avisá al administrador.';
-			} else if (
-				txt.includes('timeout') ||
-				txt.includes('etimedout') ||
-				txt.includes('econnreset') ||
-				txt.includes('fetch failed')
-			) {
+			if (txt.includes('429') || txt.includes('rate') || txt.includes('quota') || txt.includes('resource_exhausted')) {
+				mensajeUsuario = 'El asistente está recibiendo muchas consultas seguidas. Esperá unos segundos y volvé a preguntar.';
+			} else if (txt.includes('api key') || txt.includes('apikey') || txt.includes('permission') || txt.includes('401') || txt.includes('403')) {
+				mensajeUsuario = 'Hay un problema con la configuración del asistente (clave de IA). Avisá al administrador.';
+			} else if (txt.includes('timeout') || txt.includes('etimedout') || txt.includes('econnreset') || txt.includes('fetch failed')) {
 				mensajeUsuario = 'La conexión con el servicio de IA tardó demasiado. Intentá de nuevo.';
 			}
 
 			return {
 				ok: false,
 				respuesta: mensajeUsuario,
+				herramientasUsadas: [],
+				modulosDisponibles: permitidos.map((m) => m.id),
 				error: detalle
 			};
 		}

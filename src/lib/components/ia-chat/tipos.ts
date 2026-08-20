@@ -28,6 +28,14 @@ export interface MensajeUI {
 export interface RespuestaApi {
 	ok: boolean;
 	respuesta: string;
+	herramientasUsadas: string[];
+	modulosDisponibles: string[];
 	costo?: CostoInteraccion;
 	error?: string;
+}
+
+export interface ContextoPantalla {
+	codigoProcesamiento?: string;
+	codigoSku?: string;
+	ruta?: string;
 }

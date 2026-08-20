@@ -14,10 +14,11 @@ export type DB = BetterSqlite3.Database;
 // Contexto del usuario y de la petición
 // ----------------------------------------------------------------------------
 
-/** Identidad del usuario que hace la consulta. */
+/** Identidad y permisos del usuario que hace la consulta. */
 export interface ContextoUsuario {
 	userId: string;
 	nombre: string;
+	/** Módulos a los que el usuario tiene acceso, ej: ['compras'] o ['compras','finanzas']. */
 	modulos: string[];
 	/** Gancho para expansión por país. Hoy opcional. */
 	pais?: string;
@@ -43,6 +44,7 @@ export interface MensajeChat {
 export interface EntradaChat {
 	mensaje: string;
 	usuario: ContextoUsuario;
+	contexto?: ContextoPantalla;
 	historial?: MensajeChat[];
 	/** Id de conversación para agrupar la auditoría (opcional). */
 	conversacionId?: string;
@@ -68,6 +70,10 @@ export interface CostoInteraccion {
 export interface SalidaChat {
 	ok: boolean;
 	respuesta: string;
+	/** Nombres de herramientas que se ejecutaron para construir la respuesta. */
+	herramientasUsadas: string[];
+	/** Módulos que estuvieron disponibles para esta petición. */
+	modulosDisponibles: string[];
 	/** Costo de esta interacción (si hubo consumo de tokens). */
 	costo?: CostoInteraccion;
 	error?: string;
@@ -144,7 +150,10 @@ export interface HerramientaIA {
 	nombre: string;
 	descripcion: string; // la IA la lee para decidir cuándo usarla
 	parametros: EsquemaParametros;
-	ejecutar: (args: Record<string, unknown>, ctx: ContextoHerramienta) => Promise<unknown>;
+	ejecutar: (
+		args: Record<string, unknown>,
+		ctx: ContextoHerramienta
+	) => Promise<unknown>;
 }
 
 /** Un módulo de negocio (compras, finanzas, ...) que se registra en el motor. */
@@ -179,7 +188,10 @@ export interface SolicitudIA {
 	 * Callback que ejecuta una herramienta por nombre. El motor lo provee e
 	 * incluye la verificación de permisos. El proveedor solo lo invoca.
 	 */
-	ejecutarHerramienta: (nombre: string, args: Record<string, unknown>) => Promise<unknown>;
+	ejecutarHerramienta: (
+		nombre: string,
+		args: Record<string, unknown>
+	) => Promise<unknown>;
 	maxIteraciones?: number;
 }
 

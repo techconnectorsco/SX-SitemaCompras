@@ -3,15 +3,16 @@
  * ENDPOINT: GET /api/ia/auditoria   (consumo y costo — SOLO monto final)
  * ============================================================================
  * Query params:
- *   ?desde=epoch&hasta=epoch&userId=...&vista=resumen|dia|usuario|detalle
+ *   ?desde=epoch&hasta=epoch&userId=...&modulo=...&vista=resumen|dia|usuario|detalle
  *
- * Autorización: rol ADMIN.
+ * Autorización: puedeVerConsumo (ia_admin o ia_consumo).
  * Nunca devuelve costo base ni margen: solo el monto final que paga el cliente.
  */
 
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { db } from '$lib/config/db-config';
+import { puedeVerConsumo } from '$lib/server/ia';
 import {
 	detalleUso,
 	resumenPeriodo,
@@ -23,7 +24,7 @@ import {
 export const GET: RequestHandler = async ({ url, locals }) => {
 	const user = locals.user;
 	if (!user) throw error(401, 'No autenticado.');
-	if (user.role !== 'ADMIN') throw error(403, 'No autorizado.');
+	if (!puedeVerConsumo(db, user.id, user.role)) throw error(403, 'No autorizado.');
 
 	const numero = (k: string): number | undefined => {
 		const v = url.searchParams.get(k);
@@ -34,7 +35,8 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	const filtro: FiltroAuditoria = {
 		desde: numero('desde'),
 		hasta: numero('hasta'),
-		userId: url.searchParams.get('userId') ?? undefined
+		userId: url.searchParams.get('userId') ?? undefined,
+		modulo: url.searchParams.get('modulo') ?? undefined
 	};
 
 	const vista = url.searchParams.get('vista') ?? 'usuario';

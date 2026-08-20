@@ -89,23 +89,17 @@ export interface FiltroAuditoria {
 	/** epoch seconds fin (incluido). */
 	hasta?: number;
 	userId?: string;
+	/** filtra por un módulo presente en la interacción (ej: 'compras'). */
+	modulo?: string;
 }
 
 function whereYParams(f: FiltroAuditoria): { where: string; params: unknown[] } {
 	const cond: string[] = [];
 	const params: unknown[] = [];
-	if (f.desde != null) {
-		cond.push('fecha >= ?');
-		params.push(f.desde);
-	}
-	if (f.hasta != null) {
-		cond.push('fecha <= ?');
-		params.push(f.hasta);
-	}
-	if (f.userId) {
-		cond.push('user_id = ?');
-		params.push(f.userId);
-	}
+	if (f.desde != null) { cond.push('fecha >= ?'); params.push(f.desde); }
+	if (f.hasta != null) { cond.push('fecha <= ?'); params.push(f.hasta); }
+	if (f.userId) { cond.push('user_id = ?'); params.push(f.userId); }
+	if (f.modulo) { cond.push('modulos LIKE ?'); params.push(`%"${f.modulo}"%`); }
 	return { where: cond.length ? `WHERE ${cond.join(' AND ')}` : '', params };
 }
 
