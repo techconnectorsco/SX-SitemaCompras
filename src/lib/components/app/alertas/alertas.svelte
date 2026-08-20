@@ -246,7 +246,7 @@
         </button>
         
         <div class="bg-orange-50 dark:bg-slate-900 p-2.5 rounded-full border border-orange-100 dark:border-slate-800">
-          <Bell class="h-5 w-5 text-orange-600 dark:text-orange-400" />
+          <Bell class="h-5 w-5 text-[#1A73C2] dark:text-[#1A73C2]" />
         </div>
       </div>
 
@@ -295,10 +295,10 @@
       <button 
         onclick={() => filtrarPorCategoria('pedir_courier')} 
         class="flex flex-col items-center justify-center p-3 rounded-xl border bg-white dark:bg-slate-900 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5
-               {categoriaFiltro === 'pedir_courier' ? 'border-orange-500 ring-1 ring-orange-500 bg-orange-50/10' : 'border-slate-200 dark:border-slate-800'}"
+               {categoriaFiltro === 'pedir_courier' ? 'border-[#1A73C2] ring-1 ring-[#1A73C2] bg-orange-50/10' : 'border-slate-200 dark:border-slate-800'}"
       >
         <div class="flex items-center gap-2 mb-1">
-          <Truck class="h-5 w-5 text-orange-600" />
+          <Truck class="h-5 w-5 text-[#1A73C2]" />
           <span class="text-2xl font-bold text-slate-900 dark:text-white">{resumen.pedirCourier}</span>
         </div>
         <span class="text-xs font-semibold text-slate-500 uppercase">Courier</span>
@@ -337,7 +337,7 @@
         <select 
           bind:value={abcFiltro}
           onchange={() => cargarAlertas()} 
-          class="h-10 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-3 text-sm min-w-20 focus:ring-2 focus:ring-orange-500/20"
+          class="h-10 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-3 text-sm min-w-20 focus:ring-2 focus:ring-[#1A73C2]/20"
         >
           <option value="">ABC</option>
           <option value="A">A</option>

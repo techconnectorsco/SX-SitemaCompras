@@ -134,7 +134,7 @@
 	<div class="space-y-4">
 		<Card.Root class="border-slate-200 bg-white/80 p-5 backdrop-blur dark:border-slate-800 dark:bg-slate-950/80">
 			<h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-				<Sparkles class="h-4 w-4 text-orange-500" />
+				<Sparkles class="h-4 w-4 text-[#1A73C2]" />
 				Brand Agent Config
 			</h3>
 			<p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
@@ -225,7 +225,7 @@
 			</div>
 		{:else if generatedOptions.length === 0}
 			<div class="flex min-h-[420px] flex-col items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-white p-8 text-center dark:border-slate-800 dark:bg-slate-950">
-				<div class="rounded-2xl bg-orange-500/10 p-3.5 text-orange-500 dark:bg-orange-500/15">
+				<div class="rounded-2xl bg-[#1A73C2]/10 p-3.5 text-[#1A73C2] dark:bg-[#1A73C2]/15">
 					<Sparkles class="h-6 w-6 animate-pulse" />
 				</div>
 				<p class="mt-4 text-sm font-semibold text-slate-800 dark:text-slate-200">Asistente Creativo de Copywriting</p>

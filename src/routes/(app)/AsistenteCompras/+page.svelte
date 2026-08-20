@@ -171,7 +171,7 @@
           <Icon class="h-4 w-4" />
           <span class="text-sm">{item.label}</span>
           {#if item.adminOnly}
-            <span class="ml-1 rounded-full bg-orange-500 px-2 py-0.5 text-xs font-bold text-white">
+            <span class="ml-1 rounded-full bg-[#1A73C2] px-2 py-0.5 text-xs font-bold text-white">
               ADMIN
             </span>
           {/if}

@@ -134,7 +134,7 @@
 					<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950/40 rounded-2xl hover:shadow-sm transition">
 						<div class="flex items-start gap-4">
 							<!-- Mini preview o icono -->
-							<div class="h-14 w-14 rounded-xl bg-gradient-to-br from-[#0D1E3D] to-orange-500 flex items-center justify-center text-white shrink-0 shadow-inner">
+							<div class="h-14 w-14 rounded-xl bg-gradient-to-br from-[#0D1E3D] to-[#1A73C2] flex items-center justify-center text-white shrink-0 shadow-inner">
 								<Megaphone class="h-5 w-5" />
 							</div>
 							<div class="space-y-1">

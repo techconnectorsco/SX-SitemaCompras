@@ -1244,7 +1244,7 @@
 
 			<Button 
 				onclick={() => openCreateModal()}
-				class="h-8.5 bg-orange-500 hover:bg-orange-600 text-white gap-1.5 text-xs font-semibold shadow-xs rounded-lg cursor-pointer"
+				class="h-8.5 bg-[#1A73C2] hover:bg-[#1A73C2] text-white gap-1.5 text-xs font-semibold shadow-xs rounded-lg cursor-pointer"
 			>
 				<Plus class="h-4 w-4" />
 				Programar Publicación
@@ -1287,7 +1287,7 @@
 							<button
 								type="button"
 								onclick={() => openCreateModal(dateString)}
-								class="opacity-40 group-hover:opacity-100 transition-all rounded bg-orange-500 hover:bg-orange-600 text-white p-0.5 shadow-sm"
+								class="opacity-40 group-hover:opacity-100 transition-all rounded bg-[#1A73C2] hover:bg-[#1A73C2] text-white p-0.5 shadow-sm"
 								title="Programar post este día"
 							>
 								<Plus class="h-3 w-3" />
@@ -1419,7 +1419,7 @@ class="w-full text-left rounded p-1.5 text-[10px] leading-tight border transitio
 									max="10" 
 									value={carouselImageCount} 
 									onchange={updateCarouselCount}
-									class="w-14 px-2 py-1 text-xs rounded-md border border-slate-200 bg-background text-foreground focus:border-orange-500 outline-none"
+									class="w-14 px-2 py-1 text-xs rounded-md border border-slate-200 bg-background text-foreground focus:border-[#1A73C2] outline-none"
 								/>
 							</div>
 						{/if}
@@ -1552,7 +1552,7 @@ class="w-full text-left rounded p-1.5 text-[10px] leading-tight border transitio
 									min={getTodayStr()}
 									value={draftPost.date}
 									onchange={(e) => handleDateChange(e.currentTarget.value)}
-									class="w-full px-2 py-1.5 text-xs rounded-md border border-slate-200 bg-background text-foreground shadow-xs focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 dark:border-slate-800"
+									class="w-full px-2 py-1.5 text-xs rounded-md border border-slate-200 bg-background text-foreground shadow-xs focus:outline-none focus:ring-1 focus:ring-[#1A73C2] focus:border-[#1A73C2] dark:border-slate-800"
 								/>
 							</div>
 							<div>
@@ -1560,7 +1560,7 @@ class="w-full text-left rounded p-1.5 text-[10px] leading-tight border transitio
 								<input 
 									type="time" 
 									bind:value={draftPost.time} 
-									class="w-full px-2 py-1.5 text-xs rounded-md border border-slate-200 bg-background text-foreground shadow-xs focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 dark:border-slate-800" 
+									class="w-full px-2 py-1.5 text-xs rounded-md border border-slate-200 bg-background text-foreground shadow-xs focus:outline-none focus:ring-1 focus:ring-[#1A73C2] focus:border-[#1A73C2] dark:border-slate-800" 
 								/>
 							</div>
 						</div>

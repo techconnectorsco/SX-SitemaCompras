@@ -453,7 +453,7 @@
 			<div class="grid gap-3 sm:grid-cols-2 md:grid-cols-3 text-xs">
 				<div class="bg-card border p-3 rounded-lg">
 					<h5 class="font-bold text-slate-950 dark:text-white flex items-center gap-1">
-						<Coins class="h-3.5 w-3.5 text-orange-500" />
+						<Coins class="h-3.5 w-3.5 text-[#1A73C2]" />
 						Marketing API
 					</h5>
 					<p class="text-slate-500 mt-1 leading-snug">Estadísticas de gasto publicitario, costos por click (CPC), impresiones, y alcance de campañas pagadas de las marcas.</p>
@@ -782,7 +782,7 @@
 			<!-- Ubicaciones y Horarios -->
 			<Card.Root class="border-slate-200 bg-card p-5 dark:border-slate-800">
 				<h3 class="text-sm font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-1.5">
-					<MapPin class="h-4.5 w-4.5 text-orange-500" />
+					<MapPin class="h-4.5 w-4.5 text-[#1A73C2]" />
 					Geolocalización e Interacciones
 				</h3>
 

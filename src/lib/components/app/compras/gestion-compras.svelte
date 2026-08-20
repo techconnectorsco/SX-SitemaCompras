@@ -653,7 +653,7 @@
 				<div
 					class="flex items-center justify-center w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/50"
 				>
-					<TriangleAlert class="h-5 w-5 text-orange-600 dark:text-orange-400" />
+					<TriangleAlert class="h-5 w-5 text-[#1A73C2] dark:text-[#1A73C2]" />
 				</div>
 				<div>
 					<h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
@@ -675,7 +675,7 @@
 
 			<div class="px-6 py-5">
 				<p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-					Has realizado <strong class="text-orange-600 dark:text-orange-400"
+					Has realizado <strong class="text-[#1A73C2] dark:text-[#1A73C2]"
 						>{cambiosPendientes.size} cambio(s)</strong
 					>
 					que aún no se han guardado.
@@ -898,7 +898,7 @@
 					onclick={() => exportarPedidos('husqvarna')}
 					disabled={exportandoHusqvarna || !procesamientoSeleccionado}
 					class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg
-                 bg-orange-500 hover:bg-orange-600 text-white
+                 bg-[#1A73C2] hover:bg-[#1A73C2] text-white
                  disabled:opacity-50 disabled:cursor-not-allowed
                  transition-colors shadow-sm"
 				>
@@ -1096,7 +1096,7 @@
 
 				{#if hayCambios}
 					<div
-						class="flex items-center gap-2 text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 px-3 py-1.5 rounded-full border border-orange-200 dark:border-orange-800 animate-pulse shadow-sm"
+						class="flex items-center gap-2 text-[#1A73C2] dark:text-[#1A73C2] bg-orange-50 dark:bg-orange-900/20 px-3 py-1.5 rounded-full border border-orange-200 dark:border-orange-800 animate-pulse shadow-sm"
 					>
 						<CircleAlert class="h-3.5 w-3.5" />
 						<span class="font-bold">{cambiosPendientes.size} cambios pendientes</span>
@@ -1698,7 +1698,7 @@
 										</button>
 									{:else if filasEnEdicion.has(sku.id)}
 										<span
-											class="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30"
+											class="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium text-[#1A73C2] dark:text-[#1A73C2] bg-orange-50 dark:bg-orange-900/30"
 										>
 											<Pencil class="h-3 w-3 animate-pulse" />
 											Editando...

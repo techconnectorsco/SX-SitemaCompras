@@ -117,7 +117,7 @@
           <span>Columnas con el <strong>Cálculo Normal</strong> (Todas las bodegas)</span>
         </li>
         <li class="flex gap-2">
-          <FileSpreadsheet class="h-4 w-4 text-orange-600 shrink-0 mt-0.5" />
+          <FileSpreadsheet class="h-4 w-4 text-[#1A73C2] shrink-0 mt-0.5" />
           <span>Columnas con el <strong>Cálculo Simulado</strong> (Sin contar las bodegas excluidas)</span>
         </li>
         <li class="flex gap-2">

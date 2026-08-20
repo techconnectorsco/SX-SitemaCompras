@@ -186,7 +186,7 @@
   <div class="flex items-center justify-between border-b pb-4">
     <div class="flex items-center gap-3">
         <div class="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-            <FileSearch class="h-6 w-6 text-orange-600 dark:text-orange-400" />
+            <FileSearch class="h-6 w-6 text-[#1A73C2] dark:text-[#1A73C2]" />
         </div>
         <div>
             <h2 class="text-xl font-bold text-gray-900 dark:text-white">Auditoría del Sistema</h2>
@@ -198,27 +198,27 @@
     <div class="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
         <button 
             onclick={() => activeTab = 'auth'}
-            class="px-3 py-2 text-sm font-medium rounded-md transition-all {activeTab === 'auth' ? 'bg-white text-orange-600 shadow dark:bg-gray-700 dark:text-orange-400' : 'text-gray-500 hover:text-gray-700'} flex items-center gap-1.5">
+            class="px-3 py-2 text-sm font-medium rounded-md transition-all {activeTab === 'auth' ? 'bg-white text-[#1A73C2] shadow dark:bg-gray-700 dark:text-[#1A73C2]' : 'text-gray-500 hover:text-gray-700'} flex items-center gap-1.5">
             <UserCog size={15} /> Accesos
         </button>
         <button 
             onclick={() => activeTab = 'compras'}
-            class="px-3 py-2 text-sm font-medium rounded-md transition-all {activeTab === 'compras' ? 'bg-white text-orange-600 shadow dark:bg-gray-700 dark:text-orange-400' : 'text-gray-500 hover:text-gray-700'} flex items-center gap-1.5">
+            class="px-3 py-2 text-sm font-medium rounded-md transition-all {activeTab === 'compras' ? 'bg-white text-[#1A73C2] shadow dark:bg-gray-700 dark:text-[#1A73C2]' : 'text-gray-500 hover:text-gray-700'} flex items-center gap-1.5">
             <ShoppingCart size={15} /> Compras
         </button>
         <button 
             onclick={() => activeTab = 'process'}
-            class="px-3 py-2 text-sm font-medium rounded-md transition-all {activeTab === 'process' ? 'bg-white text-orange-600 shadow dark:bg-gray-700 dark:text-orange-400' : 'text-gray-500 hover:text-gray-700'} flex items-center gap-1.5">
+            class="px-3 py-2 text-sm font-medium rounded-md transition-all {activeTab === 'process' ? 'bg-white text-[#1A73C2] shadow dark:bg-gray-700 dark:text-[#1A73C2]' : 'text-gray-500 hover:text-gray-700'} flex items-center gap-1.5">
             <Activity size={15} /> Procesos
         </button>
         <button 
             onclick={() => activeTab = 'profile'}
-            class="px-3 py-2 text-sm font-medium rounded-md transition-all {activeTab === 'profile' ? 'bg-white text-orange-600 shadow dark:bg-gray-700 dark:text-orange-400' : 'text-gray-500 hover:text-gray-700'} flex items-center gap-1.5">
+            class="px-3 py-2 text-sm font-medium rounded-md transition-all {activeTab === 'profile' ? 'bg-white text-[#1A73C2] shadow dark:bg-gray-700 dark:text-[#1A73C2]' : 'text-gray-500 hover:text-gray-700'} flex items-center gap-1.5">
             <User size={15} /> Perfil
         </button>
         <button 
             onclick={() => activeTab = 'reportes'}
-            class="px-3 py-2 text-sm font-medium rounded-md transition-all {activeTab === 'reportes' ? 'bg-white text-orange-600 shadow dark:bg-gray-700 dark:text-orange-400' : 'text-gray-500 hover:text-gray-700'} flex items-center gap-1.5">
+            class="px-3 py-2 text-sm font-medium rounded-md transition-all {activeTab === 'reportes' ? 'bg-white text-[#1A73C2] shadow dark:bg-gray-700 dark:text-[#1A73C2]' : 'text-gray-500 hover:text-gray-700'} flex items-center gap-1.5">
             <FileSpreadsheet size={15} /> Reportes
         </button>
     </div>
@@ -238,7 +238,7 @@
         type="text"
         bind:value={searchTerm}
         placeholder="Buscar en todo..."
-        class="w-full pl-9 pr-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+        class="w-full pl-9 pr-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#1A73C2] focus:border-transparent"
       />
     </div>
 
@@ -248,14 +248,14 @@
         type="text"
         bind:value={filtroUsuario}
         placeholder="Usuario..."
-        class="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+        class="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#1A73C2] focus:border-transparent"
       />
     </div>
 
     <!-- Filtro por acción (adaptativo) -->
     <select
       bind:value={filtroAccion}
-      class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+      class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#1A73C2] focus:border-transparent"
     >
       <option value="">Todas las acciones</option>
       {#each accionesPorTab[activeTab] || [] as accion}
@@ -278,7 +278,7 @@
     <div class="ml-auto text-sm text-gray-500 dark:text-gray-400">
       {logsFiltrados.length} registro{logsFiltrados.length !== 1 ? 's' : ''}
       {#if hayFiltrosActivos}
-        <span class="text-orange-500">(filtrado)</span>
+        <span class="text-[#1A73C2]">(filtrado)</span>
       {/if}
     </div>
   </div>
@@ -288,7 +288,7 @@
     
     {#if isLoading}
         <div class="absolute inset-0 flex flex-col items-center justify-center bg-white/80 dark:bg-gray-900/80 z-10">
-            <Loader2 class="h-10 w-10 text-orange-500 animate-spin mb-4" />
+            <Loader2 class="h-10 w-10 text-[#1A73C2] animate-spin mb-4" />
             <p class="text-sm text-gray-500">Cargando registros de auditoría...</p>
         </div>
     {:else if error}
@@ -387,7 +387,7 @@
                                       </div>
                                   {:else if log.product_info}
                                       <div class="flex flex-col">
-                                          <span class="font-bold text-orange-700 dark:text-orange-400">{log.product_info.codigo_sku}</span>
+                                          <span class="font-bold text-orange-700 dark:text-[#1A73C2]">{log.product_info.codigo_sku}</span>
                                           <span class="text-xs text-gray-500 truncate max-w-[200px]" title={log.product_info.descripcion}>
                                               {log.product_info.descripcion}
                                           </span>

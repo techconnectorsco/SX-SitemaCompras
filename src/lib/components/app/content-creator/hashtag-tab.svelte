@@ -121,12 +121,12 @@
 				<Button 
 					variant="outline" 
 					size="sm"
-					class="border-orange-200 text-orange-600 bg-orange-50 hover:bg-orange-100 hover:text-orange-700 dark:border-orange-950 dark:bg-orange-950/20 dark:text-orange-400"
+					class="border-orange-200 text-[#1A73C2] bg-orange-50 hover:bg-orange-100 hover:text-orange-700 dark:border-orange-950 dark:bg-orange-950/20 dark:text-[#1A73C2]"
 					onclick={suggestHashtagsWithIa}
 					disabled={loadingIa}
 				>
 					{#if loadingIa}
-						<span class="mr-1.5 h-3 w-3 animate-spin rounded-full border border-orange-500 border-t-transparent"></span>
+						<span class="mr-1.5 h-3 w-3 animate-spin rounded-full border border-[#1A73C2] border-t-transparent"></span>
 						Analizando...
 					{:else}
 						<Sparkles class="h-3.5 w-3.5 mr-1.5" />

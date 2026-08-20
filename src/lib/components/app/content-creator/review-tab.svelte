@@ -1314,7 +1314,7 @@
 										{/if}
 										<Button
 											size="xs"
-											class="bg-orange-500 hover:bg-orange-600 text-white font-bold h-7 gap-1 text-[10px] cursor-pointer"
+											class="bg-[#1A73C2] hover:bg-[#1A73C2] text-white font-bold h-7 gap-1 text-[10px] cursor-pointer"
 onclick={() => openCopyPromptDialog(selectedPost)}
 										disabled={geminiGeneratingReview || isPostLocked}
 									>
@@ -1617,7 +1617,7 @@ onclick={() => savePost(selectedPost.id)}
 	>
 		<div class="relative w-full max-w-2xl rounded-xl border bg-card p-6 shadow-2xl" onclick={(e) => e.stopPropagation()}>
 			<div class="flex items-center gap-3 mb-4">
-				<Sparkles class="h-5 w-5 text-orange-500" />
+				<Sparkles class="h-5 w-5 text-[#1A73C2]" />
 				<h3 class="text-base font-bold text-[#0D1E3D]">Generar Copy con IA</h3>
 			</div>
 
@@ -1660,7 +1660,7 @@ onclick={() => savePost(selectedPost.id)}
 					</Button>
 					<Button
 						size="sm"
-						class="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold gap-1.5"
+						class="bg-[#1A73C2] hover:bg-[#1A73C2] text-white text-xs font-bold gap-1.5"
 						onclick={confirmGenerateCopy}
 						disabled={geminiGeneratingReview || copyPromptDialog.customPrompt.length > MAX_COPY_PROMPT_LENGTH}
 					>

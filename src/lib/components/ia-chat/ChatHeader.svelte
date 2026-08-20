@@ -53,7 +53,7 @@
 		align-items: center;
 		justify-content: space-between;
 		padding: 0.65rem 0.9rem;
-		background: #fe6a01;
+		background: #1A73C2;
 		color: #fff;
 		border-top-left-radius: 12px;
 		border-top-right-radius: 12px;
