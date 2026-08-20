@@ -369,7 +369,7 @@
 
 					<div class="pt-2 flex gap-3">
 						<Button 
-							class="bg-[#253166] text-white hover:bg-[#253166]/90 font-bold text-xs"
+							class="bg-[#0D1E3D] text-white hover:bg-[#0D1E3D]/90 font-bold text-xs"
 							onclick={reconnectMeta}
 							disabled={isConnecting}
 						>
@@ -402,7 +402,7 @@
 						<input 
 							type="checkbox" 
 							bind:checked={webhookActive} 
-							class="h-4 w-8 rounded-full bg-slate-200 accent-[#253166] cursor-pointer"
+							class="h-4 w-8 rounded-full bg-slate-200 accent-[#0D1E3D] cursor-pointer"
 						/>
 					</div>
 
@@ -436,7 +436,7 @@
 
 					<div class="border-t pt-3 flex items-center justify-between">
 						<span class="text-[10px] font-semibold text-slate-500">Último ping recibido: Hace 4 minutos</span>
-						<a href="https://developers.facebook.com" target="_blank" class="text-[10px] font-bold text-[#253166] hover:underline flex items-center gap-1 dark:text-blue-400">
+						<a href="https://developers.facebook.com" target="_blank" class="text-[10px] font-bold text-[#0D1E3D] hover:underline flex items-center gap-1 dark:text-blue-400">
 							Consola de Desarrolladores Meta <ExternalLink class="h-3 w-3" />
 						</a>
 					</div>
@@ -492,7 +492,7 @@
 						<select 
 							id="post-select"
 							bind:value={selectedPredictPostId}
-							class="w-full rounded-md border bg-background px-3 py-2 text-xs font-semibold outline-none focus:border-[#253166]"
+							class="w-full rounded-md border bg-background px-3 py-2 text-xs font-semibold outline-none focus:border-[#0D1E3D]"
 						>
 							<option value="">Selecciona un post...</option>
 							{#each posts as post}
@@ -642,10 +642,10 @@
 							type="text" 
 							bind:value={searchCompetitor}
 							placeholder="Nombre de la página o empresa competidora..." 
-							class="flex-1 rounded-md border bg-background px-3 py-1.5 text-xs font-semibold outline-none focus:border-[#253166]"
+							class="flex-1 rounded-md border bg-background px-3 py-1.5 text-xs font-semibold outline-none focus:border-[#0D1E3D]"
 						/>
 						<Button 
-							class="bg-[#253166] hover:bg-[#253166]/90 text-white font-bold text-xs"
+							class="bg-[#0D1E3D] hover:bg-[#0D1E3D]/90 text-white font-bold text-xs"
 							onclick={auditCompetitor}
 							disabled={isAuditingCompetitor}
 						>
@@ -721,7 +721,7 @@
 			<!-- Gráficos Demográficos -->
 			<Card.Root class="border-slate-200 bg-card p-5 dark:border-slate-800">
 				<h3 class="text-sm font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-1.5">
-					<Users class="h-4.5 w-4.5 text-[#253166]" />
+					<Users class="h-4.5 w-4.5 text-[#0D1E3D]" />
 					Perfil Demográfico de Audiencia Meta (API Connect)
 				</h3>
 
@@ -756,14 +756,14 @@
 							<div class="flex items-center gap-2">
 								<span class="w-10 text-slate-500 font-semibold">25-34</span>
 								<div class="flex-1 h-3 bg-slate-100 rounded-full overflow-hidden dark:bg-slate-900">
-									<div class="bg-[#253166] h-full rounded-full" style="width: 35%"></div>
+									<div class="bg-[#0D1E3D] h-full rounded-full" style="width: 35%"></div>
 								</div>
 								<span class="w-8 text-right font-bold">35%</span>
 							</div>
 							<div class="flex items-center gap-2">
 								<span class="w-10 text-slate-500 font-semibold">35-44</span>
 								<div class="flex-1 h-3 bg-slate-100 rounded-full overflow-hidden dark:bg-slate-900">
-									<div class="bg-[#253166] h-full rounded-full" style="width: 40%"></div>
+									<div class="bg-[#0D1E3D] h-full rounded-full" style="width: 40%"></div>
 								</div>
 								<span class="w-8 text-right font-bold">40%</span>
 							</div>
@@ -874,7 +874,7 @@
 									</div>
 								</td>
 								<td class="py-3.5 px-3">
-									<Badge class="bg-[#253166]/10 text-[#253166] hover:bg-[#253166]/15 border-none text-[9px] font-extrabold">{lead.brand}</Badge>
+									<Badge class="bg-[#0D1E3D]/10 text-[#0D1E3D] hover:bg-[#0D1E3D]/15 border-none text-[9px] font-extrabold">{lead.brand}</Badge>
 									<p class="text-[10px] font-semibold text-slate-600 mt-1 dark:text-slate-400">{lead.product}</p>
 								</td>
 								<td class="py-3.5 px-3">

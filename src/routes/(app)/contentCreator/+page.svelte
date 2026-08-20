@@ -149,7 +149,7 @@
 			<!-- Logo de marca del módulo -->
 			<div class="flex items-center gap-2.5 px-1.5 border-b pb-4">
 				<div
-					class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#253166] text-white shadow-sm"
+					class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#0D1E3D] text-white shadow-sm"
 				>
 					<Layers class="h-4.5 w-4.5" />
 				</div>
@@ -174,7 +174,7 @@
 					class={`flex w-full items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-left text-xs font-medium transition-all duration-200
 					${
 						activeTab === 'dashboard'
-							? 'bg-[#253166] text-white shadow-sm dark:bg-blue-600'
+							? 'bg-[#0D1E3D] text-white shadow-sm dark:bg-blue-600'
 							: 'text-muted-foreground hover:bg-muted/80 hover:text-foreground'
 					}`}
 				>
@@ -189,7 +189,7 @@
 					class={`flex w-full items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-left text-xs font-medium transition-all duration-200
 					${
 						activeTab === 'schedule'
-							? 'bg-[#253166] text-white shadow-sm dark:bg-blue-600'
+							? 'bg-[#0D1E3D] text-white shadow-sm dark:bg-blue-600'
 							: 'text-muted-foreground hover:bg-muted/80 hover:text-foreground'
 					}`}
 				>
@@ -204,7 +204,7 @@
 					class={`flex w-full items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-left text-xs font-medium transition-all duration-200
 					${
 						activeTab === 'review'
-							? 'bg-[#253166] text-white shadow-sm dark:bg-blue-600'
+							? 'bg-[#0D1E3D] text-white shadow-sm dark:bg-blue-600'
 							: 'text-muted-foreground hover:bg-muted/80 hover:text-foreground'
 					}`}
 				>
@@ -219,7 +219,7 @@
 					class={`flex w-full items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-left text-xs font-medium transition-all duration-200
 					${
 						activeTab === 'metrics'
-							? 'bg-[#253166] text-white shadow-sm dark:bg-blue-600'
+							? 'bg-[#0D1E3D] text-white shadow-sm dark:bg-blue-600'
 							: 'text-muted-foreground hover:bg-muted/80 hover:text-foreground'
 					}`}
 				>
@@ -234,7 +234,7 @@
 					class={`flex w-full items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-left text-xs font-medium transition-all duration-200
 					${
 						activeTab === 'meta-hub'
-							? 'bg-[#253166] text-white shadow-sm dark:bg-blue-600'
+							? 'bg-[#0D1E3D] text-white shadow-sm dark:bg-blue-600'
 							: 'text-muted-foreground hover:bg-muted/80 hover:text-foreground'
 					}`}
 				>
@@ -249,7 +249,7 @@
 					class={`flex w-full items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-left text-xs font-medium transition-all duration-200
 					${
 						activeTab === 'prompts'
-							? 'bg-[#253166] text-white shadow-sm dark:bg-blue-600'
+							? 'bg-[#0D1E3D] text-white shadow-sm dark:bg-blue-600'
 							: 'text-muted-foreground hover:bg-muted/80 hover:text-foreground'
 					}`}
 				>
@@ -264,7 +264,7 @@
 					class={`flex w-full items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-left text-xs font-medium transition-all duration-200
 					${
 						activeTab === 'assets'
-							? 'bg-[#253166] text-white shadow-sm dark:bg-blue-600'
+							? 'bg-[#0D1E3D] text-white shadow-sm dark:bg-blue-600'
 							: 'text-muted-foreground hover:bg-muted/80 hover:text-foreground'
 					}`}
 				>
@@ -279,7 +279,7 @@
 					class={`flex w-full items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-left text-xs font-medium transition-all duration-200
 						${
 							activeTab === 'bodegas'
-								? 'bg-[#253166] text-white shadow-sm dark:bg-blue-600'
+								? 'bg-[#0D1E3D] text-white shadow-sm dark:bg-blue-600'
 								: 'text-muted-foreground hover:bg-muted/80 hover:text-foreground'
 						}`}
 				>
@@ -294,7 +294,7 @@
 					class={`flex w-full items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-left text-xs font-medium transition-all duration-200
 						${
 							activeTab === 'fichas'
-								? 'bg-[#253166] text-white shadow-sm dark:bg-blue-600'
+								? 'bg-[#0D1E3D] text-white shadow-sm dark:bg-blue-600'
 								: 'text-muted-foreground hover:bg-muted/80 hover:text-foreground'
 						}`}
 				>

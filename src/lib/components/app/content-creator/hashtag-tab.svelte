@@ -113,7 +113,7 @@
 			<div class="flex flex-wrap items-center justify-between gap-4">
 				<div>
 					<h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-						<Hash class="h-4 w-4 text-[#253166] dark:text-blue-400" />
+						<Hash class="h-4 w-4 text-[#0D1E3D] dark:text-blue-400" />
 						Librería de Etiquetas
 					</h3>
 					<p class="text-xs text-slate-500 mt-0.5 dark:text-slate-400">Selecciona hashtags categorizados o añade los tuyos.</p>
@@ -141,7 +141,7 @@
 					<button 
 						type="button"
 						onclick={() => activeCategory = category}
-						class="rounded-xl px-3.5 py-1.5 text-xs font-medium transition-all duration-200 {activeCategory === category ? 'bg-[#253166] text-white dark:bg-blue-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800'}"
+						class="rounded-xl px-3.5 py-1.5 text-xs font-medium transition-all duration-200 {activeCategory === category ? 'bg-[#0D1E3D] text-white dark:bg-blue-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800'}"
 					>
 						{category}
 					</button>
@@ -176,7 +176,7 @@
 						type="text" 
 						bind:value={customTagInput}
 						placeholder="ej: OfertaImperdible" 
-						class="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs outline-none focus:border-[#253166] dark:border-slate-800 dark:bg-slate-950 dark:focus:border-blue-500"
+						class="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs outline-none focus:border-[#0D1E3D] dark:border-slate-800 dark:bg-slate-950 dark:focus:border-blue-500"
 						onkeydown={(e) => e.key === 'Enter' && addCustomTag()}
 					/>
 					<Button onclick={addCustomTag}>Agregar</Button>
@@ -239,7 +239,7 @@
 					<div class="flex gap-2">
 						<select 
 							id="append-to-post-select"
-							class="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs outline-none focus:border-[#253166] dark:border-slate-800 dark:bg-slate-950"
+							class="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs outline-none focus:border-[#0D1E3D] dark:border-slate-800 dark:bg-slate-950"
 						>
 							<option value="">Seleccionar publicación...</option>
 							{#each entries as entry (entry.id)}

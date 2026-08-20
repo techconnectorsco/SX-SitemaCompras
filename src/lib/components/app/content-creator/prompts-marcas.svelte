@@ -284,7 +284,7 @@
                 type="button"
                 onclick={() => savePrompt(marca.id)}
                 disabled={savingId === marca.id}
-                class="flex items-center gap-2 rounded-lg bg-[#253166] dark:bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-[#1c264f] dark:hover:bg-indigo-700 disabled:opacity-50 transition-colors shrink-0 mt-6 cursor-pointer shadow-sm"
+                class="flex items-center gap-2 rounded-lg bg-[#0D1E3D] dark:bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-[#0A1730] dark:hover:bg-indigo-700 disabled:opacity-50 transition-colors shrink-0 mt-6 cursor-pointer shadow-sm"
               >
                 {#if savingId === marca.id}
                   <Loader2 class="h-3.5 w-3.5 animate-spin" />

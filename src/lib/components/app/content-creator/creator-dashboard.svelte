@@ -80,7 +80,7 @@
 		<!-- Header Principal -->
 		<header class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b pb-4">
 			<div class="flex items-center gap-3">
-				<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-[#253166]">
+				<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-[#0D1E3D]">
 					<LayoutDashboard class="h-6 w-6 text-white" />
 				</div>
 				<div>
@@ -94,7 +94,7 @@
 				<span class="text-xs font-medium text-muted-foreground">Filtrar marca:</span>
 				<select 
 					bind:value={selectedBrandFilter}
-					class="h-9 rounded-md border border-input dark:border-slate-700 bg-white dark:bg-slate-800 px-3 text-xs dark:text-slate-200 outline-none focus:border-[#253166]"
+					class="h-9 rounded-md border border-input dark:border-slate-700 bg-white dark:bg-slate-800 px-3 text-xs dark:text-slate-200 outline-none focus:border-[#0D1E3D]"
 				>
 					<option value="Todas">Todas las marcas</option>
 					{#each catalogos.marcas as marca}
@@ -187,7 +187,7 @@
 							<line x1="0" y1="75" x2="100" y2="75" stroke="currentColor" stroke-dasharray="3" stroke-width="0.5" />
 						</svg>
 
-						<svg class="absolute inset-0 h-full w-full text-[#253166] dark:text-blue-500" viewBox="0 0 100 100" preserveAspectRatio="none">
+						<svg class="absolute inset-0 h-full w-full text-[#0D1E3D] dark:text-blue-500" viewBox="0 0 100 100" preserveAspectRatio="none">
 							<defs>
 								<linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
 									<stop offset="0%" stop-color="currentColor" stop-opacity="0.2" />
@@ -219,7 +219,7 @@
 						<p class="text-[10px] text-muted-foreground">Siguiente pieza en calendario</p>
 					</div>
 					{#if nextPublish}
-						<div class="text-[#253166] dark:text-blue-400 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-lg shrink-0">
+						<div class="text-[#0D1E3D] dark:text-blue-400 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-lg shrink-0">
 							{#if nextPublish.network === 'Instagram'}
 								<Instagram class="h-4 w-4" />
 							{:else}
@@ -235,7 +235,7 @@
 						<div class="rounded-lg border bg-muted/20 p-3 flex flex-col gap-2">
 							<div class="flex items-center justify-between">
 								<div class="flex items-center gap-2">
-									<div class="h-6 w-6 rounded-full bg-[#253166] text-white text-[9px] flex items-center justify-center font-bold">
+									<div class="h-6 w-6 rounded-full bg-[#0D1E3D] text-white text-[9px] flex items-center justify-center font-bold">
 										{(nextPublish.brand || 'V&O')[0]}
 									</div>
 									<div class="min-w-0">
@@ -294,7 +294,7 @@
 							<div class="flex items-center justify-between rounded-lg border p-2.5 hover:bg-muted/30 transition">
 								<div class="min-w-0 flex-1">
 									<div class="flex items-center gap-2">
-										<span class="rounded bg-[#253166]/10 dark:bg-blue-950/40 px-1.5 py-0.5 text-[8px] font-bold text-[#253166] dark:text-blue-300">
+										<span class="rounded bg-[#0D1E3D]/10 dark:bg-blue-950/40 px-1.5 py-0.5 text-[8px] font-bold text-[#0D1E3D] dark:text-blue-300">
 											{post.brand || 'V&O'}
 										</span>
 										<span class="text-[9px] text-muted-foreground">{post.date} · {post.week || 'Semana 1'}</span>
@@ -317,7 +317,7 @@
 				<div class="p-3 border-t text-center bg-muted/10">
 					<button 
 						type="button" 
-						class="text-xs font-bold text-[#253166] dark:text-blue-400 hover:underline flex items-center justify-center gap-1 w-full"
+						class="text-xs font-bold text-[#0D1E3D] dark:text-blue-400 hover:underline flex items-center justify-center gap-1 w-full"
 						onclick={() => toast.info('Gestión de posts detallado próximamente.')}
 					>
 						<span>Ver todos los posts</span>

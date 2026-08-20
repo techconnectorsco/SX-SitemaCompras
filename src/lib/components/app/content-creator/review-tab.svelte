@@ -993,7 +993,7 @@
 							onclick={() => filterStatus = st as any}
 							class={`rounded px-2.5 py-1 text-[10px] font-bold transition-all
 								${filterStatus === st 
-									? 'bg-[#253166] text-white' 
+									? 'bg-[#0D1E3D] text-white' 
 									: 'bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}
 						>
 							{st === 'En revisión' ? 'Revisión' : st}
@@ -1054,7 +1054,7 @@
 						onclick={() => selectedPostId = post.id}
 						class={`group w-full rounded-xl border text-left p-3.5 transition-all duration-200 hover:shadow-sm hover:scale-[1.01] flex flex-col gap-2
 							${selectedPostId === post.id 
-								? 'border-[#253166] bg-[#253166]/5 dark:border-blue-500 dark:bg-blue-950/10' 
+								? 'border-[#0D1E3D] bg-[#0D1E3D]/5 dark:border-blue-500 dark:bg-blue-950/10' 
 								: 'border-slate-200 bg-card dark:border-slate-800'}`}
 					>
 						<div class="flex items-center justify-between gap-2 w-full">
@@ -1067,7 +1067,7 @@
 						</div>
 						
 						<div>
-							<h4 class="text-xs font-bold text-slate-900 line-clamp-1 dark:text-slate-100 group-hover:text-[#253166] dark:group-hover:text-blue-400">
+							<h4 class="text-xs font-bold text-slate-900 line-clamp-1 dark:text-slate-100 group-hover:text-[#0D1E3D] dark:group-hover:text-blue-400">
 								{post.title}
 							</h4>
 							<p class="mt-1 text-[10px] text-muted-foreground line-clamp-2 italic">
@@ -1100,7 +1100,7 @@
 					<div class="flex flex-wrap items-center justify-between gap-4">
 						<div class="space-y-1">
 							<div class="flex items-center gap-2">
-								<span class="rounded bg-[#253166]/10 px-2 py-0.5 text-[9px] font-bold text-[#253166] dark:bg-blue-900/30 dark:text-blue-400 uppercase">
+								<span class="rounded bg-[#0D1E3D]/10 px-2 py-0.5 text-[9px] font-bold text-[#0D1E3D] dark:bg-blue-900/30 dark:text-blue-400 uppercase">
 									{selectedPost.brand}
 								</span>
 								<span class="text-[10px] text-muted-foreground">· {selectedPost.network} ({selectedPost.format})</span>
@@ -1142,7 +1142,7 @@
 										<div class="snap-center shrink-0 w-4/5 sm:w-1/2 relative group">
 											<span class="absolute top-2 left-2 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">#{i+1}</span>
 											{#if img.modo === 'crear'}
-												<span class="absolute top-2 right-2 bg-[#253166]/80 text-white text-[8px] font-bold uppercase px-1.5 py-0.5 rounded">✨ Crear</span>
+												<span class="absolute top-2 right-2 bg-[#0D1E3D]/80 text-white text-[8px] font-bold uppercase px-1.5 py-0.5 rounded">✨ Crear</span>
 											{/if}
 											{#if img.imagePreview}
 												<img src={img.imagePreview} alt="Mockup {i+1}" class="h-48 w-full object-contain rounded-lg border shadow-sm bg-white dark:bg-black/50" />
@@ -1155,7 +1155,7 @@
 										<button
 											type="button"
 										title={`Regenerar slide ${i+1} con IA`}
-										class="absolute bottom-2 right-2 inline-flex items-center justify-center h-7 w-7 rounded-md bg-background/90 border border-slate-200 text-[#253166] hover:bg-[#253166] hover:text-white transition opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+										class="absolute bottom-2 right-2 inline-flex items-center justify-center h-7 w-7 rounded-md bg-background/90 border border-slate-200 text-[#0D1E3D] hover:bg-[#0D1E3D] hover:text-white transition opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
 										onclick={(e) => { e.stopPropagation(); openRegenerationFlow(i); }}
 										disabled={nanoBananaGenerating || isPostLocked}
 									>
@@ -1213,8 +1213,8 @@
 									<!-- Re-generar con IA (Nano Banana) -->
 								{#if isCarousel}
 									<div class="flex-1 flex items-center justify-center gap-2 rounded-md border border-dashed border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/50 px-3 py-2 text-[11px] text-slate-600 dark:text-slate-300 font-medium">
-										<Sparkles class="h-3.5 w-3.5 text-[#253166] shrink-0" />
-										<span>Cada slide se regenera individualmente con el botón <Sparkles class="inline-block h-3 w-3 align-text-bottom text-[#253166]" /> sobre cada imagen.</span>
+										<Sparkles class="h-3.5 w-3.5 text-[#0D1E3D] shrink-0" />
+										<span>Cada slide se regenera individualmente con el botón <Sparkles class="inline-block h-3 w-3 align-text-bottom text-[#0D1E3D]" /> sobre cada imagen.</span>
 									</div>
 								{:else}
 									<Button 
@@ -1237,7 +1237,7 @@
 									<Button 
 										variant="outline" 
 										size="sm"
-										class="flex-1 text-[11px] font-bold border-[#253166]/20 text-[#253166] hover:bg-[#253166]/5 dark:border-blue-400/30 dark:text-blue-300 dark:hover:bg-blue-400/10"
+										class="flex-1 text-[11px] font-bold border-[#0D1E3D]/20 text-[#0D1E3D] hover:bg-[#0D1E3D]/5 dark:border-blue-400/30 dark:text-blue-300 dark:hover:bg-blue-400/10"
 										onclick={() => downloadBaseImage(selectedPost)}
 										disabled={downloadingImage || (!selectedPost?.imagePreview && !hasCarouselImages)}
 									>
@@ -1335,7 +1335,7 @@ onclick={() => openCopyPromptDialog(selectedPost)}
 										rows="8"
 										onblur={() => autosaveCopy(selectedPost)}
 										disabled={isPostLocked}
-										class="w-full rounded-lg border bg-background px-3 py-2.5 text-xs outline-none focus:border-[#253166] leading-relaxed font-sans disabled:opacity-60 disabled:cursor-not-allowed"
+										class="w-full rounded-lg border bg-background px-3 py-2.5 text-xs outline-none focus:border-[#0D1E3D] leading-relaxed font-sans disabled:opacity-60 disabled:cursor-not-allowed"
 										placeholder="Ingresa o edita el copy definitivo..."
 									></textarea>
 								</div>
@@ -1348,7 +1348,7 @@ onclick={() => openCopyPromptDialog(selectedPost)}
 										type="text" 
 										bind:value={selectedPost.cta} 
 										disabled={isPostLocked}
-										class="h-8.5 w-full rounded-md border bg-background px-2 text-xs outline-none focus:border-[#253166] disabled:opacity-60 disabled:cursor-not-allowed" 
+										class="h-8.5 w-full rounded-md border bg-background px-2 text-xs outline-none focus:border-[#0D1E3D] disabled:opacity-60 disabled:cursor-not-allowed" 
 									/>
 									</div>
 									<div class="space-y-1">
@@ -1357,7 +1357,7 @@ onclick={() => openCopyPromptDialog(selectedPost)}
 										type="text" 
 										bind:value={selectedPost.objective} 
 										disabled={isPostLocked}
-										class="h-8.5 w-full rounded-md border bg-background px-2 text-xs outline-none focus:border-[#253166] disabled:opacity-60 disabled:cursor-not-allowed" 
+										class="h-8.5 w-full rounded-md border bg-background px-2 text-xs outline-none focus:border-[#0D1E3D] disabled:opacity-60 disabled:cursor-not-allowed" 
 									/>
 									</div>
 								</div>
@@ -1545,8 +1545,8 @@ onclick={() => savePost(selectedPost.id)}
 	>
 		<div class="relative w-full max-w-2xl rounded-xl border bg-card p-6 shadow-2xl" onclick={(e) => e.stopPropagation()}>
 			<div class="flex items-center gap-3 mb-4">
-				<RefreshCw class="h-5 w-5 text-[#253166]" />
-				<h3 class="text-base font-bold text-[#253166]">
+				<RefreshCw class="h-5 w-5 text-[#0D1E3D]" />
+				<h3 class="text-base font-bold text-[#0D1E3D]">
 					{regeneratingSlideIndex !== null
 						? `Regenerar imagen ${regeneratingSlideIndex + 1} del carrusel`
 						: 'Regenerar imagen'}
@@ -1562,7 +1562,7 @@ onclick={() => savePost(selectedPost.id)}
 			<textarea
 				bind:value={promptDialog.customPrompt}
 				rows="12"
-				class="w-full rounded-lg border bg-background px-3 py-2.5 text-xs outline-none focus:border-[#253166] leading-relaxed font-sans resize-y mb-4"
+				class="w-full rounded-lg border bg-background px-3 py-2.5 text-xs outline-none focus:border-[#0D1E3D] leading-relaxed font-sans resize-y mb-4"
 				placeholder="Edita el prompt para la generación de imagen..."
 			></textarea>
 
@@ -1584,7 +1584,7 @@ onclick={() => savePost(selectedPost.id)}
 				</Button>
 				<Button 
 					size="sm"
-					class="bg-[#253166] hover:bg-[#1c264f] text-white text-xs font-bold"
+					class="bg-[#0D1E3D] hover:bg-[#0A1730] text-white text-xs font-bold"
 					onclick={() => {
 						const ids = Array.from(assetSelectorDialog?.selectedIds || []);
 						assetSelectorDialog = null;
@@ -1618,7 +1618,7 @@ onclick={() => savePost(selectedPost.id)}
 		<div class="relative w-full max-w-2xl rounded-xl border bg-card p-6 shadow-2xl" onclick={(e) => e.stopPropagation()}>
 			<div class="flex items-center gap-3 mb-4">
 				<Sparkles class="h-5 w-5 text-orange-500" />
-				<h3 class="text-base font-bold text-[#253166]">Generar Copy con IA</h3>
+				<h3 class="text-base font-bold text-[#0D1E3D]">Generar Copy con IA</h3>
 			</div>
 
 			<p class="text-xs text-muted-foreground mb-3">
@@ -1630,7 +1630,7 @@ onclick={() => savePost(selectedPost.id)}
 				rows="8"
 				maxlength={MAX_COPY_PROMPT_LENGTH}
 				disabled={geminiGeneratingReview}
-				class="w-full rounded-lg border bg-background px-3 py-2.5 text-xs outline-none focus:border-[#253166] leading-relaxed font-sans resize-y mb-3"
+				class="w-full rounded-lg border bg-background px-3 py-2.5 text-xs outline-none focus:border-[#0D1E3D] leading-relaxed font-sans resize-y mb-3"
 				placeholder="Ej: Máximo 80 palabras, tono humorístico y sin hashtags en inglés..."
 			></textarea>
 			<p class="-mt-2 mb-3 text-right text-[10px] text-muted-foreground">
