@@ -13,13 +13,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { IA_CONFIG } from '../config';
-import type {
-	ProveedorIA,
-	SolicitudIA,
-	RespuestaIA,
-	EsquemaParametros,
-	UsoTokens
-} from '../tipos';
+import type { ProveedorIA, SolicitudIA, RespuestaIA, EsquemaParametros, UsoTokens } from '../tipos';
 
 export class ProveedorClaude implements ProveedorIA {
 	nombre = 'claude';
@@ -65,7 +59,7 @@ export class ProveedorClaude implements ProveedorIA {
 				max_tokens: 1500,
 				temperature: IA_CONFIG.temperatura,
 				system: solicitud.instruccionSistema,
-				tools,
+				...(tools.length ? { tools } : {}),
 				messages
 			});
 
@@ -120,7 +114,8 @@ export class ProveedorClaude implements ProveedorIA {
 		}
 
 		return {
-			texto: 'No pude completar el análisis en el número de pasos permitido. Probá una pregunta más específica.',
+			texto:
+				'No pude completar el análisis en el número de pasos permitido. Probá una pregunta más específica.',
 			herramientasUsadas,
 			iteraciones,
 			proveedor: this.nombre,

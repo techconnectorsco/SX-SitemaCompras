@@ -25,13 +25,20 @@ import type {
 
 function tipoGemini(t: string): Type {
 	switch (t) {
-		case 'string': return Type.STRING;
-		case 'number': return Type.NUMBER;
-		case 'integer': return Type.INTEGER;
-		case 'boolean': return Type.BOOLEAN;
-		case 'array': return Type.ARRAY;
-		case 'object': return Type.OBJECT;
-		default: return Type.STRING;
+		case 'string':
+			return Type.STRING;
+		case 'number':
+			return Type.NUMBER;
+		case 'integer':
+			return Type.INTEGER;
+		case 'boolean':
+			return Type.BOOLEAN;
+		case 'array':
+			return Type.ARRAY;
+		case 'object':
+			return Type.OBJECT;
+		default:
+			return Type.STRING;
 	}
 }
 
@@ -82,14 +89,20 @@ export class ProveedorGemini implements ProveedorIA {
 				ultimoError = e;
 				const msg = (e instanceof Error ? e.message : String(e)).toLowerCase();
 				const esTransitorio =
-					msg.includes('429') || msg.includes('rate') || msg.includes('quota') ||
-					msg.includes('resource_exhausted') || msg.includes('503') ||
-					msg.includes('overloaded') || msg.includes('unavailable');
+					msg.includes('429') ||
+					msg.includes('rate') ||
+					msg.includes('quota') ||
+					msg.includes('resource_exhausted') ||
+					msg.includes('503') ||
+					msg.includes('overloaded') ||
+					msg.includes('unavailable');
 				if (!esTransitorio || intento === maxIntentos) break;
 				// Espera creciente con algo de aleatoriedad: ~1.5s, 3s, 6s.
 				const base = 1500 * Math.pow(2, intento - 1);
 				const esperaMs = base + Math.floor(Math.random() * 500);
-				console.warn(`[Gemini] Reintento ${intento}/${maxIntentos} en ${esperaMs}ms (${msg.slice(0, 70)})`);
+				console.warn(
+					`[Gemini] Reintento ${intento}/${maxIntentos} en ${esperaMs}ms (${msg.slice(0, 70)})`
+				);
 				await new Promise((r) => setTimeout(r, esperaMs));
 			}
 		}
@@ -97,14 +110,19 @@ export class ProveedorGemini implements ProveedorIA {
 		// Último recurso: si el modelo principal está saturado, probar el de respaldo.
 		const modeloActual = (params as any).model;
 		if (IA_CONFIG.modeloRespaldo && modeloActual !== IA_CONFIG.modeloRespaldo) {
-			console.warn(`[Gemini] Modelo ${modeloActual} no disponible. Probando respaldo: ${IA_CONFIG.modeloRespaldo}`);
+			console.warn(
+				`[Gemini] Modelo ${modeloActual} no disponible. Probando respaldo: ${IA_CONFIG.modeloRespaldo}`
+			);
 			try {
 				return await this.ai!.models.generateContent({
 					...(params as any),
 					model: IA_CONFIG.modeloRespaldo
 				});
 			} catch (e2) {
-				console.error('[Gemini] El modelo de respaldo también falló:', e2 instanceof Error ? e2.message : e2);
+				console.error(
+					'[Gemini] El modelo de respaldo también falló:',
+					e2 instanceof Error ? e2.message : e2
+				);
 				throw e2;
 			}
 		}
@@ -116,15 +134,17 @@ export class ProveedorGemini implements ProveedorIA {
 			throw new Error('Gemini no está configurado (falta GEMINI_API_KEY).');
 		}
 
-		const tools = [
-			{
-				functionDeclarations: solicitud.herramientas.map((h) => ({
-					name: h.nombre,
-					description: h.descripcion,
-					parameters: parametrosGemini(h.parametros)
-				}))
-			}
-		];
+		const tools = solicitud.herramientas.length
+			? [
+					{
+						functionDeclarations: solicitud.herramientas.map((h) => ({
+							name: h.nombre,
+							description: h.descripcion,
+							parameters: parametrosGemini(h.parametros)
+						}))
+					}
+				]
+			: undefined;
 
 		const contents: Array<Record<string, unknown>> = [];
 		for (const m of solicitud.historial ?? []) {
@@ -138,7 +158,7 @@ export class ProveedorGemini implements ProveedorIA {
 		const config = {
 			systemInstruction: solicitud.instruccionSistema,
 			temperature: IA_CONFIG.temperatura,
-			tools
+			...(tools ? { tools } : {})
 		};
 
 		const herramientasUsadas: string[] = [];
@@ -204,7 +224,8 @@ export class ProveedorGemini implements ProveedorIA {
 		}
 
 		return {
-			texto: 'No pude completar el análisis en el número de pasos permitido. Probá una pregunta más específica.',
+			texto:
+				'No pude completar el análisis en el número de pasos permitido. Probá una pregunta más específica.',
 			herramientasUsadas,
 			iteraciones,
 			proveedor: this.nombre,

@@ -8,14 +8,13 @@
 
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { crearMotor, modulosDelUsuario } from '$lib/server/ia';
+import { crearMotor } from '$lib/server/ia';
 import { historialReciente } from '$lib/server/ia/auditoria';
 import { db } from '$lib/config/db-config';
-import type { MensajeChat, ContextoPantalla } from '$lib/server/ia';
+import type { MensajeChat } from '$lib/server/ia';
 
 interface CuerpoPeticion {
 	mensaje: string;
-	contexto?: ContextoPantalla;
 	historial?: MensajeChat[];
 	conversacionId?: string;
 }
@@ -40,17 +39,14 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const cuerpo = (await request.json()) as CuerpoPeticion;
 	if (!cuerpo?.mensaje?.trim()) throw error(400, 'Falta el mensaje.');
 
-	const modulos = modulosDelUsuario(db, usuario.id);
-
 	const motor = crearMotor(db);
 	const salida = await motor.responder({
 		mensaje: cuerpo.mensaje,
 		usuario: {
 			userId: usuario.id,
 			nombre: usuario.display_name ?? usuario.email ?? 'Usuario',
-			modulos
+			modulos: []
 		},
-		contexto: cuerpo.contexto,
 		historial: cuerpo.historial,
 		conversacionId: cuerpo.conversacionId
 	});
