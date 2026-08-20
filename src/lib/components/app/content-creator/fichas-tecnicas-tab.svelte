@@ -238,7 +238,7 @@
 	<!-- Header de la Tab -->
 	<header class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b pb-4">
 		<div class="flex items-center gap-3">
-			<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-[#253166] text-white shadow-sm">
+			<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-[#0D1E3D] text-white shadow-sm">
 				<FileText class="h-6 w-6 text-white" />
 			</div>
 			<div>
@@ -253,7 +253,7 @@
 		<button
 			type="button"
 			onclick={() => (showUploadModal = true)}
-			class="inline-flex items-center justify-center gap-2 rounded-lg bg-[#253166] px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-[#1a234a] transition-all"
+			class="inline-flex items-center justify-center gap-2 rounded-lg bg-[#0D1E3D] px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-[#0A1730] transition-all"
 		>
 			<Plus class="h-4 w-4" />
 			<span>Subir Nueva Ficha Técnica</span>
@@ -268,7 +268,7 @@
 			<span class="text-xs font-medium text-muted-foreground">Marca:</span>
 			<select
 				bind:value={selectedBrandFilter}
-				class="h-9 rounded-md border border-input dark:border-slate-700 bg-white dark:bg-slate-800 px-3 text-xs outline-none focus:border-[#253166]"
+				class="h-9 rounded-md border border-input dark:border-slate-700 bg-white dark:bg-slate-800 px-3 text-xs outline-none focus:border-[#0D1E3D]"
 			>
 				<option value="Todas">Todas las marcas ({fichas.length})</option>
 				{#if catalogos?.marcas}
@@ -286,7 +286,7 @@
 				type="text"
 				bind:value={searchQuery}
 				placeholder="Buscar producto o especificación..."
-				class="w-full rounded-md border bg-white dark:bg-slate-800 pl-8 pr-3 py-2 text-xs outline-none focus:border-[#253166]"
+				class="w-full rounded-md border bg-white dark:bg-slate-800 pl-8 pr-3 py-2 text-xs outline-none focus:border-[#0D1E3D]"
 			/>
 		</div>
 	</div>
@@ -294,7 +294,7 @@
 	<!-- Lista o Grid de Fichas -->
 	{#if loading}
 		<div class="flex flex-col items-center justify-center py-16 gap-3">
-			<Loader2 class="h-8 w-8 animate-spin text-[#253166]" />
+			<Loader2 class="h-8 w-8 animate-spin text-[#0D1E3D]" />
 			<p class="text-xs text-muted-foreground">Cargando biblioteca de fichas técnicas...</p>
 		</div>
 	{:else if filteredFichas.length === 0}
@@ -316,7 +316,7 @@
 					<!-- Header de la Card -->
 					<div class="flex items-center justify-between p-4 border-b bg-muted/20">
 						<div class="flex items-center gap-2">
-							<span class="rounded-md bg-[#253166]/10 px-2 py-0.5 text-[10px] font-bold text-[#253166] dark:bg-blue-900/40 dark:text-blue-300">
+							<span class="rounded-md bg-[#0D1E3D]/10 px-2 py-0.5 text-[10px] font-bold text-[#0D1E3D] dark:bg-blue-900/40 dark:text-blue-300">
 								{ficha.marca_nombre || 'Marca'}
 							</span>
 							<span class="rounded-md bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground uppercase">
@@ -337,7 +337,7 @@
 
 						<!-- Vista previa del texto extraído -->
 						<div class="bg-muted/40 rounded-lg p-3 text-xs font-mono text-muted-foreground line-clamp-4 leading-relaxed border relative group">
-							<div class="flex items-center gap-1.5 text-[10px] font-sans font-bold text-[#253166] dark:text-blue-400 mb-1">
+							<div class="flex items-center gap-1.5 text-[10px] font-sans font-bold text-[#0D1E3D] dark:text-blue-400 mb-1">
 								<Sparkles class="h-3 w-3" />
 								<span>Texto Estructurado (IA):</span>
 							</div>
@@ -407,7 +407,7 @@
 		<div class="w-full max-w-lg rounded-xl border bg-background p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
 			<div class="flex items-center justify-between border-b pb-3">
 				<div class="flex items-center gap-2">
-					<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#253166] text-white">
+					<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0D1E3D] text-white">
 						<UploadCloud class="h-4 w-4" />
 					</div>
 					<div>
@@ -433,7 +433,7 @@
 						id="marca-select"
 						bind:value={uploadMarcaId}
 						required
-						class="w-full rounded-md border bg-background px-3 py-2 text-xs outline-none focus:border-[#253166]"
+						class="w-full rounded-md border bg-background px-3 py-2 text-xs outline-none focus:border-[#0D1E3D]"
 					>
 						{#if catalogos?.marcas}
 							{#each catalogos.marcas as m}
@@ -452,7 +452,7 @@
 						bind:value={uploadNombreProducto}
 						placeholder="ej. Excavadora Caterpillar CAT 320"
 						required
-						class="w-full rounded-md border bg-background px-3 py-2 text-xs outline-none focus:border-[#253166]"
+						class="w-full rounded-md border bg-background px-3 py-2 text-xs outline-none focus:border-[#0D1E3D]"
 					/>
 				</div>
 
@@ -464,7 +464,7 @@
 						bind:value={uploadDescripcion}
 						rows="2"
 						placeholder="ej. Equipo pesado de excavación para obras civiles"
-						class="w-full rounded-md border bg-background px-3 py-2 text-xs outline-none focus:border-[#253166]"
+						class="w-full rounded-md border bg-background px-3 py-2 text-xs outline-none focus:border-[#0D1E3D]"
 					></textarea>
 				</div>
 
@@ -480,7 +480,7 @@
 								accept=".pdf,image/png,image/jpeg,image/webp"
 								onchange={handleFileSelect}
 								required
-								class="text-xs text-muted-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-[#253166] file:text-white hover:file:bg-[#1a234a]"
+								class="text-xs text-muted-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-[#0D1E3D] file:text-white hover:file:bg-[#0A1730]"
 							/>
 						</div>
 						<p class="text-[10px] text-muted-foreground">Formatos soportados: PDF, PNG, JPG, WEBP (Máx. 20MB)</p>
@@ -511,7 +511,7 @@
 					<button
 						type="submit"
 						disabled={isUploading}
-						class="inline-flex items-center gap-2 rounded-md bg-[#253166] px-4 py-2 text-xs font-bold text-white shadow hover:bg-[#1a234a] disabled:opacity-50"
+						class="inline-flex items-center gap-2 rounded-md bg-[#0D1E3D] px-4 py-2 text-xs font-bold text-white shadow hover:bg-[#0A1730] disabled:opacity-50"
 					>
 						{#if isUploading}
 							<Loader2 class="h-3.5 w-3.5 animate-spin" />
@@ -533,7 +533,7 @@
 		<div class="w-full max-w-xl rounded-xl border bg-background p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
 			<div class="flex items-center justify-between border-b pb-3">
 				<div class="flex items-center gap-2">
-					<Edit3 class="h-5 w-5 text-[#253166]" />
+					<Edit3 class="h-5 w-5 text-[#0D1E3D]" />
 					<h2 class="text-base font-bold">Editar Especificaciones Técnicas</h2>
 				</div>
 				<button
@@ -552,7 +552,7 @@
 						id="edit-prod-name"
 						type="text"
 						bind:value={editNombreProducto}
-						class="w-full rounded-md border bg-background px-3 py-2 text-xs outline-none focus:border-[#253166]"
+						class="w-full rounded-md border bg-background px-3 py-2 text-xs outline-none focus:border-[#0D1E3D]"
 					/>
 				</div>
 
@@ -562,7 +562,7 @@
 						id="edit-prod-desc"
 						bind:value={editDescripcion}
 						rows="2"
-						class="w-full rounded-md border bg-background px-3 py-2 text-xs outline-none focus:border-[#253166]"
+						class="w-full rounded-md border bg-background px-3 py-2 text-xs outline-none focus:border-[#0D1E3D]"
 					></textarea>
 				</div>
 
@@ -572,7 +572,7 @@
 						id="edit-specs-text"
 						bind:value={editEspecificacionesTexto}
 						rows="10"
-						class="w-full rounded-md border bg-background px-3 py-2 text-xs font-mono outline-none focus:border-[#253166]"
+						class="w-full rounded-md border bg-background px-3 py-2 text-xs font-mono outline-none focus:border-[#0D1E3D]"
 					></textarea>
 				</div>
 			</div>
@@ -591,7 +591,7 @@
 					type="button"
 					onclick={handleSaveEdit}
 					disabled={isSavingEdit}
-					class="inline-flex items-center gap-2 rounded-md bg-[#253166] px-4 py-2 text-xs font-bold text-white shadow hover:bg-[#1a234a] disabled:opacity-50"
+					class="inline-flex items-center gap-2 rounded-md bg-[#0D1E3D] px-4 py-2 text-xs font-bold text-white shadow hover:bg-[#0A1730] disabled:opacity-50"
 				>
 					{#if isSavingEdit}
 						<Loader2 class="h-3.5 w-3.5 animate-spin" />
@@ -612,7 +612,7 @@
 		<div class="w-full max-w-2xl rounded-xl border bg-background p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
 			<div class="flex items-center justify-between border-b pb-3">
 				<div>
-					<span class="rounded-md bg-[#253166]/10 px-2 py-0.5 text-[10px] font-bold text-[#253166]">
+					<span class="rounded-md bg-[#0D1E3D]/10 px-2 py-0.5 text-[10px] font-bold text-[#0D1E3D]">
 						{viewingFicha.marca_nombre}
 					</span>
 					<h2 class="text-lg font-bold mt-1">{viewingFicha.nombre_producto}</h2>
@@ -647,7 +647,7 @@
 						href={viewingFicha.file_path}
 						target="_blank"
 						rel="noopener noreferrer"
-						class="inline-flex items-center gap-1 font-bold text-[#253166] hover:underline"
+						class="inline-flex items-center gap-1 font-bold text-[#0D1E3D] hover:underline"
 					>
 						<ExternalLink class="h-3.5 w-3.5" />
 						Abrir documento original

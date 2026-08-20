@@ -41,19 +41,23 @@ function validarCarousel(data: any) {
     }
 
     const promptGeneral = typeof data.prompt === 'string' ? data.prompt.trim() : '';
+    const slidesIncompletos: number[] = [];
     for (let index = 0; index < data.carouselImages.length; index++) {
         const slide = data.carouselImages[index] || {};
-        const tieneReferencia = [slide.imageBase64, slide.imagePreview]
+        const tieneImagenPrincipal = [slide.imageBase64, slide.imagePreview]
             .some((value) => typeof value === 'string' && value.trim().length > 0);
         const promptSlide = typeof slide.prompt === 'string' ? slide.prompt.trim() : '';
         const tienePrompt = Boolean(promptSlide || promptGeneral);
-        const modoCrear = slide.modo === 'crear';
 
-        if (!tieneReferencia && (!modoCrear || !tienePrompt)) {
-            throw new ValidationError(
-                `El slide #${index + 1} requiere una imagen de referencia o activar “Crear (sin ref)” con un prompt propio o general.`
-            );
+        if (!tieneImagenPrincipal && !tienePrompt) {
+            slidesIncompletos.push(index + 1);
         }
+    }
+
+    if (slidesIncompletos.length > 0) {
+        throw new ValidationError(
+            `Los slides #${slidesIncompletos.join(', #')} requieren una imagen principal o un prompt propio/general.`
+        );
     }
 }
 

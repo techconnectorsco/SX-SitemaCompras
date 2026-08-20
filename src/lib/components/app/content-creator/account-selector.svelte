@@ -163,7 +163,7 @@
 			type="button"
 			onclick={connectAccount}
 			title="Conectar cuenta Meta (OAuth)"
-			class="flex items-center gap-1 rounded-md bg-[#253166] px-2 py-1 text-[10px] font-semibold text-white hover:bg-[#1c2750] transition-colors"
+			class="flex items-center gap-1 rounded-md bg-[#0D1E3D] px-2 py-1 text-[10px] font-semibold text-white hover:bg-[#1c2750] transition-colors"
 		>
 			<Plus class="h-3 w-3" />
 			<span>Conectar</span>
@@ -189,7 +189,7 @@
 				onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectAccount(a.id); } }}
 				class={`flex w-full cursor-pointer flex-col gap-1.5 rounded-lg border p-2.5 text-left transition-all ${
 					cuentaId === a.id
-						? 'border-[#253166] bg-[#253166]/10 ring-1 ring-[#253166]/30'
+						? 'border-[#0D1E3D] bg-[#0D1E3D]/10 ring-1 ring-[#0D1E3D]/30'
 						: 'border-border bg-muted/30 hover:bg-muted/60'
 				}`}
 			>

@@ -147,7 +147,7 @@
 					<select 
 						id="brand-select"
 						bind:value={selectedBrand}
-						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs outline-none focus:border-[#253166] dark:border-slate-800 dark:bg-slate-950 dark:focus:border-blue-500"
+						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs outline-none focus:border-[#0D1E3D] dark:border-slate-800 dark:bg-slate-950 dark:focus:border-blue-500"
 					>
 						<option value="Vedoba">Vedoba</option>
 						<option value="Grupo VYO">Grupo VYO</option>
@@ -166,7 +166,7 @@
 					<select 
 						id="tone-select"
 						bind:value={selectedTone}
-						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs outline-none focus:border-[#253166] dark:border-slate-800 dark:bg-slate-950 dark:focus:border-blue-500"
+						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs outline-none focus:border-[#0D1E3D] dark:border-slate-800 dark:bg-slate-950 dark:focus:border-blue-500"
 					>
 						<option value="Corporativo">Corporativo</option>
 						<option value="Inspiracional">Inspiracional</option>
@@ -183,12 +183,12 @@
 						bind:value={ideaInput}
 						rows="4" 
 						placeholder="Escribe la idea central (ej: Invitación a feria industrial el viernes, descuento de 15% en soldadoras ecológicas...)"
-						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none focus:border-[#253166] dark:border-slate-800 dark:bg-slate-950 dark:focus:border-blue-500"
+						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none focus:border-[#0D1E3D] dark:border-slate-800 dark:bg-slate-950 dark:focus:border-blue-500"
 					></textarea>
 				</div>
 
 				<Button 
-					class="w-full bg-[#253166] hover:bg-[#253166]/90 text-white mt-2"
+					class="w-full bg-[#0D1E3D] hover:bg-[#0D1E3D]/90 text-white mt-2"
 					onclick={generateCopies}
 					disabled={generating}
 				>
@@ -238,7 +238,7 @@
 				{#each generatedOptions as option (option.id)}
 					<Card.Root class="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950 hover:shadow-md transition-shadow duration-200">
 						<Card.Header class="flex flex-row items-center justify-between border-b border-slate-100 p-4 dark:border-slate-900 bg-slate-50/30 dark:bg-slate-900/20">
-							<span class="text-xs font-semibold text-[#253166] dark:text-blue-400">
+							<span class="text-xs font-semibold text-[#0D1E3D] dark:text-blue-400">
 								{option.type}
 							</span>
 							<div class="flex gap-2">
@@ -270,7 +270,7 @@
 									<span class="text-xs text-slate-500 dark:text-slate-400">Aplicar a:</span>
 									<select 
 										onchange={(e) => applyToPost(option.text, (e.target as HTMLSelectElement).value)}
-										class="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs outline-none focus:border-[#253166] dark:border-slate-800 dark:bg-slate-950 dark:focus:border-blue-500"
+										class="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs outline-none focus:border-[#0D1E3D] dark:border-slate-800 dark:bg-slate-950 dark:focus:border-blue-500"
 									>
 										<option value="">Selecciona fecha...</option>
 										{#each entries.filter(e => e.brand === selectedBrand) as entry (entry.id)}

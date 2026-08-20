@@ -882,6 +882,9 @@
 
 	// Guardar formulario
 	async function savePost() {
+		// Snapshot the selection before saving/closing the modal because reactive effects can reset it.
+		const assetIdsForGeneration = Array.from(selectedAssetIds);
+		const hasSelectedAssets = assetIdsForGeneration.length > 0;
 		if (!draftPost.title.trim()) {
 			toast.error('El tipo de contenido (título/producto) es requerido');
 			return;
@@ -951,24 +954,28 @@
 		}
 
 		const promptGeneral = draftPost.prompt?.trim() || '';
+		const systemPrompt = buildSystemPromptForBrand(draftPost.brand).trim();
 		if (draftPost.esCarrusel) {
-			const missingSlide = (draftPost.carouselImages || []).findIndex((img) => {
-				const hasReference = Boolean(img.imageBase64?.trim() || img.imagePreview?.trim());
-				const hasPrompt = Boolean(img.prompt?.trim() || promptGeneral);
-				return !hasReference && !hasPrompt;
-			});
-			if (missingSlide >= 0) {
-				toast.error(`El slide #${missingSlide + 1} requiere una imagen de referencia o un prompt.`, {
-					description: 'Activa «Crear (sin ref)» y usa el prompt del slide o el prompt general.'
+			const missingSlides = (draftPost.carouselImages || [])
+				.map((img, index) => ({ img, number: index + 1 }))
+				.filter(({ img }) => {
+					const hasPrimaryImage = Boolean(img.imageBase64?.trim() || img.imagePreview?.trim());
+					const hasContentPrompt = Boolean(img.prompt?.trim() || promptGeneral);
+					return !hasPrimaryImage && !hasContentPrompt;
+				})
+				.map(({ number }) => number);
+			if (missingSlides.length > 0) {
+				toast.error(`Slides incompletos: #${missingSlides.join(', #')}`, {
+					description: 'Cada slide sin imagen principal necesita un prompt propio o el prompt general.'
 				});
 				return;
 			}
 		}
 		const carouselImages = draftPost.esCarrusel
 			? (draftPost.carouselImages || []).map((img) => {
-				const hasReference = Boolean(img.imageBase64?.trim() || img.imagePreview?.trim());
-				const hasPrompt = Boolean(img.prompt?.trim() || promptGeneral);
-				return !hasReference && hasPrompt ? { ...img, modo: 'crear' as const } : img;
+				const hasPrimaryImage = Boolean(img.imageBase64?.trim() || img.imagePreview?.trim());
+				const hasContentPrompt = Boolean(img.prompt?.trim() || promptGeneral);
+				return !hasPrimaryImage && hasContentPrompt ? { ...img, modo: 'crear' as const } : img;
 			})
 			: draftPost.carouselImages;
 
@@ -1040,18 +1047,18 @@
 		const isCarouselFormat = !!postToProcess.esCarrusel;
 
 		if (isCarouselFormat && postToProcess.carouselImages && postToProcess.carouselImages.length > 0) {
-			// Filtrar slides procesables: modo crear SIEMPRE (requiere prompt); modo editar solo si hay base64
+			// Los assets son referencias visuales compartidas, no sustituyen el prompt de contenido.
 			const slidesProcesables = postToProcess.carouselImages
 				.map((img, idx) => ({ img, idx }))
 				.filter(({ img, idx }) => {
 					if (img.modo === 'crear') {
-						const ok = (img.prompt && img.prompt.trim()) || (postToProcess.prompt && postToProcess.prompt.trim());
+						const ok = (img.prompt && img.prompt.trim()) || promptGeneral;
 						if (!ok) {
 							console.warn(`[savePost] Slide ${idx} en modo crear sin prompt — se omite.`);
 						}
 						return ok;
 					}
-					return !!img.imageBase64;
+					return Boolean(img.imageBase64 || img.imagePreview);
 				});
 
 			if (slidesProcesables.length === 0) {
@@ -1064,29 +1071,33 @@
 				// Procesar todas las imágenes del carrusel individualmente
 				Promise.all(slidesProcesables.map(async ({ img, idx }) => {
 					try {
+						// Un prompt de slide reemplaza al general; el system prompt sólo es fallback
+						// cuando existe una imagen principal y no hay ninguno de los dos.
+						const resolvedPrompt = img.prompt?.trim() || promptGeneral || systemPrompt;
 						const response = await fetch(`/api/content-creator/publicaciones/${realId}/generar-imagen`, {
 							method: 'POST',
 							headers: { 'Content-Type': 'application/json' },
 							body: JSON.stringify({
 								base64Image: img.modo === 'crear' ? null : img.imageBase64,
+								imageUrl: img.modo === 'crear' ? null : (img.imagePreview || undefined),
 								brand: postToProcess.brand,
 								title: postToProcess.title,
 								context: postToProcess.context,
 								objective: postToProcess.objective,
 								index: idx,
-								customPrompt: (img.prompt && img.prompt.trim()) ? img.prompt.trim() : (postToProcess.prompt || undefined),
+								customPrompt: resolvedPrompt,
 								modo: img.modo || 'editar',
-								selectedAssetIds: Array.from(selectedAssetIds)
+								selectedAssetIds: assetIdsForGeneration
 							})
 						});
 						const data = await response.json();
 						if (data.success && data.imageUrl) {
 							return { index: idx, url: data.imageUrl };
 						}
-						return null;
+						return { index: idx, error: data.error || `No se pudo generar el slide #${idx + 1}` };
 					} catch (error) {
 						console.error(error);
-						return null;
+						return { index: idx, error: `Fallo de conexión al generar el slide #${idx + 1}` };
 					}
 				})).then((results) => {
 					// Actualizar estado local
@@ -1094,7 +1105,7 @@
 						if (p.id === realId && p.carouselImages) {
 							const updatedImages = [...p.carouselImages];
 							results.forEach(res => {
-								if (res && updatedImages[res.index]) {
+								if (res && 'url' in res && updatedImages[res.index]) {
 									updatedImages[res.index].imageName = `ia_gen_pub_${realId}_${res.index}.jpg`;
 									updatedImages[res.index].imagePreview = res.url;
 									updatedImages[res.index].imageBase64 = '';
@@ -1104,7 +1115,11 @@
 						}
 						return p;
 					});
-					const completados = results.filter(r => r !== null).length;
+					const completados = results.filter(r => 'url' in r).length;
+					const primerError = results.find((r) => 'error' in r);
+					if (primerError && 'error' in primerError) {
+						toast.error('No se pudieron generar todos los slides.', { description: primerError.error });
+					}
 					if (completados > 0) {
 						toast.success(`¡Edición de ${completados} imágenes de carrusel terminada!`, {
 							description: 'Revisa el resultado en la pestaña de Revisión.'
@@ -1114,8 +1129,8 @@
 			}
 } else {
 			// Post individual: modo editar (con imagen de referencia) o modo crear (text-to-image)
-			const isSingleCrear = postToProcess.modo === 'crear';
 			const hasRefImage = !!postToProcess.imageBase64 || !!postToProcess.imagePreview;
+			const isSingleCrear = postToProcess.modo === 'crear' || (!hasRefImage && hasSelectedAssets);
 
 			if (!isSingleCrear && !hasRefImage) {
 				toast.error('Sube una imagen de referencia o activá «Crear sin referencia» para generar con IA', {
@@ -1145,9 +1160,9 @@
 						title: postToProcess.title,
 						context: postToProcess.context,
 						objective: postToProcess.objective,
-						customPrompt: postToProcess.prompt || undefined,
+						customPrompt: promptGeneral || systemPrompt,
 						modo: isSingleCrear ? 'crear' : 'editar',
-						selectedAssetIds: Array.from(selectedAssetIds)
+						selectedAssetIds: assetIdsForGeneration
 					})
 				});
 				const data = await response.json();
@@ -1168,7 +1183,7 @@
 						description: 'Revisa el resultado en la pestaña de Revisión.'
 					});
 				} else {
-					toast.error('Error al generar la imagen automáticamente.');
+					toast.error('Error al generar la imagen automáticamente.', { description: data.error || '' });
 				}
 			} catch (error) {
 				console.error(error);
@@ -1202,7 +1217,7 @@
 	<!-- Cabecera del Calendario -->
 	<div class="flex flex-wrap items-center justify-between gap-4 rounded-xl border bg-card p-4 shadow-sm">
 		<div class="flex items-center gap-3">
-			<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-[#253166]">
+			<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-[#0D1E3D]">
 				<CalendarIcon class="h-5.5 w-5.5 text-white" />
 			</div>
 			<div>
@@ -1379,7 +1394,7 @@ class="w-full text-left rounded p-1.5 text-[10px] leading-tight border transitio
 					Sube la imagen y configura las directrices para que la IA genere el contenido según el system prompt de la marca.
 				</Dialog.Description>
 			</div>
-			<div class="font-mono text-xs bg-[#253166]/10 text-[#253166] dark:bg-blue-900/30 dark:text-blue-300 px-3 py-1.5 rounded-md font-semibold">
+			<div class="font-mono text-xs bg-[#0D1E3D]/10 text-[#0D1E3D] dark:bg-blue-900/30 dark:text-blue-300 px-3 py-1.5 rounded-md font-semibold">
 				{draftPost.id} · {draftPost.date}
 			</div>
 		</div>
@@ -1423,7 +1438,7 @@ class="w-full text-left rounded p-1.5 text-[10px] leading-tight border transitio
 											type="checkbox"
 											checked={slideModo === 'crear'}
 											onchange={() => toggleSlideModo(i)}
-											class="rounded border-slate-200 text-[#253166] focus:ring-[#253166] dark:border-slate-700"
+											class="rounded border-slate-200 text-[#0D1E3D] focus:ring-[#0D1E3D] dark:border-slate-700"
 										/>
 										<span>✨ Crear (sin ref)</span>
 									</label>
@@ -1450,8 +1465,8 @@ class="w-full text-left rounded p-1.5 text-[10px] leading-tight border transitio
 										</div>
 									{/if}
 								{:else}
-									<div class="flex min-h-[100px] flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-[#253166]/40 bg-[#253166]/5 px-3 py-4 text-center">
-										<Sparkles class="h-5 w-5 text-[#253166]" />
+									<div class="flex min-h-[100px] flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-[#0D1E3D]/40 bg-[#0D1E3D]/5 px-3 py-4 text-center">
+										<Sparkles class="h-5 w-5 text-[#0D1E3D]" />
 										<p class="text-[9px] font-semibold text-slate-700 dark:text-slate-200">Generar imagen desde cero con IA</p>
 										<p class="text-[8px] text-muted-foreground">Se usará solo el prompt</p>
 									</div>
@@ -1463,7 +1478,7 @@ class="w-full text-left rounded p-1.5 text-[10px] leading-tight border transitio
 										<label class="text-[9px] font-bold text-muted-foreground" for={`slide-prompt-${i}`}>Prompt de IA</label>
 										<button
 											type="button"
-											class="text-[9px] font-semibold text-[#253166] hover:underline"
+											class="text-[9px] font-semibold text-[#0D1E3D] hover:underline"
 											onclick={() => autoFillSlidePrompt(i)}
 										>Auto-generar</button>
 									</div>
@@ -1474,7 +1489,7 @@ class="w-full text-left rounded p-1.5 text-[10px] leading-tight border transitio
 											? 'Describe qué generar (obligatorio en modo crear)…'
 											: 'Opcional: hereda el prompt general si lo dejas vacío…'}
 										bind:value={draftPost.carouselImages[i].prompt}
-										class="w-full rounded-md border border-slate-200 bg-background px-2 py-1.5 text-[10px] outline-none focus:border-[#253166] dark:border-slate-700"
+										class="w-full rounded-md border border-slate-200 bg-background px-2 py-1.5 text-[10px] outline-none focus:border-[#0D1E3D] dark:border-slate-700"
 									></textarea>
 								</div>
 							</div>
@@ -1489,7 +1504,7 @@ class="w-full text-left rounded p-1.5 text-[10px] leading-tight border transitio
 									type="checkbox"
 									checked={draftPost.modo === 'crear'}
 									onchange={toggleSingleModo}
-									class="rounded border-slate-200 text-[#253166] focus:ring-[#253166] dark:border-slate-700"
+									class="rounded border-slate-200 text-[#0D1E3D] focus:ring-[#0D1E3D] dark:border-slate-700"
 								/>
 								<span>✨ Crear (sin ref)</span>
 							</label>
@@ -1509,8 +1524,8 @@ class="w-full text-left rounded p-1.5 text-[10px] leading-tight border transitio
 								<input bind:this={imageInput} type="file" accept="image/*" class="hidden" onchange={handleImageUpload} />
 							</label>
 						{:else}
-							<div class="flex min-h-[140px] flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-[#253166]/40 bg-[#253166]/5 px-3 py-6 text-center">
-								<Sparkles class="h-6 w-6 text-[#253166]" />
+							<div class="flex min-h-[140px] flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-[#0D1E3D]/40 bg-[#0D1E3D]/5 px-3 py-6 text-center">
+								<Sparkles class="h-6 w-6 text-[#0D1E3D]" />
 								<p class="text-[10px] font-semibold text-slate-700 dark:text-slate-200">Generar imagen desde cero con IA</p>
 								<p class="text-[8px] text-muted-foreground">Se usará el prompt de la IA de abajo</p>
 							</div>
@@ -1602,7 +1617,7 @@ class="w-full text-left rounded p-1.5 text-[10px] leading-tight border transitio
 					type="checkbox"
 					checked={isCarruselMode}
 					onchange={toggleCarruselMode}
-					class="rounded border-slate-200 text-[#253166] focus:ring-[#253166] dark:border-slate-700"
+					class="rounded border-slate-200 text-[#0D1E3D] focus:ring-[#0D1E3D] dark:border-slate-700"
 				/>
 				<span>🖼️ Es carrusel (varias imágenes)</span>
 			</label>
@@ -1618,13 +1633,13 @@ class="w-full text-left rounded p-1.5 text-[10px] leading-tight border transitio
 								id="post-title"
 								type="text" 
 								bind:value={draftPost.title} 
-								class="h-9.5 flex-1 rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166] font-semibold text-slate-800 dark:text-slate-100 min-w-0" 
+								class="h-9.5 flex-1 rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D] font-semibold text-slate-800 dark:text-slate-100 min-w-0" 
 								placeholder="ej: Toyama Ahoyadora TEA52X-200"
 							/>
 							<Button 
 								type="button" 
 								variant="outline" 
-								class="h-9.5 text-xs font-semibold px-2.5 border-[#253166]/20 hover:bg-[#253166]/5 dark:border-blue-900/30 text-[#253166] dark:text-blue-400 gap-1.5 flex items-center shrink-0 cursor-pointer"
+								class="h-9.5 text-xs font-semibold px-2.5 border-[#0D1E3D]/20 hover:bg-[#0D1E3D]/5 dark:border-blue-900/30 text-[#0D1E3D] dark:text-blue-400 gap-1.5 flex items-center shrink-0 cursor-pointer"
 								onclick={openProductSelector}
 							>
 								<Package class="h-3.5 w-3.5" />
@@ -1650,7 +1665,7 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 									draftPost.network = selectedNetworks.join(', ');
 								}
 							}}
-							class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166] font-bold"
+							class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D] font-bold"
 							disabled={cuentasMeta.length === 0}
 						>
 							{#if cuentasMeta.length === 0}
@@ -1672,7 +1687,7 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 						<select 
 							id="post-brand"
 							bind:value={draftPost.brand} 
-							class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166] font-bold"
+							class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D] font-bold"
 						>
 							{#each catalogos.marcas as marca}
 								<option value={marca.nombre}>{marca.nombre}</option>
@@ -1694,7 +1709,7 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 						type="button"
 						onclick={() => { assetFilterType = 'todos'; assetPickerOpen = true; }}
 						disabled={loadingAssets || marcaAssets.length === 0}
-						class="inline-flex items-center gap-1.5 rounded-md border border-[#253166]/30 bg-[#253166]/5 px-2.5 py-1 text-[10px] font-bold text-[#253166] hover:bg-[#253166]/10 transition disabled:opacity-50 disabled:cursor-not-allowed"
+						class="inline-flex items-center gap-1.5 rounded-md border border-[#0D1E3D]/30 bg-[#0D1E3D]/5 px-2.5 py-1 text-[10px] font-bold text-[#0D1E3D] hover:bg-[#0D1E3D]/10 transition disabled:opacity-50 disabled:cursor-not-allowed"
 						title="Ver y seleccionar assets de marca"
 					>
 						<ImageIcon class="h-3.5 w-3.5" />
@@ -1745,7 +1760,7 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 						<button
 							type="button"
 							onclick={openFichasSelector}
-							class="inline-flex items-center gap-1.5 rounded-md border border-[#253166]/30 bg-[#253166]/5 px-2 py-1 text-[10px] font-bold text-[#253166] hover:bg-[#253166]/10 transition"
+							class="inline-flex items-center gap-1.5 rounded-md border border-[#0D1E3D]/30 bg-[#0D1E3D]/5 px-2 py-1 text-[10px] font-bold text-[#0D1E3D] hover:bg-[#0D1E3D]/10 transition"
 							title="Adjuntar especificaciones de una ficha técnica de esta marca"
 						>
 							<FileText class="h-3 w-3" />
@@ -1756,7 +1771,7 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 						id="post-context"
 						bind:value={draftPost.context}
 						rows="3"
-						class="w-full rounded-md border bg-background px-3 py-2 text-xs outline-none focus:border-[#253166] leading-relaxed font-sans resize-y"
+						class="w-full rounded-md border bg-background px-3 py-2 text-xs outline-none focus:border-[#0D1E3D] leading-relaxed font-sans resize-y"
 						placeholder="ej: Especificaciones técnicas: Haga de su excavación algo fácil y rápido"
 					></textarea>
 				</div>
@@ -1768,7 +1783,7 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 						<button
 							type="button"
 							onclick={fillDefaultPrompt}
-							class="inline-flex items-center gap-1 rounded-md border border-[#253166]/30 bg-[#253166]/5 px-2 py-1 text-[10px] font-bold text-[#253166] hover:bg-[#253166]/10 transition"
+							class="inline-flex items-center gap-1 rounded-md border border-[#0D1E3D]/30 bg-[#0D1E3D]/5 px-2 py-1 text-[10px] font-bold text-[#0D1E3D] hover:bg-[#0D1E3D]/10 transition"
 							title="Rellenar con el system prompt de la marca + contexto + objetivo"
 						>
 							<Sparkles class="h-3 w-3" />
@@ -1779,7 +1794,7 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 						id="post-prompt"
 						bind:value={draftPost.prompt}
 						rows="4"
-						class="w-full rounded-md border bg-background px-3 py-2 text-xs outline-none focus:border-[#253166] leading-relaxed font-sans resize-y"
+						class="w-full rounded-md border bg-background px-3 py-2 text-xs outline-none focus:border-[#0D1E3D] leading-relaxed font-sans resize-y"
 						placeholder="Pulsa «Auto-generar» para partir del system prompt de la marca, o escribe aquí tus indicaciones específicas (fondo, composición, ángulos, etc.)."
 					></textarea>
 					<p class="text-[9px] text-muted-foreground">Si lo dejas vacío, se usará el system prompt de la marca por defecto.</p>
@@ -1792,7 +1807,7 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 						id="post-prompt-copy"
 						bind:value={draftPost.promptCopy}
 						rows="3"
-						class="w-full rounded-md border bg-background px-3 py-2 text-xs outline-none focus:border-[#253166] leading-relaxed font-sans resize-y"
+						class="w-full rounded-md border bg-background px-3 py-2 text-xs outline-none focus:border-[#0D1E3D] leading-relaxed font-sans resize-y"
 						placeholder="Indicaciones específicas para el copy (tono más humorístico, evitar hashtags, longitud, etc.). Vacío = usa el manual de marca."
 					></textarea>
 					<p class="text-[9px] text-muted-foreground">Sobreescribe el manual de marca solo para el texto de esta publicación.</p>
@@ -1814,7 +1829,7 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 							class={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all
 								${redHabilitada ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'}
 								${selectedNetworks.includes(red.nombre) 
-									? 'bg-[#253166]/10 border-[#253166] text-[#253166] dark:bg-blue-950/40 dark:text-blue-400 font-bold' 
+									? 'bg-[#0D1E3D]/10 border-[#0D1E3D] text-[#0D1E3D] dark:bg-blue-950/40 dark:text-blue-400 font-bold' 
 									: 'bg-background hover:bg-slate-50 dark:hover:bg-slate-800 border-slate-200 text-slate-600 dark:text-slate-400'}`}
 							title={redHabilitada ? red.nombre : `${red.nombre} no está habilitada para esta cuenta`}
 						>
@@ -1834,7 +1849,7 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 					<select
 						id="post-format"
 						bind:value={draftPost.format}
-						class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166]"
+						class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D]"
 					>
 						{#each catalogos.formatos as formato}
 							<option value={formato.nombre}>{formato.nombre}</option>
@@ -1846,7 +1861,7 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 					<select
 						id="post-audience"
 						bind:value={draftPost.audience}
-						class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166]"
+						class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D]"
 					>
 						{#each catalogos.audiencias as audiencia}
 							<option value={audiencia.nombre}>{audiencia.nombre}</option>
@@ -1859,7 +1874,7 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 						id="post-budget"
 						type="number"
 						bind:value={draftPost.budget}
-						class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166] text-right font-mono"
+						class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D] text-right font-mono"
 					/>
 				</div>
 			</div>
@@ -1872,7 +1887,7 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 							id="post-cta"
 							type="text" 
 							bind:value={draftPost.cta} 
-							class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166]" 
+							class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D]" 
 							placeholder="ej: Cotizar ahora"
 						/>
 					</div>
@@ -1882,7 +1897,7 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 							id="post-objective"
 							type="text" 
 							bind:value={draftPost.objective} 
-							class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166]" 
+							class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D]" 
 							placeholder="ej: Conversaciones iniciadas"
 						/>
 					</div>
@@ -1898,7 +1913,7 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 								id="post-meta-start-date"
 								type="date" 
 								bind:value={draftPost.metaStartDate} 
-								class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166] text-slate-800 dark:text-slate-100" 
+								class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D] text-slate-800 dark:text-slate-100" 
 							/>
 						</div>
 						<div class="space-y-1">
@@ -1907,7 +1922,7 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 								id="post-meta-end-date"
 								type="date" 
 								bind:value={draftPost.metaEndDate} 
-								class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166] text-slate-800 dark:text-slate-100" 
+								class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D] text-slate-800 dark:text-slate-100" 
 							/>
 						</div>
 					</div>
@@ -1916,7 +1931,7 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 				<!-- Botones Finales de Guardado -->
 				<div class="flex justify-end gap-2.5 pt-6 border-t">
 					<Button variant="outline" onclick={requestCloseModal}>Cancelar</Button>
-					<Button class="bg-[#253166] hover:bg-[#253166]/90 text-white font-bold cursor-pointer" onclick={savePost}>Guardar Ficha</Button>
+					<Button class="bg-[#0D1E3D] hover:bg-[#0D1E3D]/90 text-white font-bold cursor-pointer" onclick={savePost}>Guardar Ficha</Button>
 				</div>
 
 			</div>
@@ -1934,12 +1949,12 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 					>
 						<div class="flex items-center justify-between border-b pb-3">
 							<div class="flex items-center gap-2">
-								<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#253166] text-white">
+								<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0D1E3D] text-white">
 									<FileText class="h-4 w-4" />
 								</div>
 								<div>
 									<h3 class="text-sm font-bold">Seleccionar Ficha Técnica</h3>
-									<p class="text-[11px] text-muted-foreground">Marca actual: <strong class="text-[#253166]">{draftPost.brand}</strong></p>
+									<p class="text-[11px] text-muted-foreground">Marca actual: <strong class="text-[#0D1E3D]">{draftPost.brand}</strong></p>
 								</div>
 							</div>
 							<button
@@ -1954,7 +1969,7 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 						<div class="flex-1 overflow-y-auto space-y-3 pr-1">
 							{#if loadingFichasSelector}
 								<div class="flex flex-col items-center justify-center py-10 gap-2">
-									<RefreshCw class="h-6 w-6 animate-spin text-[#253166]" />
+									<RefreshCw class="h-6 w-6 animate-spin text-[#0D1E3D]" />
 									<p class="text-xs text-muted-foreground">Cargando fichas de la marca...</p>
 								</div>
 							{:else if fichasDisponibles.length === 0}
@@ -1966,13 +1981,13 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 							{:else}
 								<div class="grid grid-cols-1 gap-2.5">
 									{#each fichasDisponibles as ficha}
-										<div class="flex flex-col gap-2 p-3 border rounded-lg hover:border-[#253166]/50 bg-card transition">
+										<div class="flex flex-col gap-2 p-3 border rounded-lg hover:border-[#0D1E3D]/50 bg-card transition">
 											<div class="flex items-center justify-between">
 												<h4 class="font-bold text-xs text-foreground">{ficha.nombre_producto}</h4>
 												<button
 													type="button"
 													onclick={(e) => { e.stopPropagation(); attachFichaToContext(ficha); }}
-													class="inline-flex items-center gap-1 rounded-md bg-[#253166] px-2.5 py-1 text-[11px] font-bold text-white shadow-sm hover:bg-[#1a234a] transition cursor-pointer"
+													class="inline-flex items-center gap-1 rounded-md bg-[#0D1E3D] px-2.5 py-1 text-[11px] font-bold text-white shadow-sm hover:bg-[#0A1730] transition cursor-pointer"
 												>
 													<Plus class="h-3 w-3" />
 													<span>Adjuntar al Contexto</span>
@@ -2014,7 +2029,7 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 		<div class="flex items-center justify-between border-b p-5 bg-muted/40 shrink-0">
 			<div>
 				<Dialog.Title class="text-base font-bold flex items-center gap-2">
-					<Package class="h-5 w-5 text-[#253166] dark:text-blue-400" />
+					<Package class="h-5 w-5 text-[#0D1E3D] dark:text-blue-400" />
 					Catálogo de Productos e Inventario
 				</Dialog.Title>
 				<Dialog.Description class="text-xs text-muted-foreground mt-0.5">
@@ -2033,7 +2048,7 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 					bind:value={productSearchQuery}
 					oninput={dispararBusquedaConDebounce}
 					onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); cargarProductos(); } }}
-					class="pl-9 h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166] text-slate-800 dark:text-slate-100"
+					class="pl-9 h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D] text-slate-800 dark:text-slate-100"
 				/>
 				{#if productSearchQuery}
 					<button
@@ -2050,7 +2065,7 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 				<select
 					bind:value={productBrandFilter}
 					onchange={cargarProductos}
-					class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166] font-semibold text-slate-800 dark:text-slate-100 cursor-pointer"
+					class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D] font-semibold text-slate-800 dark:text-slate-100 cursor-pointer"
 				>
 					<option value="Todas">Todas las marcas</option>
 					{#each marcasExactus as m}
@@ -2063,7 +2078,7 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 				<select
 					bind:value={productCategoryFilter}
 					onchange={cargarProductos}
-					class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166] font-semibold text-slate-800 dark:text-slate-100 cursor-pointer"
+					class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D] font-semibold text-slate-800 dark:text-slate-100 cursor-pointer"
 				>
 					<option value="Todas">Todas las categorías</option>
 					{#each categoriasExactus as cat}
@@ -2076,7 +2091,7 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 				<select
 					bind:value={productSortOrder}
 					onchange={cargarProductos}
-					class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166] font-semibold text-slate-800 dark:text-slate-100 cursor-pointer"
+					class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D] font-semibold text-slate-800 dark:text-slate-100 cursor-pointer"
 				>
 					<option value="none">Orden por defecto</option>
 					<option value="highest">Mayor disponibilidad</option>
@@ -2115,7 +2130,7 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 		<div class="flex-1 min-h-0 overflow-y-auto p-4 space-y-2">
 			{#if cargandoProductos && productos.length === 0}
 				<div class="flex justify-center py-12">
-					<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#253166]"></div>
+					<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0D1E3D]"></div>
 				</div>
 			{:else if productos.length === 0}
 				<div class="text-center py-10 text-muted-foreground text-xs">
@@ -2142,7 +2157,7 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 								>
 									<div class="space-y-1 flex-1 min-w-0">
 										<div class="flex flex-wrap items-center gap-2">
-											<span class="font-bold text-slate-800 dark:text-slate-200 group-hover:text-[#253166] dark:group-hover:text-blue-400 transition-colors text-xs">
+											<span class="font-bold text-slate-800 dark:text-slate-200 group-hover:text-[#0D1E3D] dark:group-hover:text-blue-400 transition-colors text-xs">
 												{product.descripcion || product.codigo}
 											</span>
 											<span class="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-[10px] font-medium text-slate-600 dark:text-slate-300 font-mono">
@@ -2173,7 +2188,7 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 												<span class="text-[9px] text-muted-foreground">· {product.bodegas_con_stock} bod.</span>
 											</div>
 										</div>
-										<div class="h-8 w-8 rounded-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-500 group-hover:bg-[#253166] group-hover:text-white group-hover:border-[#253166] dark:group-hover:bg-blue-600 dark:group-hover:border-blue-600 transition-all shadow-xs" title="Seleccionar producto">
+										<div class="h-8 w-8 rounded-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-500 group-hover:bg-[#0D1E3D] group-hover:text-white group-hover:border-[#0D1E3D] dark:group-hover:bg-blue-600 dark:group-hover:border-blue-600 transition-all shadow-xs" title="Seleccionar producto">
 											<Check class="h-4 w-4" />
 										</div>
 									</div>
@@ -2183,7 +2198,7 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 								<div class="w-9 shrink-0 border-l border-slate-200 dark:border-slate-800 flex items-center justify-center hover:bg-muted/50 transition cursor-pointer" title="Ver stock por bodega">
 									<button
 										type="button"
-										class="h-full w-full flex items-center justify-center text-slate-500 hover:text-[#253166] dark:hover:text-blue-400"
+										class="h-full w-full flex items-center justify-center text-slate-500 hover:text-[#0D1E3D] dark:hover:text-blue-400"
 										onclick={() => toggleExpandirProducto(product.codigo)}
 										aria-label="Ver desglose por bodega"
 									>
@@ -2278,10 +2293,10 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 		<div class="flex items-center justify-between border-b p-5 bg-muted/40">
 			<div>
 				<Dialog.Title class="text-base font-bold flex items-center gap-2">
-					<ImageIcon class="h-5 w-5 text-[#253166] dark:text-blue-400" />
+					<ImageIcon class="h-5 w-5 text-[#0D1E3D] dark:text-blue-400" />
 					Assets de Marca
 					{#if selectedAssetIds.size > 0}
-						<span class="ml-1 inline-flex items-center rounded-full bg-[#253166]/10 text-[#253166] dark:bg-blue-900/40 dark:text-blue-300 px-2 py-0.5 text-[10px] font-bold">
+						<span class="ml-1 inline-flex items-center rounded-full bg-[#0D1E3D]/10 text-[#0D1E3D] dark:bg-blue-900/40 dark:text-blue-300 px-2 py-0.5 text-[10px] font-bold">
 							{selectedAssetIds.size} seleccionado(s)
 						</span>
 					{/if}
@@ -2302,7 +2317,7 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 						<button
 							type="button"
 							onclick={() => assetFilterType = tipo as typeof assetFilterType}
-							class={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide transition ${active ? 'bg-[#253166] text-white dark:bg-blue-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+							class={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide transition ${active ? 'bg-[#0D1E3D] text-white dark:bg-blue-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
 						>
 							{tipo === 'todos' ? 'Todos' : tipo}
 							<span class={`rounded-full px-1 text-[9px] ${active ? 'bg-white/20' : 'bg-slate-200 dark:bg-slate-700'}`}>{count}</span>
@@ -2316,7 +2331,7 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 		<div class="max-h-[60vh] overflow-y-auto p-4">
 			{#if loadingAssets}
 				<div class="flex justify-center py-12">
-					<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#253166]"></div>
+					<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0D1E3D]"></div>
 				</div>
 			{:else if marcaAssets.length === 0}
 				<div class="text-center py-10 text-muted-foreground text-xs">
@@ -2336,7 +2351,7 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 							<button
 								type="button"
 								onclick={() => toggleAsset(asset.id)}
-								class={`group relative flex flex-col rounded-lg border overflow-hidden transition-all text-left ${selected ? 'border-[#253166] ring-2 ring-[#253166]/30 dark:border-blue-500 dark:ring-blue-500/30 bg-indigo-50/50 dark:bg-blue-950/20' : 'border-slate-200 dark:border-slate-800 bg-card hover:border-[#253166]/40 dark:hover:border-blue-500/40 hover:shadow-xs'}`}
+								class={`group relative flex flex-col rounded-lg border overflow-hidden transition-all text-left ${selected ? 'border-[#0D1E3D] ring-2 ring-[#0D1E3D]/30 dark:border-blue-500 dark:ring-blue-500/30 bg-indigo-50/50 dark:bg-blue-950/20' : 'border-slate-200 dark:border-slate-800 bg-card hover:border-[#0D1E3D]/40 dark:hover:border-blue-500/40 hover:shadow-xs'}`}
 							>
 								<!-- Preview -->
 								<div class="aspect-square bg-slate-50 dark:bg-slate-900/40 flex items-center justify-center overflow-hidden border-b border-slate-100 dark:border-slate-800">
@@ -2344,7 +2359,7 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 								</div>
 								<!-- Badge selección -->
 								{#if selected}
-									<div class="absolute top-1.5 right-1.5 h-5 w-5 rounded-full bg-[#253166] dark:bg-blue-600 flex items-center justify-center shadow-sm">
+									<div class="absolute top-1.5 right-1.5 h-5 w-5 rounded-full bg-[#0D1E3D] dark:bg-blue-600 flex items-center justify-center shadow-sm">
 										<Check class="h-3.5 w-3.5 text-white" />
 									</div>
 								{/if}

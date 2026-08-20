@@ -94,7 +94,7 @@
 		<div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4 dark:border-slate-900">
 			<div>
 				<h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-					<Megaphone class="h-4 w-4 text-[#253166] dark:text-blue-400 animate-bounce" />
+					<Megaphone class="h-4 w-4 text-[#0D1E3D] dark:text-blue-400 animate-bounce" />
 					Cola de Envío API (Meta Graph API)
 				</h3>
 				<p class="text-xs text-slate-500 mt-0.5 dark:text-slate-400">
@@ -106,14 +106,14 @@
 				<button 
 					type="button"
 					onclick={() => activeFilter = 'Aprobados'}
-					class="rounded-lg px-2.5 py-1 text-xs font-medium transition-all duration-200 {activeFilter === 'Aprobados' ? 'bg-[#253166] text-white dark:bg-blue-600' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-900'}"
+					class="rounded-lg px-2.5 py-1 text-xs font-medium transition-all duration-200 {activeFilter === 'Aprobados' ? 'bg-[#0D1E3D] text-white dark:bg-blue-600' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-900'}"
 				>
 					Listos para Publicar ({entries.filter(e => e.status === 'Aprobado' || e.status === 'Programado').length})
 				</button>
 				<button 
 					type="button"
 					onclick={() => activeFilter = 'Todos'}
-					class="rounded-lg px-2.5 py-1 text-xs font-medium transition-all duration-200 {activeFilter === 'Todos' ? 'bg-[#253166] text-white dark:bg-blue-600' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-900'}"
+					class="rounded-lg px-2.5 py-1 text-xs font-medium transition-all duration-200 {activeFilter === 'Todos' ? 'bg-[#0D1E3D] text-white dark:bg-blue-600' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-900'}"
 				>
 					Todos ({entries.length})
 				</button>
@@ -134,12 +134,12 @@
 					<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950/40 rounded-2xl hover:shadow-sm transition">
 						<div class="flex items-start gap-4">
 							<!-- Mini preview o icono -->
-							<div class="h-14 w-14 rounded-xl bg-gradient-to-br from-[#253166] to-orange-500 flex items-center justify-center text-white shrink-0 shadow-inner">
+							<div class="h-14 w-14 rounded-xl bg-gradient-to-br from-[#0D1E3D] to-orange-500 flex items-center justify-center text-white shrink-0 shadow-inner">
 								<Megaphone class="h-5 w-5" />
 							</div>
 							<div class="space-y-1">
 								<div class="flex flex-wrap items-center gap-2">
-									<span class="rounded-full bg-[#253166]/10 px-2.5 py-0.5 text-[10px] font-semibold text-[#253166] dark:bg-[#253166]/20 dark:text-blue-300">
+									<span class="rounded-full bg-[#0D1E3D]/10 px-2.5 py-0.5 text-[10px] font-semibold text-[#0D1E3D] dark:bg-[#0D1E3D]/20 dark:text-blue-300">
 										{entry.brand}
 									</span>
 									<span class="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">

@@ -77,7 +77,7 @@
 				<div class="flex gap-2">
 					<select 
 						bind:value={selectedCountry}
-						class="rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-xs outline-none focus:border-[#253166] dark:border-slate-800 dark:bg-slate-950"
+						class="rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-xs outline-none focus:border-[#0D1E3D] dark:border-slate-800 dark:bg-slate-950"
 					>
 						<option value="Costa Rica">Costa Rica</option>
 						<option value="Panamá">Panamá</option>
@@ -89,7 +89,7 @@
 			<!-- Visualización de Consumo actual -->
 			<div class="mt-5 space-y-4">
 				<div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-					<span>Rol Simulado: <span class="font-semibold text-[#253166] dark:text-blue-400">{currentRole}</span></span>
+					<span>Rol Simulado: <span class="font-semibold text-[#0D1E3D] dark:text-blue-400">{currentRole}</span></span>
 					<span>Límite de Rol: {limitForRole === Infinity ? 'Ilimitado (Auditable)' : `${limitForRole.toLocaleString()} tokens`}</span>
 				</div>
 
@@ -141,7 +141,7 @@
 					<select 
 						id="role-select"
 						bind:value={currentRole}
-						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs outline-none focus:border-[#253166] dark:border-slate-800 dark:bg-slate-950"
+						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs outline-none focus:border-[#0D1E3D] dark:border-slate-800 dark:bg-slate-950"
 					>
 						<option value="Super Admin">Super Admin</option>
 						<option value="Admin por País">Admin por País</option>
@@ -159,7 +159,7 @@
 								id="quota-admin-input"
 								type="number" 
 								bind:value={quotas['Admin por País']} 
-								class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs outline-none focus:border-[#253166] dark:border-slate-800 dark:bg-slate-950" 
+								class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs outline-none focus:border-[#0D1E3D] dark:border-slate-800 dark:bg-slate-950" 
 							/>
 						</div>
 						<div>
@@ -170,7 +170,7 @@
 								id="quota-analyst-input"
 								type="number" 
 								bind:value={quotas['Analista']} 
-								class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs outline-none focus:border-[#253166] dark:border-slate-800 dark:bg-slate-950" 
+								class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs outline-none focus:border-[#0D1E3D] dark:border-slate-800 dark:bg-slate-950" 
 							/>
 						</div>
 						<Button class="w-full" onclick={saveQuotas}>Actualizar cuotas</Button>
