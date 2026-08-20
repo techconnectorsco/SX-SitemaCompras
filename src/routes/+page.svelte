@@ -123,7 +123,6 @@
 							</p>
 						</div>
 
-
 						<!-- CTA Buttons -->
 						<div class="flex flex-col sm:flex-row gap-4 flex-wrap">
 							<Button
@@ -159,6 +158,16 @@
 								Asistente CXC
 							</Button>
 							<Button
+								href="http://facturacion.soportexperto.com:3003/inicio/"
+								target="_blank"
+								rel="noopener noreferrer"
+								size="lg"
+								class="text-base px-8 py-6 bg-[#1A73C2] hover:bg-[#1A73C2]/90 text-white"
+							>
+								<Package class="mr-2 h-5 w-5" />
+								Facturación
+							</Button>
+							<Button
 								href={AUTH_PATHS.REGISTER}
 								size="lg"
 								class="text-base px-8 py-6 bg-[#1A73C2] hover:bg-[#1A73C2]/90 text-white"
@@ -172,10 +181,10 @@
 					<div class="hidden lg:flex items-center justify-center relative">
 						<div class="relative w-full max-w-lg overflow-visible">
 							<!-- Hero Image -->
-							<img 
-								src="/hero_img.png" 
-								alt="Asistente IA" 
-								class="relative z-10 w-[115%] max-w-none h-auto object-cover -ml-4" 
+							<img
+								src="/hero_img.png"
+								alt="Asistente IA"
+								class="relative z-10 w-[115%] max-w-none h-auto object-cover -ml-4"
 								style="-webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%); mask-image: linear-gradient(to bottom, black 80%, transparent 100%);"
 							/>
 						</div>
