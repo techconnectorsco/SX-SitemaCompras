@@ -73,6 +73,7 @@
 		esCarrusel?: boolean;
 		modo?: 'editar' | 'crear';
 		cuentaId?: number | null;
+		publicarAlAprobar?: boolean;
 	}
 
 	// Props Svelte 5
@@ -614,6 +615,7 @@
 			references: '',
 			trend: '',
 			date: actualDateStr,
+			time: '12:00',
 			imagePreview: null,
 			imageName: '',
 			imageBase64: '',
@@ -630,6 +632,7 @@
 			prompt: '',
 			esCarrusel: true,
 			modo: 'editar',
+			publicarAlAprobar: false,
 			// Default: primera cuenta Meta disponible con token válido
 			cuentaId: cuentasMeta[0]?.id ?? null
 		};
@@ -690,6 +693,7 @@
 			metaEndDate: post.metaEndDate || '',
 			prompt: post.prompt || '',
 			promptCopy: post.promptCopy || '',
+			publicarAlAprobar: false,
 			modo: post.modo === 'crear' ? 'crear' : 'editar',
 			carouselImages: (post.carouselImages || []).map((img: any) => ({
 				imagePreview: img.imagePreview ?? null,
@@ -885,17 +889,19 @@
 		// Snapshot the selection before saving/closing the modal because reactive effects can reset it.
 		const assetIdsForGeneration = Array.from(selectedAssetIds);
 		const hasSelectedAssets = assetIdsForGeneration.length > 0;
+		const publishImmediately = draftPost.publicarAlAprobar === true;
+		const scheduledTime = typeof draftPost.time === 'string' ? draftPost.time.trim() : '';
 		if (!draftPost.title.trim()) {
 			toast.error('El tipo de contenido (título/producto) es requerido');
 			return;
 		}
 
-		if (!draftPost.date) {
+		if (!publishImmediately && !draftPost.date) {
 			toast.error('La fecha de publicación es requerida');
 			return;
 		}
 
-		if (!draftPost.time || !draftPost.time.trim()) {
+		if (!publishImmediately && !scheduledTime) {
 			toast.error('La hora de publicación es requerida', {
 				description: 'Seleccioná una hora para poder guardar la ficha.'
 			});
@@ -912,7 +918,7 @@
 
 		// Al crear una publicación nueva, no permitir fechas pasadas.
 		// En edición, handleDateChange ya bloquea mover la fecha al pasado.
-		if (!isEditing && isPastDate(draftPost.date)) {
+		if (!publishImmediately && !isEditing && isPastDate(draftPost.date)) {
 			toast.error('No se puede programar una publicación en una fecha pasada', {
 				description: 'Ajusta la fecha a hoy o una fecha futura.'
 			});
@@ -979,7 +985,12 @@
 			})
 			: draftPost.carouselImages;
 
-		const postToProcess = { ...draftPost, carouselImages, redes_ids };
+		const postToProcess = {
+			...draftPost,
+			carouselImages,
+			redes_ids,
+			publicarAlAprobar: publishImmediately
+		};
 		exitConfirmed = true;
 		dialogOpen = false;
 
@@ -1544,30 +1555,45 @@ class="w-full text-left rounded p-1.5 text-[10px] leading-tight border transitio
 
 					<!-- Detalles de Calendario -->
 					<div class="border-t pt-3 space-y-3.5 text-xs">
-						<div class="grid grid-cols-2 gap-3">
-							<div>
-								<label class="text-[9px] font-bold text-slate-400 uppercase block mb-1">Fecha de Publicación</label>
-								<input
-									type="date"
-									min={getTodayStr()}
-									value={draftPost.date}
-									onchange={(e) => handleDateChange(e.currentTarget.value)}
-									class="w-full px-2 py-1.5 text-xs rounded-md border border-slate-200 bg-background text-foreground shadow-xs focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 dark:border-slate-800"
-								/>
+						<label class="flex items-start gap-2 rounded-lg border border-orange-200 bg-orange-50/60 p-2.5 text-xs font-semibold text-slate-700 cursor-pointer dark:border-orange-900/60 dark:bg-orange-950/20 dark:text-slate-200">
+							<input
+								type="checkbox"
+								bind:checked={draftPost.publicarAlAprobar}
+								class="mt-0.5 rounded border-orange-300 text-orange-600 focus:ring-orange-500"
+							/>
+							<span>
+								Publicar al aprobar
+								<span class="mt-0.5 block text-[10px] font-normal text-muted-foreground">Se enviará automáticamente en el siguiente ciclo al aprobar la pieza.</span>
+							</span>
+						</label>
+						{#if draftPost.publicarAlAprobar}
+							<p class="rounded-md bg-muted px-2.5 py-2 text-[10px] text-muted-foreground">No necesitás seleccionar fecha ni hora de publicación.</p>
+						{:else}
+							<div class="grid grid-cols-2 gap-3">
+								<div>
+									<label class="text-[9px] font-bold text-slate-400 uppercase block mb-1">Fecha de Publicación</label>
+									<input
+										type="date"
+										min={getTodayStr()}
+										value={draftPost.date}
+										onchange={(e) => handleDateChange(e.currentTarget.value)}
+										class="w-full px-2 py-1.5 text-xs rounded-md border border-slate-200 bg-background text-foreground shadow-xs focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 dark:border-slate-800"
+									/>
+								</div>
+								<div>
+									<label class="text-[9px] font-bold text-slate-400 uppercase block mb-1">Hora de Publicación</label>
+									<input
+										type="time"
+										bind:value={draftPost.time}
+										class="w-full px-2 py-1.5 text-xs rounded-md border border-slate-200 bg-background text-foreground shadow-xs focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 dark:border-slate-800"
+									/>
+								</div>
 							</div>
-							<div>
-								<label class="text-[9px] font-bold text-slate-400 uppercase block mb-1">Hora de Publicación</label>
-								<input 
-									type="time" 
-									bind:value={draftPost.time} 
-									class="w-full px-2 py-1.5 text-xs rounded-md border border-slate-200 bg-background text-foreground shadow-xs focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 dark:border-slate-800" 
-								/>
-							</div>
-						</div>
+						{/if}
 						<div>
 							<span class="text-[9px] font-bold text-slate-400 uppercase">Día Programado</span>
 							<p class="font-bold text-slate-800 dark:text-slate-200">
-								{draftPost.date ? getDayNameFormatted(draftPost.date) : '-'}
+								{draftPost.publicarAlAprobar ? 'Al aprobar' : (draftPost.date ? getDayNameFormatted(draftPost.date) : '-')}
 							</p>
 						</div>
 						<div>

@@ -107,10 +107,17 @@ function resolverDatos(data: any) {
         }
     }
 
+    const publicarAlAprobar = data.publicarAlAprobar === true;
     let fecha_programada: number | null = null;
-    if (data.date) {
+    if (publicarAlAprobar) {
+        // Al aprobarse, el scheduler encontrará esta fecha vencida y la enviará
+        // en su siguiente ciclo, sin necesitar un flujo de publicación aparte.
+        fecha_programada = Math.floor(Date.now() / 1000);
+    } else if (data.date) {
         const timeStr = data.time && data.time.includes(':') ? data.time : '12:00';
         fecha_programada = Math.floor(new Date(`${data.date}T${timeStr}:00`).getTime() / 1000);
+    } else {
+        throw new ValidationError('La fecha de publicación es requerida o selecciona "Publicar al aprobar"');
     }
 
     let meta_pauta_inicio: number | null = null;
