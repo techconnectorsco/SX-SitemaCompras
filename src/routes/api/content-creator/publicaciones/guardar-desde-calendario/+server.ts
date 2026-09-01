@@ -36,8 +36,8 @@ class ValidationError extends Error {}
 function validarCarousel(data: any) {
     if (!data.esCarrusel) return;
 
-    if (!Array.isArray(data.carouselImages) || data.carouselImages.length === 0) {
-        throw new ValidationError('El carrusel debe incluir al menos una imagen');
+    if (!Array.isArray(data.carouselImages) || data.carouselImages.length < 2 || data.carouselImages.length > 10) {
+        throw new ValidationError('El carrusel debe incluir entre 2 y 10 slides');
     }
 
     const promptGeneral = typeof data.prompt === 'string' ? data.prompt.trim() : '';
@@ -107,20 +107,36 @@ function resolverDatos(data: any) {
         }
     }
 
+    const publicarAlAprobar = data.publicarAlAprobar === true;
     let fecha_programada: number | null = null;
-    if (data.date) {
+    if (publicarAlAprobar) {
+        // Al aprobarse, el scheduler encontrará esta fecha vencida y la enviará
+        // en su siguiente ciclo, sin necesitar un flujo de publicación aparte.
+        fecha_programada = Math.floor(Date.now() / 1000);
+    } else if (data.date) {
         const timeStr = data.time && data.time.includes(':') ? data.time : '12:00';
         fecha_programada = Math.floor(new Date(`${data.date}T${timeStr}:00`).getTime() / 1000);
+    } else {
+        throw new ValidationError('La fecha de publicación es requerida o selecciona "Publicar al aprobar"');
+    }
+
+    const metaStartDate = typeof data.metaStartDate === 'string' ? data.metaStartDate.trim() : '';
+    const metaEndDate = typeof data.metaEndDate === 'string' ? data.metaEndDate.trim() : '';
+    const promoted = data.promoted === true;
+
+    if (promoted && (!metaStartDate || !metaEndDate)) {
+        throw new ValidationError('Las fechas de inicio y finalización de pauta son requeridas para una publicación promocionada');
+    }
+
+    if (promoted && metaEndDate < metaStartDate) {
+        throw new ValidationError('La fecha de finalización de pauta no puede ser anterior a la fecha de inicio');
     }
 
     let meta_pauta_inicio: number | null = null;
-    if (data.metaStartDate) {
-        meta_pauta_inicio = Math.floor(new Date(data.metaStartDate + 'T12:00:00').getTime() / 1000);
-    }
-
     let meta_pauta_fin: number | null = null;
-    if (data.metaEndDate) {
-        meta_pauta_fin = Math.floor(new Date(data.metaEndDate + 'T12:00:00').getTime() / 1000);
+    if (promoted) {
+        meta_pauta_inicio = Math.floor(new Date(metaStartDate + 'T12:00:00').getTime() / 1000);
+        meta_pauta_fin = Math.floor(new Date(metaEndDate + 'T12:00:00').getTime() / 1000);
     }
 
     // `published` es un indicador técnico que solo debe modificar el proceso
@@ -134,7 +150,7 @@ function resolverDatos(data: any) {
                 ? 'Publicado'
             : 'Borrador';
 
-    return { marca, formato, audiencia, cuenta, redes_ids, fecha_programada, meta_pauta_inicio, meta_pauta_fin, estado };
+    return { marca, formato, audiencia, cuenta, redes_ids, fecha_programada, meta_pauta_inicio, meta_pauta_fin, promoted, estado };
 }
 
 /**
@@ -154,7 +170,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             const msg = err instanceof Error ? err.message : 'Error de validación';
             return json({ error: msg }, { status: 400 });
         }
-        const { marca, formato, audiencia, cuenta, redes_ids, fecha_programada, meta_pauta_inicio, meta_pauta_fin, estado } = resolved;
+        const { marca, formato, audiencia, cuenta, redes_ids, fecha_programada, meta_pauta_inicio, meta_pauta_fin, promoted, estado } = resolved;
 
         if (!marca) return json({ error: `Marca no encontrada: ${data.brand}` }, { status: 400 });
         if (!cuenta) return json({ error: 'Selecciona una cuenta Meta válida (conéctala en el sidebar).' }, { status: 400 });
@@ -197,7 +213,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             WHERE id = ?
         `).run(
             data.designed ? 1 : 0,
-            data.promoted ? 1 : 0,
+            promoted ? 1 : 0,
             data.prompt || null,
             data.promptCopy || null,
             meta_pauta_inicio,
@@ -234,7 +250,7 @@ export const PUT: RequestHandler = async ({ request, locals }) => {
             const msg = err instanceof Error ? err.message : 'Error de validación';
             return json({ error: msg }, { status: 400 });
         }
-        const { marca, formato, audiencia, cuenta, redes_ids, fecha_programada, meta_pauta_inicio, meta_pauta_fin, estado } = resolved;
+        const { marca, formato, audiencia, cuenta, redes_ids, fecha_programada, meta_pauta_inicio, meta_pauta_fin, promoted, estado } = resolved;
 
         if (!marca) return json({ error: `Marca no encontrada: ${data.brand}` }, { status: 400 });
         if (!cuenta) return json({ error: 'Selecciona una cuenta Meta válida (conéctala en el sidebar).' }, { status: 400 });
@@ -286,7 +302,7 @@ export const PUT: RequestHandler = async ({ request, locals }) => {
             WHERE id = ? AND user_id = ?
         `).run(
             data.designed ? 1 : 0,
-            data.promoted ? 1 : 0,
+            promoted ? 1 : 0,
             data.prompt || null,
             data.promptCopy || null,
             meta_pauta_inicio,
