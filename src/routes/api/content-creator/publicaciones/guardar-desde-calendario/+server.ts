@@ -122,22 +122,20 @@ function resolverDatos(data: any) {
 
     const metaStartDate = typeof data.metaStartDate === 'string' ? data.metaStartDate.trim() : '';
     const metaEndDate = typeof data.metaEndDate === 'string' ? data.metaEndDate.trim() : '';
+    const promoted = data.promoted === true;
 
-    if (data.promoted === true && (!metaStartDate || !metaEndDate)) {
+    if (promoted && (!metaStartDate || !metaEndDate)) {
         throw new ValidationError('Las fechas de inicio y finalización de pauta son requeridas para una publicación promocionada');
     }
 
-    if (metaStartDate && metaEndDate && metaEndDate < metaStartDate) {
+    if (promoted && metaEndDate < metaStartDate) {
         throw new ValidationError('La fecha de finalización de pauta no puede ser anterior a la fecha de inicio');
     }
 
     let meta_pauta_inicio: number | null = null;
-    if (metaStartDate) {
-        meta_pauta_inicio = Math.floor(new Date(metaStartDate + 'T12:00:00').getTime() / 1000);
-    }
-
     let meta_pauta_fin: number | null = null;
-    if (metaEndDate) {
+    if (promoted) {
+        meta_pauta_inicio = Math.floor(new Date(metaStartDate + 'T12:00:00').getTime() / 1000);
         meta_pauta_fin = Math.floor(new Date(metaEndDate + 'T12:00:00').getTime() / 1000);
     }
 
@@ -152,7 +150,7 @@ function resolverDatos(data: any) {
                 ? 'Publicado'
             : 'Borrador';
 
-    return { marca, formato, audiencia, cuenta, redes_ids, fecha_programada, meta_pauta_inicio, meta_pauta_fin, estado };
+    return { marca, formato, audiencia, cuenta, redes_ids, fecha_programada, meta_pauta_inicio, meta_pauta_fin, promoted, estado };
 }
 
 /**
@@ -172,7 +170,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             const msg = err instanceof Error ? err.message : 'Error de validación';
             return json({ error: msg }, { status: 400 });
         }
-        const { marca, formato, audiencia, cuenta, redes_ids, fecha_programada, meta_pauta_inicio, meta_pauta_fin, estado } = resolved;
+        const { marca, formato, audiencia, cuenta, redes_ids, fecha_programada, meta_pauta_inicio, meta_pauta_fin, promoted, estado } = resolved;
 
         if (!marca) return json({ error: `Marca no encontrada: ${data.brand}` }, { status: 400 });
         if (!cuenta) return json({ error: 'Selecciona una cuenta Meta válida (conéctala en el sidebar).' }, { status: 400 });
@@ -215,7 +213,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             WHERE id = ?
         `).run(
             data.designed ? 1 : 0,
-            data.promoted ? 1 : 0,
+            promoted ? 1 : 0,
             data.prompt || null,
             data.promptCopy || null,
             meta_pauta_inicio,
@@ -252,7 +250,7 @@ export const PUT: RequestHandler = async ({ request, locals }) => {
             const msg = err instanceof Error ? err.message : 'Error de validación';
             return json({ error: msg }, { status: 400 });
         }
-        const { marca, formato, audiencia, cuenta, redes_ids, fecha_programada, meta_pauta_inicio, meta_pauta_fin, estado } = resolved;
+        const { marca, formato, audiencia, cuenta, redes_ids, fecha_programada, meta_pauta_inicio, meta_pauta_fin, promoted, estado } = resolved;
 
         if (!marca) return json({ error: `Marca no encontrada: ${data.brand}` }, { status: 400 });
         if (!cuenta) return json({ error: 'Selecciona una cuenta Meta válida (conéctala en el sidebar).' }, { status: 400 });
@@ -304,7 +302,7 @@ export const PUT: RequestHandler = async ({ request, locals }) => {
             WHERE id = ? AND user_id = ?
         `).run(
             data.designed ? 1 : 0,
-            data.promoted ? 1 : 0,
+            promoted ? 1 : 0,
             data.prompt || null,
             data.promptCopy || null,
             meta_pauta_inicio,
