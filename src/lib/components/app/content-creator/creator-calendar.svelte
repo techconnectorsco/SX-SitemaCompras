@@ -29,30 +29,30 @@
 
 	interface ExcelPost {
 		id: string;
-		title: string;       // Tipo de contenido (ej: Toyama Ahoyadora)
-		format: string;      // Formato de salida (ej: Carrusel)
-		context: string;     // Contexto para post (Tópico central)
-		objective: string;   // Objetivo en RRSS
-		audience: string;    // Público (Amplio, etc.)
-		budget: number;      // Presupuesto
-		network: string;     // Red Social (display, string separado por coma)
+		title: string; // Tipo de contenido (ej: Toyama Ahoyadora)
+		format: string; // Formato de salida (ej: Carrusel)
+		context: string; // Contexto para post (Tópico central)
+		objective: string; // Objetivo en RRSS
+		audience: string; // Público (Amplio, etc.)
+		budget: number; // Presupuesto
+		network: string; // Red Social (display, string separado por coma)
 		redes_ids?: number[]; // IDs numéricos de redes destino (resueltos desde catálogo)
 		designed: boolean;
 		published: boolean;
 		promoted: boolean;
 		copy: string;
-		week: string;        // Semana a programar
-		links: string;       // Hiper vínculos
-		kpi: string;         // Objetivo KPI
-		cta: string;         // CTA
-		references: string;  // Referencias
-		trend: string;       // Contexto trend
-		date: string;        // Formato YYYY-MM-DD
-		time?: string;       // Formato HH:MM (24h)
+		week: string; // Semana a programar
+		links: string; // Hiper vínculos
+		kpi: string; // Objetivo KPI
+		cta: string; // CTA
+		references: string; // Referencias
+		trend: string; // Contexto trend
+		date: string; // Formato YYYY-MM-DD
+		time?: string; // Formato HH:MM (24h)
 		imagePreview: string | null;
 		imageName?: string;
 		imageBase64?: string;
-		
+
 		carouselImages?: Array<{
 			imagePreview: string | null;
 			imageName: string;
@@ -77,7 +77,7 @@
 	}
 
 	// Props Svelte 5
-	let { posts = $bindable(), catalogos } = $props<{ posts: ExcelPost[], catalogos: any }>();
+	let { posts = $bindable(), catalogos } = $props<{ posts: ExcelPost[]; catalogos: any }>();
 
 	// Cuentas Meta disponibles (cargadas desde /api/content-creator/meta/auth/list)
 	interface CuentaMeta {
@@ -142,24 +142,26 @@
 		imageName: '',
 		imageBase64: '',
 		carouselImages: [
-				{ imagePreview: null, imageName: '', imageBase64: '', prompt: '', modo: 'editar' },
-				{ imagePreview: null, imageName: '', imageBase64: '', prompt: '', modo: 'editar' }
-			],
-			brand: 'Toyama',
-			status: 'Borrador',
-			ecommerceImage: true,
-			ecommerceUrl: '',
-			metaStartDate: '',
-			metaEndDate: '',
-			prompt: '',
-			promptCopy: '',
-			esCarrusel: true,
-			modo: 'editar',
-			cuentaId: null
-		});
+			{ imagePreview: null, imageName: '', imageBase64: '', prompt: '', modo: 'editar' },
+			{ imagePreview: null, imageName: '', imageBase64: '', prompt: '', modo: 'editar' }
+		],
+		brand: 'Toyama',
+		status: 'Borrador',
+		ecommerceImage: true,
+		ecommerceUrl: '',
+		metaStartDate: '',
+		metaEndDate: '',
+		prompt: '',
+		promptCopy: '',
+		esCarrusel: true,
+		modo: 'editar',
+		cuentaId: null
+	});
 
 	let carouselImageCount = $state(2);
 	let imageInput = $state<HTMLInputElement | null>(null);
+	const MIN_CAROUSEL_SLIDES = 2;
+	const MAX_CAROUSEL_SLIDES = 10;
 
 	// Confirmación de salida del modal con datos sin guardar
 	let showExitConfirm = $state(false);
@@ -210,15 +212,7 @@
 	function toggleCarruselMode() {
 		draftPost.esCarrusel = !draftPost.esCarrusel;
 		if (draftPost.esCarrusel) {
-			if (!draftPost.carouselImages || draftPost.carouselImages.length === 0) {
-				draftPost.carouselImages = [
-					{ imagePreview: null, imageName: '', imageBase64: '' },
-					{ imagePreview: null, imageName: '', imageBase64: '' }
-				];
-				carouselImageCount = 2;
-			} else {
-				carouselImageCount = draftPost.carouselImages.length;
-			}
+			setCarouselImageCount(draftPost.carouselImages?.length || MIN_CAROUSEL_SLIDES);
 		}
 	}
 
@@ -276,9 +270,12 @@
 			loadingAssets = true;
 			selectedAssetIds = new Set();
 			fetch(`/api/content-creator/marcas/${marca.id}/assets`)
-				.then(r => r.json())
-				.then(d => { marcaAssets = d.assets || []; loadingAssets = false; })
-				.catch(() => loadingAssets = false);
+				.then((r) => r.json())
+				.then((d) => {
+					marcaAssets = d.assets || [];
+					loadingAssets = false;
+				})
+				.catch(() => (loadingAssets = false));
 		} else {
 			marcaAssets = [];
 		}
@@ -353,8 +350,10 @@
 		try {
 			const params = new URLSearchParams();
 			if (productSearchQuery.trim()) params.set('search', productSearchQuery.trim());
-			if (productBrandFilter && productBrandFilter !== 'Todas') params.set('marca', productBrandFilter);
-			if (productCategoryFilter && productCategoryFilter !== 'Todas') params.set('categoria', productCategoryFilter);
+			if (productBrandFilter && productBrandFilter !== 'Todas')
+				params.set('marca', productBrandFilter);
+			if (productCategoryFilter && productCategoryFilter !== 'Todas')
+				params.set('categoria', productCategoryFilter);
 			if (productSortOrder !== 'none') params.set('sort', productSortOrder);
 
 			const res = await fetch(`/api/content-creator/productos?${params.toString()}`);
@@ -396,7 +395,9 @@
 			set.add(codigo);
 			cargandoDistribucion = set;
 			try {
-				const res = await fetch(`/api/content-creator/productos/${encodeURIComponent(codigo)}/bodegas`);
+				const res = await fetch(
+					`/api/content-creator/productos/${encodeURIComponent(codigo)}/bodegas`
+				);
 				const data = await res.json();
 				if (res.ok && data.encontrado) {
 					distribucionPorCodigo = { ...distribucionPorCodigo, [codigo]: data.distribucion };
@@ -478,7 +479,7 @@
 		const firstDayIndex = new Date(year, month, 1).getDay();
 		// Cantidad de días en el mes
 		const totalDays = new Date(year, month + 1, 0).getDate();
-		
+
 		// Ajustar índice para que Lunes sea el primer día (0: Lun, 6: Dom)
 		const adjustedFirstDay = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
 
@@ -528,30 +529,42 @@
 	// Obtener publicaciones programadas para un día
 	function getPostsForDay(dateStr: string | null): ExcelPost[] {
 		if (!dateStr) return [];
-		return posts.filter(p => p.date === dateStr);
+		return posts.filter((p) => p.date === dateStr);
 	}
 
 	// Clases de color (borde + fondo suave + texto) para las celdas del calendario
 	function getStatusCellColor(status?: string): string {
 		switch (status) {
-			case 'Publicado':   return 'border-green-200 bg-green-50/40 text-green-800 dark:border-green-950 dark:bg-green-950/20 dark:text-green-400';
-			case 'Aprobado':    return 'border-indigo-200 bg-indigo-50/40 text-indigo-800 dark:border-indigo-950/20 dark:bg-indigo-950/10 dark:text-indigo-400';
-			case 'En revisión': return 'border-amber-200 bg-amber-50/40 text-amber-800 dark:border-amber-950/20 dark:bg-amber-950/10 dark:text-amber-400';
-			case 'Guardado':    return 'border-sky-200 bg-sky-50/40 text-sky-800 dark:border-sky-950/20 dark:bg-sky-950/10 dark:text-sky-400';
-			case 'Error API':   return 'border-rose-200 bg-rose-50/40 text-rose-800 dark:border-rose-950/20 dark:bg-rose-950/10 dark:text-rose-400';
-			default:            return 'border-slate-200 bg-white text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300';
+			case 'Publicado':
+				return 'border-green-200 bg-green-50/40 text-green-800 dark:border-green-950 dark:bg-green-950/20 dark:text-green-400';
+			case 'Aprobado':
+				return 'border-indigo-200 bg-indigo-50/40 text-indigo-800 dark:border-indigo-950/20 dark:bg-indigo-950/10 dark:text-indigo-400';
+			case 'En revisión':
+				return 'border-amber-200 bg-amber-50/40 text-amber-800 dark:border-amber-950/20 dark:bg-amber-950/10 dark:text-amber-400';
+			case 'Guardado':
+				return 'border-sky-200 bg-sky-50/40 text-sky-800 dark:border-sky-950/20 dark:bg-sky-950/10 dark:text-sky-400';
+			case 'Error API':
+				return 'border-rose-200 bg-rose-50/40 text-rose-800 dark:border-rose-950/20 dark:bg-rose-950/10 dark:text-rose-400';
+			default:
+				return 'border-slate-200 bg-white text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300';
 		}
 	}
 
 	// Clases de color (relleno sólido) para las pastillas de la leyenda y la lista de revisión
 	function getStatusBadgeColor(status?: string): string {
 		switch (status) {
-			case 'Publicado':   return 'bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400';
-			case 'Aprobado':    return 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400';
-			case 'En revisión': return 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400';
-			case 'Guardado':    return 'bg-sky-100 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400';
-			case 'Error API':   return 'bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400';
-			default:            return 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400';
+			case 'Publicado':
+				return 'bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400';
+			case 'Aprobado':
+				return 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400';
+			case 'En revisión':
+				return 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400';
+			case 'Guardado':
+				return 'bg-sky-100 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400';
+			case 'Error API':
+				return 'bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400';
+			default:
+				return 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400';
 		}
 	}
 
@@ -563,7 +576,10 @@
 		if (!actualDateStr) {
 			// Usar el primer día de currentDate o el día de hoy si coincide con el mes/año
 			const today = new Date();
-			if (today.getFullYear() === currentDate.getFullYear() && today.getMonth() === currentDate.getMonth()) {
+			if (
+				today.getFullYear() === currentDate.getFullYear() &&
+				today.getMonth() === currentDate.getMonth()
+			) {
 				actualDateStr = today.toISOString().split('T')[0];
 			} else {
 				const year = currentDate.getFullYear();
@@ -589,11 +605,12 @@
 		// Si no hay info de redes_activas, fallback a FB+IG.
 		const cuentaDefault = cuentasMeta[0];
 		const redesPermitidas = cuentaDefault?.redes_activas ?? null;
-		selectedNetworks = (redesPermitidas == null)
-			? ['Facebook', 'Instagram']
-			: catalogos.redes
-				.filter((r: RedSocial) => redesPermitidas.includes(r.id))
-				.map((r: RedSocial) => r.nombre);
+		selectedNetworks =
+			redesPermitidas == null
+				? ['Facebook', 'Instagram']
+				: catalogos.redes
+						.filter((r: RedSocial) => redesPermitidas.includes(r.id))
+						.map((r: RedSocial) => r.nombre);
 
 		draftPost = {
 			id: `MER-${String(posts.length + 1).padStart(3, '0')}`,
@@ -651,7 +668,9 @@
 				description: 'Selecciona una fecha de hoy en adelante.'
 			});
 			// Revertir el valor del input
-			setTimeout(() => { draftPost.date = getTodayStr(); }, 0);
+			setTimeout(() => {
+				draftPost.date = getTodayStr();
+			}, 0);
 			return;
 		}
 
@@ -666,7 +685,7 @@
 	// Alternar redes sociales seleccionadas
 	function toggleNetwork(net: string) {
 		if (selectedNetworks.includes(net)) {
-			selectedNetworks = selectedNetworks.filter(n => n !== net);
+			selectedNetworks = selectedNetworks.filter((n) => n !== net);
 		} else {
 			selectedNetworks = [...selectedNetworks, net];
 		}
@@ -683,7 +702,7 @@
 			if (netString.includes(red.nombre)) selectedNetworks.push(red.nombre);
 		}
 
-		draftPost = { 
+		draftPost = {
 			...post,
 			brand: post.brand || 'Toyama',
 			status: post.status || 'Borrador',
@@ -702,16 +721,16 @@
 				prompt: img.prompt || '',
 				modo: img.modo === 'crear' ? 'crear' : 'editar'
 			})),
-			esCarrusel: post.esCarrusel !== undefined
-				? !!post.esCarrusel
-				: (Array.isArray(post.carouselImages) && post.carouselImages.length > 0)
+			esCarrusel:
+				post.esCarrusel !== undefined
+					? !!post.esCarrusel
+					: Array.isArray(post.carouselImages) && post.carouselImages.length > 0
 		};
 
 		// Filtrar selectedNetworks contra las redes habilitadas para la cuenta del post.
 		// Sanea posts legados con IG en el string aunque la cuenta no lo soporte.
-		const cuentaPost = draftPost.cuentaId != null
-			? cuentasMeta.find((c) => c.id === draftPost.cuentaId)
-			: null;
+		const cuentaPost =
+			draftPost.cuentaId != null ? cuentasMeta.find((c) => c.id === draftPost.cuentaId) : null;
 		if (cuentaPost && Array.isArray(cuentaPost.redes_activas)) {
 			selectedNetworks = selectedNetworks.filter((nombre) => {
 				const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
@@ -720,18 +739,20 @@
 		}
 		draftPost.network = selectedNetworks.join(', ');
 
-		carouselImageCount = draftPost.esCarrusel && draftPost.carouselImages?.length
-			? draftPost.carouselImages.length
-			: 2;
-		if (carouselImageCount === 0) carouselImageCount = 2;
+		if (draftPost.esCarrusel) {
+			setCarouselImageCount(draftPost.carouselImages?.length || MIN_CAROUSEL_SLIDES);
+		} else {
+			carouselImageCount = MIN_CAROUSEL_SLIDES;
+		}
 
 		exitConfirmed = false;
 		dialogOpen = true;
 	}
 
-
-
-	async function subirImagenAServidor(file: File, subPath: string = 'refs'): Promise<{ imageUrl: string; fileName: string } | null> {
+	async function subirImagenAServidor(
+		file: File,
+		subPath: string = 'refs'
+	): Promise<{ imageUrl: string; fileName: string } | null> {
 		try {
 			const fd = new FormData();
 			fd.append('file', file);
@@ -785,7 +806,13 @@
 
 		if (!draftPost.carouselImages) draftPost.carouselImages = [];
 		if (!draftPost.carouselImages[index]) {
-			draftPost.carouselImages[index] = { imagePreview: null, imageName: '', imageBase64: '', prompt: '', modo: 'editar' };
+			draftPost.carouselImages[index] = {
+				imagePreview: null,
+				imageName: '',
+				imageBase64: '',
+				prompt: '',
+				modo: 'editar'
+			};
 		}
 
 		draftPost.carouselImages[index].imageName = file.name;
@@ -822,7 +849,13 @@
 	function toggleSlideModo(index: number) {
 		if (!draftPost.carouselImages) return;
 		if (!draftPost.carouselImages[index]) {
-			draftPost.carouselImages[index] = { imagePreview: null, imageName: '', imageBase64: '', prompt: '', modo: 'editar' };
+			draftPost.carouselImages[index] = {
+				imagePreview: null,
+				imageName: '',
+				imageBase64: '',
+				prompt: '',
+				modo: 'editar'
+			};
 		}
 		const slide = draftPost.carouselImages[index];
 		if (slide.modo === 'crear') {
@@ -840,7 +873,13 @@
 	function autoFillSlidePrompt(index: number) {
 		if (!draftPost.carouselImages) return;
 		if (!draftPost.carouselImages[index]) {
-			draftPost.carouselImages[index] = { imagePreview: null, imageName: '', imageBase64: '', prompt: '', modo: 'editar' };
+			draftPost.carouselImages[index] = {
+				imagePreview: null,
+				imageName: '',
+				imageBase64: '',
+				prompt: '',
+				modo: 'editar'
+			};
 		}
 		const prompt = buildDefaultPrompt(draftPost);
 		draftPost.carouselImages[index].prompt = prompt;
@@ -848,21 +887,31 @@
 			description: 'Edítalo libremente antes de generar.'
 		});
 	}
-	
-	function updateCarouselCount(event: Event) {
-		const input = event.currentTarget as HTMLInputElement;
-		const count = parseInt(input.value) || 2;
-		carouselImageCount = Math.max(1, Math.min(10, count));
-		
+
+	function setCarouselImageCount(count: number) {
+		carouselImageCount = Math.max(MIN_CAROUSEL_SLIDES, Math.min(MAX_CAROUSEL_SLIDES, count));
+
 		if (!draftPost.carouselImages) draftPost.carouselImages = [];
 		if (draftPost.carouselImages.length < carouselImageCount) {
 			const diff = carouselImageCount - draftPost.carouselImages.length;
-			for(let i=0; i<diff; i++) {
-				draftPost.carouselImages.push({ imagePreview: null, imageName: '', imageBase64: '', prompt: '', modo: 'editar' });
+			for (let i = 0; i < diff; i++) {
+				draftPost.carouselImages.push({
+					imagePreview: null,
+					imageName: '',
+					imageBase64: '',
+					prompt: '',
+					modo: 'editar'
+				});
 			}
 		} else if (draftPost.carouselImages.length > carouselImageCount) {
 			draftPost.carouselImages = draftPost.carouselImages.slice(0, carouselImageCount);
 		}
+	}
+
+	function updateCarouselCount(event: Event) {
+		const input = event.currentTarget as HTMLInputElement;
+		const count = Number.parseInt(input.value, 10);
+		setCarouselImageCount(Number.isFinite(count) ? count : MIN_CAROUSEL_SLIDES);
 	}
 
 	function clearImage() {
@@ -908,8 +957,19 @@
 			return;
 		}
 
+		if (draftPost.promoted && (!draftPost.metaStartDate || !draftPost.metaEndDate)) {
+			toast.error('La vigencia de pauta es requerida', {
+				description: 'Ingresá las fechas de inicio y finalización para la publicación promocionada.'
+			});
+			return;
+		}
+
 		// Validar vigencia en Meta: la fecha de finalización no puede ser anterior a la de inicio
-		if (draftPost.metaStartDate && draftPost.metaEndDate && draftPost.metaEndDate < draftPost.metaStartDate) {
+		if (
+			draftPost.metaStartDate &&
+			draftPost.metaEndDate &&
+			draftPost.metaEndDate < draftPost.metaStartDate
+		) {
 			toast.error('La fecha de finalización no puede ser anterior a la fecha de inicio', {
 				description: 'Ajustá las fechas de vigencia en Meta.'
 			});
@@ -942,9 +1002,12 @@
 					return !red || !cuentaSel.redes_activas.includes(red.id);
 				});
 				if (redesInvalidas.length > 0) {
-					toast.error(`La cuenta "${cuentaSel.nombre}" no tiene habilitada(s): ${redesInvalidas.join(', ')}`, {
-						description: 'Conecta esa red en la cuenta o elige otra cuenta.'
-					});
+					toast.error(
+						`La cuenta "${cuentaSel.nombre}" no tiene habilitada(s): ${redesInvalidas.join(', ')}`,
+						{
+							description: 'Conecta esa red en la cuenta o elige otra cuenta.'
+						}
+					);
 					return;
 				}
 			}
@@ -962,6 +1025,14 @@
 		const promptGeneral = draftPost.prompt?.trim() || '';
 		const systemPrompt = buildSystemPromptForBrand(draftPost.brand).trim();
 		if (draftPost.esCarrusel) {
+			const carouselSlideCount = draftPost.carouselImages?.length ?? 0;
+			if (carouselSlideCount < MIN_CAROUSEL_SLIDES || carouselSlideCount > MAX_CAROUSEL_SLIDES) {
+				toast.error(
+					`El carrusel debe tener entre ${MIN_CAROUSEL_SLIDES} y ${MAX_CAROUSEL_SLIDES} slides.`
+				);
+				return;
+			}
+
 			const missingSlides = (draftPost.carouselImages || [])
 				.map((img, index) => ({ img, number: index + 1 }))
 				.filter(({ img }) => {
@@ -972,17 +1043,18 @@
 				.map(({ number }) => number);
 			if (missingSlides.length > 0) {
 				toast.error(`Slides incompletos: #${missingSlides.join(', #')}`, {
-					description: 'Cada slide sin imagen principal necesita un prompt propio o el prompt general.'
+					description:
+						'Cada slide sin imagen principal necesita un prompt propio o el prompt general.'
 				});
 				return;
 			}
 		}
 		const carouselImages = draftPost.esCarrusel
 			? (draftPost.carouselImages || []).map((img) => {
-				const hasPrimaryImage = Boolean(img.imageBase64?.trim() || img.imagePreview?.trim());
-				const hasContentPrompt = Boolean(img.prompt?.trim() || promptGeneral);
-				return !hasPrimaryImage && hasContentPrompt ? { ...img, modo: 'crear' as const } : img;
-			})
+					const hasPrimaryImage = Boolean(img.imageBase64?.trim() || img.imagePreview?.trim());
+					const hasContentPrompt = Boolean(img.prompt?.trim() || promptGeneral);
+					return !hasPrimaryImage && hasContentPrompt ? { ...img, modo: 'crear' as const } : img;
+				})
 			: draftPost.carouselImages;
 
 		const postToProcess = {
@@ -1001,11 +1073,14 @@
 
 		if (!isEditing) {
 			try {
-				const saveResp = await fetch('/api/content-creator/publicaciones/guardar-desde-calendario', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify(postToProcess)
-				});
+				const saveResp = await fetch(
+					'/api/content-creator/publicaciones/guardar-desde-calendario',
+					{
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify(postToProcess)
+					}
+				);
 				const saveData = await saveResp.json();
 
 				if (saveResp.ok && saveData.id) {
@@ -1047,7 +1122,7 @@
 		// Agregar/actualizar en el array local con el ID real
 		const postConIdReal = { ...postToProcess, id: realId };
 		if (isEditing) {
-			posts = posts.map(p => p.id === postToProcess.id ? postConIdReal : p);
+			posts = posts.map((p) => (p.id === postToProcess.id ? postConIdReal : p));
 		} else {
 			posts = [postConIdReal, ...posts];
 		}
@@ -1057,7 +1132,11 @@
 		// ==========================================
 		const isCarouselFormat = !!postToProcess.esCarrusel;
 
-		if (isCarouselFormat && postToProcess.carouselImages && postToProcess.carouselImages.length > 0) {
+		if (
+			isCarouselFormat &&
+			postToProcess.carouselImages &&
+			postToProcess.carouselImages.length > 0
+		) {
 			// Los assets son referencias visuales compartidas, no sustituyen el prompt de contenido.
 			const slidesProcesables = postToProcess.carouselImages
 				.map((img, idx) => ({ img, idx }))
@@ -1080,42 +1159,47 @@
 				});
 
 				// Procesar todas las imágenes del carrusel individualmente
-				Promise.all(slidesProcesables.map(async ({ img, idx }) => {
-					try {
-						// Un prompt de slide reemplaza al general; el system prompt sólo es fallback
-						// cuando existe una imagen principal y no hay ninguno de los dos.
-						const resolvedPrompt = img.prompt?.trim() || promptGeneral || systemPrompt;
-						const response = await fetch(`/api/content-creator/publicaciones/${realId}/generar-imagen`, {
-							method: 'POST',
-							headers: { 'Content-Type': 'application/json' },
-							body: JSON.stringify({
-								base64Image: img.modo === 'crear' ? null : img.imageBase64,
-								imageUrl: img.modo === 'crear' ? null : (img.imagePreview || undefined),
-								brand: postToProcess.brand,
-								title: postToProcess.title,
-								context: postToProcess.context,
-								objective: postToProcess.objective,
-								index: idx,
-								customPrompt: resolvedPrompt,
-								modo: img.modo || 'editar',
-								selectedAssetIds: assetIdsForGeneration
-							})
-						});
-						const data = await response.json();
-						if (data.success && data.imageUrl) {
-							return { index: idx, url: data.imageUrl };
+				Promise.all(
+					slidesProcesables.map(async ({ img, idx }) => {
+						try {
+							// Un prompt de slide reemplaza al general; el system prompt sólo es fallback
+							// cuando existe una imagen principal y no hay ninguno de los dos.
+							const resolvedPrompt = img.prompt?.trim() || promptGeneral || systemPrompt;
+							const response = await fetch(
+								`/api/content-creator/publicaciones/${realId}/generar-imagen`,
+								{
+									method: 'POST',
+									headers: { 'Content-Type': 'application/json' },
+									body: JSON.stringify({
+										base64Image: img.modo === 'crear' ? null : img.imageBase64,
+										imageUrl: img.modo === 'crear' ? null : img.imagePreview || undefined,
+										brand: postToProcess.brand,
+										title: postToProcess.title,
+										context: postToProcess.context,
+										objective: postToProcess.objective,
+										index: idx,
+										customPrompt: resolvedPrompt,
+										modo: img.modo || 'editar',
+										selectedAssetIds: assetIdsForGeneration
+									})
+								}
+							);
+							const data = await response.json();
+							if (data.success && data.imageUrl) {
+								return { index: idx, url: data.imageUrl };
+							}
+							return { index: idx, error: data.error || `No se pudo generar el slide #${idx + 1}` };
+						} catch (error) {
+							console.error(error);
+							return { index: idx, error: `Fallo de conexión al generar el slide #${idx + 1}` };
 						}
-						return { index: idx, error: data.error || `No se pudo generar el slide #${idx + 1}` };
-					} catch (error) {
-						console.error(error);
-						return { index: idx, error: `Fallo de conexión al generar el slide #${idx + 1}` };
-					}
-				})).then((results) => {
+					})
+				).then((results) => {
 					// Actualizar estado local
-					posts = posts.map(p => {
+					posts = posts.map((p) => {
 						if (p.id === realId && p.carouselImages) {
 							const updatedImages = [...p.carouselImages];
-							results.forEach(res => {
+							results.forEach((res) => {
 								if (res && 'url' in res && updatedImages[res.index]) {
 									updatedImages[res.index].imageName = `ia_gen_pub_${realId}_${res.index}.jpg`;
 									updatedImages[res.index].imagePreview = res.url;
@@ -1126,10 +1210,12 @@
 						}
 						return p;
 					});
-					const completados = results.filter(r => 'url' in r).length;
+					const completados = results.filter((r) => 'url' in r).length;
 					const primerError = results.find((r) => 'error' in r);
 					if (primerError && 'error' in primerError) {
-						toast.error('No se pudieron generar todos los slides.', { description: primerError.error });
+						toast.error('No se pudieron generar todos los slides.', {
+							description: primerError.error
+						});
 					}
 					if (completados > 0) {
 						toast.success(`¡Edición de ${completados} imágenes de carrusel terminada!`, {
@@ -1138,15 +1224,18 @@
 					}
 				});
 			}
-} else {
+		} else {
 			// Post individual: modo editar (con imagen de referencia) o modo crear (text-to-image)
 			const hasRefImage = !!postToProcess.imageBase64 || !!postToProcess.imagePreview;
 			const isSingleCrear = postToProcess.modo === 'crear' || (!hasRefImage && hasSelectedAssets);
 
 			if (!isSingleCrear && !hasRefImage) {
-				toast.error('Sube una imagen de referencia o activá «Crear sin referencia» para generar con IA', {
-					description: 'Sin imagen no se puede generar el contenido visual de la ficha.'
-				});
+				toast.error(
+					'Sube una imagen de referencia o activá «Crear sin referencia» para generar con IA',
+					{
+						description: 'Sin imagen no se puede generar el contenido visual de la ficha.'
+					}
+				);
 				return;
 			}
 
@@ -1161,25 +1250,28 @@
 			}
 
 			try {
-				const response = await fetch(`/api/content-creator/publicaciones/${realId}/generar-imagen`, {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({
-						base64Image: isSingleCrear ? null : (postToProcess.imageBase64 || null),
-						imageUrl: isSingleCrear ? null : (postToProcess.imagePreview || undefined),
-						brand: postToProcess.brand,
-						title: postToProcess.title,
-						context: postToProcess.context,
-						objective: postToProcess.objective,
-						customPrompt: promptGeneral || systemPrompt,
-						modo: isSingleCrear ? 'crear' : 'editar',
-						selectedAssetIds: assetIdsForGeneration
-					})
-				});
+				const response = await fetch(
+					`/api/content-creator/publicaciones/${realId}/generar-imagen`,
+					{
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							base64Image: isSingleCrear ? null : postToProcess.imageBase64 || null,
+							imageUrl: isSingleCrear ? null : postToProcess.imagePreview || undefined,
+							brand: postToProcess.brand,
+							title: postToProcess.title,
+							context: postToProcess.context,
+							objective: postToProcess.objective,
+							customPrompt: promptGeneral || systemPrompt,
+							modo: isSingleCrear ? 'crear' : 'editar',
+							selectedAssetIds: assetIdsForGeneration
+						})
+					}
+				);
 				const data = await response.json();
 
 				if (data.success && data.imageUrl) {
-					posts = posts.map(p => {
+					posts = posts.map((p) => {
 						if (p.id === realId) {
 							return {
 								...p,
@@ -1190,11 +1282,16 @@
 						}
 						return p;
 					});
-					toast.success(isSingleCrear ? '¡Imagen generada desde cero!' : '¡Edición de imagen terminada!', {
-						description: 'Revisa el resultado en la pestaña de Revisión.'
-					});
+					toast.success(
+						isSingleCrear ? '¡Imagen generada desde cero!' : '¡Edición de imagen terminada!',
+						{
+							description: 'Revisa el resultado en la pestaña de Revisión.'
+						}
+					);
 				} else {
-					toast.error('Error al generar la imagen automáticamente.', { description: data.error || '' });
+					toast.error('Error al generar la imagen automáticamente.', {
+						description: data.error || ''
+					});
 				}
 			} catch (error) {
 				console.error(error);
@@ -1212,7 +1309,7 @@
 					method: 'DELETE'
 				});
 			}
-			posts = posts.filter(p => p.id !== id);
+			posts = posts.filter((p) => p.id !== id);
 			toast.success('Publicación eliminada correctamente');
 			exitConfirmed = true;
 			dialogOpen = false;
@@ -1224,16 +1321,21 @@
 </script>
 
 <div class="space-y-4">
-	
 	<!-- Cabecera del Calendario -->
-	<div class="flex flex-wrap items-center justify-between gap-4 rounded-xl border bg-card p-4 shadow-sm">
+	<div
+		class="flex flex-wrap items-center justify-between gap-4 rounded-xl border bg-card p-4 shadow-sm"
+	>
 		<div class="flex items-center gap-3">
 			<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-[#0D1E3D]">
 				<CalendarIcon class="h-5.5 w-5.5 text-white" />
 			</div>
 			<div>
-				<h2 class="text-base font-bold text-slate-900 dark:text-white">Planificador Editorial (Cronograma IA)</h2>
-				<p class="text-xs text-muted-foreground font-medium">Configuración semanal de pautas e imágenes de referencia para la generación automática</p>
+				<h2 class="text-base font-bold text-slate-900 dark:text-white">
+					Planificador Editorial (Cronograma IA)
+				</h2>
+				<p class="text-xs text-muted-foreground font-medium">
+					Configuración semanal de pautas e imágenes de referencia para la generación automática
+				</p>
 			</div>
 		</div>
 
@@ -1244,7 +1346,9 @@
 					<ChevronLeft class="h-4 w-4 mr-0.5" />
 					Anterior
 				</Button>
-				<span class="text-xs font-bold font-mono min-w-[130px] text-center bg-slate-100 dark:bg-slate-800 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
+				<span
+					class="text-xs font-bold font-mono min-w-[130px] text-center bg-slate-100 dark:bg-slate-800 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700"
+				>
 					{getMonthName(currentDate)}
 				</span>
 				<Button variant="outline" size="sm" class="h-8.5 px-3.5" onclick={nextMonth}>
@@ -1253,7 +1357,7 @@
 				</Button>
 			</div>
 
-			<Button 
+			<Button
 				onclick={() => openCreateModal()}
 				class="h-8.5 bg-orange-500 hover:bg-orange-600 text-white gap-1.5 text-xs font-semibold shadow-xs rounded-lg cursor-pointer"
 			>
@@ -1266,7 +1370,9 @@
 	<!-- Grilla del Calendario -->
 	<div class="rounded-xl border bg-card shadow-sm overflow-hidden">
 		<!-- Cabeceras de Semana -->
-		<div class="grid grid-cols-7 border-b bg-muted/40 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+		<div
+			class="grid grid-cols-7 border-b bg-muted/40 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+		>
 			<div class="py-2.5 border-r">Lun</div>
 			<div class="py-2.5 border-r">Mar</div>
 			<div class="py-2.5 border-r">Mié</div>
@@ -1277,22 +1383,28 @@
 		</div>
 
 		<!-- Celdas de Días -->
-		<div class="grid grid-cols-7 bg-muted/10 grid-rows-[repeat(6,minmax(115px,1fr))] divide-y divide-x border-t">
+		<div
+			class="grid grid-cols-7 bg-muted/10 grid-rows-[repeat(6,minmax(115px,1fr))] divide-y divide-x border-t"
+		>
 			{#each calendarDays as { day, dateString, isCurrentMonth }}
 				{@const dayPosts = getPostsForDay(dateString)}
-				<div class={`relative p-2 group flex flex-col justify-between min-h-[115px] transition-all duration-200
+				<div
+					class={`relative p-2 group flex flex-col justify-between min-h-[115px] transition-all duration-200
 					${isCurrentMonth ? 'bg-background hover:bg-slate-50/50 dark:hover:bg-slate-900/10' : 'bg-slate-50/40 text-slate-400 dark:bg-slate-900/20'}`}
 				>
 					<!-- Número de Día -->
 					<div class="flex justify-between items-center">
-						<span class={`text-xs font-bold font-mono
-							${isCurrentMonth 
-								? 'text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white' 
-								: 'text-slate-300 dark:text-slate-700'}`}
+						<span
+							class={`text-xs font-bold font-mono
+							${
+								isCurrentMonth
+									? 'text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white'
+									: 'text-slate-300 dark:text-slate-700'
+							}`}
 						>
 							{day}
 						</span>
-						
+
 						<!-- Botón agregar post rápido -->
 						{#if !isPastDate(dateString)}
 							<button
@@ -1309,10 +1421,10 @@
 					<!-- Lista de Posts en el día -->
 					<div class="mt-1.5 space-y-1.5 flex-1 overflow-y-auto max-h-[85px] scrollbar-thin">
 						{#each dayPosts as post (post.id)}
-							<button 
-								type="button" 
+							<button
+								type="button"
 								onclick={() => openEditModal(post)}
-class="w-full text-left rounded p-1.5 text-[10px] leading-tight border transition flex flex-col gap-0.5 hover:shadow-sm hover:scale-[1.01] duration-150
+								class="w-full text-left rounded p-1.5 text-[10px] leading-tight border transition flex flex-col gap-0.5 hover:shadow-sm hover:scale-[1.01] duration-150
 								{getStatusCellColor(post.status)}"
 							>
 								<div class="flex items-center justify-between gap-1 w-full">
@@ -1321,13 +1433,19 @@ class="w-full text-left rounded p-1.5 text-[10px] leading-tight border transitio
 										{post.id}
 									</span>
 								</div>
-								
+
 								<div class="flex items-center justify-between text-[8px] text-slate-400 mt-1">
 									<span class="font-semibold">{post.brand || 'V&O'}</span>
 									<div class="flex gap-1">
-										{#if post.imagePreview}<span class="text-blue-500" title="Imagen de referencia adjuntada">🖼️</span>{/if}
-										{#if post.designed}<span class="text-indigo-500" title="Diseño listo">🎨</span>{/if}
-										{#if post.published}<span class="text-green-500" title="Publicado en Meta">📤</span>{/if}
+										{#if post.imagePreview}<span
+												class="text-blue-500"
+												title="Imagen de referencia adjuntada">🖼️</span
+											>{/if}
+										{#if post.designed}<span class="text-indigo-500" title="Diseño listo">🎨</span
+											>{/if}
+										{#if post.published}<span class="text-green-500" title="Publicado en Meta"
+												>📤</span
+											>{/if}
 									</div>
 								</div>
 							</button>
@@ -1339,8 +1457,12 @@ class="w-full text-left rounded p-1.5 text-[10px] leading-tight border transitio
 	</div>
 
 	<!-- Leyenda de estados -->
-	<div class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border bg-card px-4 py-3 shadow-sm">
-		<span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mr-1">Estados:</span>
+	<div
+		class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border bg-card px-4 py-3 shadow-sm"
+	>
+		<span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mr-1"
+			>Estados:</span
+		>
 		{#each [['Borrador'], ['En revisión'], ['Guardado'], ['Aprobado'], ['Publicado'], ['Error API']] as [st]}
 			<div class="flex items-center gap-1.5">
 				<span class="h-3 w-3 rounded {getStatusBadgeColor(st)}"></span>
@@ -1351,7 +1473,9 @@ class="w-full text-left rounded p-1.5 text-[10px] leading-tight border transitio
 </div>
 
 <!-- Modal Dialog de Configuración Completa Formulario Directo -->
-<Dialog.Root bind:open={dialogOpen} onOpenChange={(open) => {
+<Dialog.Root
+	bind:open={dialogOpen}
+	onOpenChange={(open) => {
 		if (open) {
 			dialogOpen = true;
 		} else {
@@ -1366,8 +1490,11 @@ class="w-full text-left rounded p-1.5 text-[10px] leading-tight border transitio
 			showExitConfirm = true;
 			dialogOpen = true;
 		}
-	}}>
-	<Dialog.Content class="max-w-4xl border bg-background p-0 shadow-lg text-foreground rounded-xl overflow-hidden">
+	}}
+>
+	<Dialog.Content
+		class="max-w-4xl border bg-background p-0 shadow-lg text-foreground rounded-xl overflow-hidden"
+	>
 		<!-- Confirmación de salida con datos sin guardar (dentro del Dialog para respetar el focus trap) -->
 		{#if showExitConfirm}
 			<div
@@ -1380,14 +1507,20 @@ class="w-full text-left rounded p-1.5 text-[10px] leading-tight border transitio
 			>
 				<div class="w-full max-w-sm rounded-xl border bg-background p-5 shadow-2xl space-y-4">
 					<div class="space-y-2">
-						<h2 id="exit-confirm-title" class="text-base font-bold text-foreground">¿Salir sin guardar?</h2>
+						<h2 id="exit-confirm-title" class="text-base font-bold text-foreground">
+							¿Salir sin guardar?
+						</h2>
 						<p id="exit-confirm-desc" class="text-xs text-muted-foreground">
-							Hay cambios sin guardar en la ficha. Si cerrás ahora se perderán. ¿Seguro que querés salir?
+							Hay cambios sin guardar en la ficha. Si cerrás ahora se perderán. ¿Seguro que querés
+							salir?
 						</p>
 					</div>
 					<div class="flex justify-end gap-2.5 pt-2">
 						<Button variant="outline" onclick={cancelExitModal}>Cancelar</Button>
-						<Button class="bg-rose-600 hover:bg-rose-700 text-white font-bold" onclick={confirmExitModal}>
+						<Button
+							class="bg-rose-600 hover:bg-rose-700 text-white font-bold"
+							onclick={confirmExitModal}
+						>
 							Sí, salir sin guardar
 						</Button>
 					</div>
@@ -1402,160 +1535,227 @@ class="w-full text-left rounded p-1.5 text-[10px] leading-tight border transitio
 					{isEditing ? 'Configurar Ficha de Publicación' : 'Programar Nueva Configuración Semanal'}
 				</Dialog.Title>
 				<Dialog.Description class="text-xs text-muted-foreground mt-0.5">
-					Sube la imagen y configura las directrices para que la IA genere el contenido según el system prompt de la marca.
+					Sube la imagen y configura las directrices para que la IA genere el contenido según el
+					system prompt de la marca.
 				</Dialog.Description>
 			</div>
-			<div class="font-mono text-xs bg-[#0D1E3D]/10 text-[#0D1E3D] dark:bg-blue-900/30 dark:text-blue-300 px-3 py-1.5 rounded-md font-semibold">
+			<div
+				class="font-mono text-xs bg-[#0D1E3D]/10 text-[#0D1E3D] dark:bg-blue-900/30 dark:text-blue-300 px-3 py-1.5 rounded-md font-semibold"
+			>
 				{draftPost.id} · {draftPost.date}
 			</div>
 		</div>
 
 		<!-- Cuerpo del Modal en Dos Columnas -->
 		<div class="grid gap-0 md:grid-cols-[280px_1fr] max-h-[70vh] overflow-y-auto">
-			
 			<!-- Columna Izquierda: Imagen de Referencia e Identificación -->
-			<div class="p-5 border-b md:border-b-0 md:border-r bg-muted/10 space-y-4 flex flex-col justify-between">
+			<div
+				class="p-5 border-b md:border-b-0 md:border-r bg-muted/10 space-y-4 flex flex-col justify-between"
+			>
 				<div class="space-y-4">
 					<div class="flex items-center justify-between">
-						<p class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+						<p
+							class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300"
+						>
 							{isCarruselMode ? 'Imágenes de Referencia' : 'Imagen de Referencia'}
 						</p>
 						{#if isCarruselMode}
 							<div class="flex items-center gap-2">
-								<label for="carousel-count" class="text-[10px] font-bold text-muted-foreground">Cantidad:</label>
-								<input 
+								<label for="carousel-count" class="text-[10px] font-bold text-muted-foreground"
+									>Cantidad:</label
+								>
+								<input
 									id="carousel-count"
-									type="number" 
-									min="1" 
-									max="10" 
-									value={carouselImageCount} 
+									type="number"
+									min={MIN_CAROUSEL_SLIDES}
+									max="10"
+									step="1"
+									value={carouselImageCount}
 									onchange={updateCarouselCount}
 									class="w-14 px-2 py-1 text-xs rounded-md border border-slate-200 bg-background text-foreground focus:border-orange-500 outline-none"
 								/>
 							</div>
 						{/if}
 					</div>
-					
-{#if isCarruselMode}
-					<div class="space-y-3 max-h-[520px] overflow-y-auto pr-1">
-						{#each Array.from({length: carouselImageCount}) as _, i}
-							{@const img = draftPost.carouselImages?.[i]}
-							{@const slideModo = img?.modo === 'crear' ? 'crear' : 'editar'}
-							<div class="rounded-xl border border-dashed bg-card p-3 shadow-inner">
-								<div class="flex items-center justify-between mb-2">
-									<p class="text-[10px] font-bold text-slate-500">Imagen {i + 1}</p>
-									<label class="flex items-center gap-1.5 text-[9px] font-semibold text-slate-600 dark:text-slate-300 cursor-pointer">
-										<input
-											type="checkbox"
-											checked={slideModo === 'crear'}
-											onchange={() => toggleSlideModo(i)}
-											class="rounded border-slate-200 text-[#0D1E3D] focus:ring-[#0D1E3D] dark:border-slate-700"
-										/>
-										<span>✨ Crear (sin ref)</span>
-									</label>
-								</div>
 
-								{#if slideModo === 'editar'}
-									<label class="flex min-h-[100px] cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/30 px-3 py-4 text-center hover:bg-muted/60 transition">
-										{#if img?.imagePreview}
-											<img src={img.imagePreview} alt="Preview {i+1}" class="h-20 w-full rounded-md object-cover" />
-										{:else}
-											<UploadCloud class="h-5 w-5 text-muted-foreground" />
-											<div class="space-y-0.5">
-												<p class="text-[9px] font-semibold text-slate-700 dark:text-slate-200">Subir imagen</p>
+					{#if isCarruselMode}
+						<div class="space-y-3 max-h-[520px] overflow-y-auto pr-1">
+							{#each Array.from({ length: carouselImageCount }) as _, i}
+								{@const img = draftPost.carouselImages?.[i]}
+								{@const slideModo = img?.modo === 'crear' ? 'crear' : 'editar'}
+								<div class="rounded-xl border border-dashed bg-card p-3 shadow-inner">
+									<div class="flex items-center justify-between mb-2">
+										<p class="text-[10px] font-bold text-slate-500">Imagen {i + 1}</p>
+										<label
+											class="flex items-center gap-1.5 text-[9px] font-semibold text-slate-600 dark:text-slate-300 cursor-pointer"
+										>
+											<input
+												type="checkbox"
+												checked={slideModo === 'crear'}
+												onchange={() => toggleSlideModo(i)}
+												class="rounded border-slate-200 text-[#0D1E3D] focus:ring-[#0D1E3D] dark:border-slate-700"
+											/>
+											<span>✨ Crear (sin ref)</span>
+										</label>
+									</div>
+
+									{#if slideModo === 'editar'}
+										<label
+											class="flex min-h-[100px] cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/30 px-3 py-4 text-center hover:bg-muted/60 transition"
+										>
+											{#if img?.imagePreview}
+												<img
+													src={img.imagePreview}
+													alt="Preview {i + 1}"
+													class="h-20 w-full rounded-md object-cover"
+												/>
+											{:else}
+												<UploadCloud class="h-5 w-5 text-muted-foreground" />
+												<div class="space-y-0.5">
+													<p class="text-[9px] font-semibold text-slate-700 dark:text-slate-200">
+														Subir imagen
+													</p>
+												</div>
+											{/if}
+											<input
+												type="file"
+												accept="image/*"
+												class="hidden"
+												onchange={(e) => handleCarouselImageUpload(e, i)}
+											/>
+										</label>
+										{#if img?.imageName}
+											<div
+												class="flex items-center justify-between rounded-lg border bg-card p-2 text-[10px] mt-2"
+											>
+												<span class="truncate font-semibold max-w-[150px]">{img.imageName}</span>
+												<button
+													type="button"
+													class="text-rose-500 hover:text-rose-600 p-0.5"
+													onclick={() => clearCarouselImage(i)}
+												>
+													<X class="h-3.5 w-3.5" />
+												</button>
 											</div>
 										{/if}
-										<input type="file" accept="image/*" class="hidden" onchange={(e) => handleCarouselImageUpload(e, i)} />
-									</label>
-									{#if img?.imageName}
-										<div class="flex items-center justify-between rounded-lg border bg-card p-2 text-[10px] mt-2">
-											<span class="truncate font-semibold max-w-[150px]">{img.imageName}</span>
-											<button type="button" class="text-rose-500 hover:text-rose-600 p-0.5" onclick={() => clearCarouselImage(i)}>
-												<X class="h-3.5 w-3.5" />
-											</button>
+									{:else}
+										<div
+											class="flex min-h-[100px] flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-[#0D1E3D]/40 bg-[#0D1E3D]/5 px-3 py-4 text-center"
+										>
+											<Sparkles class="h-5 w-5 text-[#0D1E3D]" />
+											<p class="text-[9px] font-semibold text-slate-700 dark:text-slate-200">
+												Generar imagen desde cero con IA
+											</p>
+											<p class="text-[8px] text-muted-foreground">Se usará solo el prompt</p>
 										</div>
 									{/if}
-								{:else}
-									<div class="flex min-h-[100px] flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-[#0D1E3D]/40 bg-[#0D1E3D]/5 px-3 py-4 text-center">
-										<Sparkles class="h-5 w-5 text-[#0D1E3D]" />
-										<p class="text-[9px] font-semibold text-slate-700 dark:text-slate-200">Generar imagen desde cero con IA</p>
-										<p class="text-[8px] text-muted-foreground">Se usará solo el prompt</p>
-									</div>
-								{/if}
 
-								<!-- Prompt por slide -->
-								<div class="mt-2 space-y-1">
-									<div class="flex items-center justify-between">
-										<label class="text-[9px] font-bold text-muted-foreground" for={`slide-prompt-${i}`}>Prompt de IA</label>
-										<button
-											type="button"
-											class="text-[9px] font-semibold text-[#0D1E3D] hover:underline"
-											onclick={() => autoFillSlidePrompt(i)}
-										>Auto-generar</button>
+									<!-- Prompt por slide -->
+									<div class="mt-2 space-y-1">
+										<div class="flex items-center justify-between">
+											<label
+												class="text-[9px] font-bold text-muted-foreground"
+												for={`slide-prompt-${i}`}>Prompt de IA</label
+											>
+											<button
+												type="button"
+												class="text-[9px] font-semibold text-[#0D1E3D] hover:underline"
+												onclick={() => autoFillSlidePrompt(i)}>Auto-generar</button
+											>
+										</div>
+										<textarea
+											id={`slide-prompt-${i}`}
+											rows="2"
+											placeholder={slideModo === 'crear'
+												? 'Describe qué generar (obligatorio en modo crear)…'
+												: 'Opcional: hereda el prompt general si lo dejas vacío…'}
+											bind:value={draftPost.carouselImages[i].prompt}
+											class="w-full rounded-md border border-slate-200 bg-background px-2 py-1.5 text-[10px] outline-none focus:border-[#0D1E3D] dark:border-slate-700"
+										></textarea>
 									</div>
-									<textarea
-										id={`slide-prompt-${i}`}
-										rows="2"
-										placeholder={slideModo === 'crear'
-											? 'Describe qué generar (obligatorio en modo crear)…'
-											: 'Opcional: hereda el prompt general si lo dejas vacío…'}
-										bind:value={draftPost.carouselImages[i].prompt}
-										class="w-full rounded-md border border-slate-200 bg-background px-2 py-1.5 text-[10px] outline-none focus:border-[#0D1E3D] dark:border-slate-700"
-									></textarea>
 								</div>
+							{/each}
+						</div>
+					{:else}
+						<!-- Uploader de imagen -->
+						<div class="rounded-xl border border-dashed bg-card p-3 shadow-inner">
+							<div class="flex items-center justify-end mb-2">
+								<label
+									class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-600 dark:text-slate-300 cursor-pointer"
+								>
+									<input
+										type="checkbox"
+										checked={draftPost.modo === 'crear'}
+										onchange={toggleSingleModo}
+										class="rounded border-slate-200 text-[#0D1E3D] focus:ring-[#0D1E3D] dark:border-slate-700"
+									/>
+									<span>✨ Crear (sin ref)</span>
+								</label>
 							</div>
-						{/each}
-					</div>
-				{:else}
-					<!-- Uploader de imagen -->
-					<div class="rounded-xl border border-dashed bg-card p-3 shadow-inner">
-						<div class="flex items-center justify-end mb-2">
-							<label class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-600 dark:text-slate-300 cursor-pointer">
-								<input
-									type="checkbox"
-									checked={draftPost.modo === 'crear'}
-									onchange={toggleSingleModo}
-									class="rounded border-slate-200 text-[#0D1E3D] focus:ring-[#0D1E3D] dark:border-slate-700"
-								/>
-								<span>✨ Crear (sin ref)</span>
-							</label>
+
+							{#if draftPost.modo === 'editar'}
+								<label
+									class="flex min-h-[140px] cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/30 px-3 py-6 text-center hover:bg-muted/60 transition"
+								>
+									{#if draftPost.imagePreview}
+										<img
+											src={draftPost.imagePreview}
+											alt="Preview"
+											class="h-28 w-full rounded-md object-cover"
+										/>
+									{:else}
+										<UploadCloud class="h-6 w-6 text-muted-foreground animate-bounce" />
+										<div class="space-y-0.5">
+											<p class="text-[10px] font-semibold text-slate-700 dark:text-slate-200">
+												Subir imagen desde PC
+											</p>
+											<p class="text-[8px] text-muted-foreground">Click o arrastra (JPG/PNG)</p>
+										</div>
+									{/if}
+									<input
+										bind:this={imageInput}
+										type="file"
+										accept="image/*"
+										class="hidden"
+										onchange={handleImageUpload}
+									/>
+								</label>
+							{:else}
+								<div
+									class="flex min-h-[140px] flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-[#0D1E3D]/40 bg-[#0D1E3D]/5 px-3 py-6 text-center"
+								>
+									<Sparkles class="h-6 w-6 text-[#0D1E3D]" />
+									<p class="text-[10px] font-semibold text-slate-700 dark:text-slate-200">
+										Generar imagen desde cero con IA
+									</p>
+									<p class="text-[8px] text-muted-foreground">
+										Se usará el prompt de la IA de abajo
+									</p>
+								</div>
+							{/if}
 						</div>
 
-						{#if draftPost.modo === 'editar'}
-							<label class="flex min-h-[140px] cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/30 px-3 py-6 text-center hover:bg-muted/60 transition">
-								{#if draftPost.imagePreview}
-									<img src={draftPost.imagePreview} alt="Preview" class="h-28 w-full rounded-md object-cover" />
-								{:else}
-									<UploadCloud class="h-6 w-6 text-muted-foreground animate-bounce" />
-									<div class="space-y-0.5">
-										<p class="text-[10px] font-semibold text-slate-700 dark:text-slate-200">Subir imagen desde PC</p>
-										<p class="text-[8px] text-muted-foreground">Click o arrastra (JPG/PNG)</p>
-									</div>
-								{/if}
-								<input bind:this={imageInput} type="file" accept="image/*" class="hidden" onchange={handleImageUpload} />
-							</label>
-						{:else}
-							<div class="flex min-h-[140px] flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-[#0D1E3D]/40 bg-[#0D1E3D]/5 px-3 py-6 text-center">
-								<Sparkles class="h-6 w-6 text-[#0D1E3D]" />
-								<p class="text-[10px] font-semibold text-slate-700 dark:text-slate-200">Generar imagen desde cero con IA</p>
-								<p class="text-[8px] text-muted-foreground">Se usará el prompt de la IA de abajo</p>
+						{#if draftPost.modo === 'editar' && draftPost.imageName}
+							<div
+								class="flex items-center justify-between rounded-lg border bg-card p-2 text-[10px]"
+							>
+								<span class="truncate font-semibold max-w-[150px]">{draftPost.imageName}</span>
+								<button
+									type="button"
+									class="text-rose-500 hover:text-rose-600 p-0.5"
+									onclick={clearImage}
+								>
+									<X class="h-3.5 w-3.5" />
+								</button>
 							</div>
 						{/if}
-					</div>
-
-					{#if draftPost.modo === 'editar' && draftPost.imageName}
-						<div class="flex items-center justify-between rounded-lg border bg-card p-2 text-[10px]">
-							<span class="truncate font-semibold max-w-[150px]">{draftPost.imageName}</span>
-							<button type="button" class="text-rose-500 hover:text-rose-600 p-0.5" onclick={clearImage}>
-								<X class="h-3.5 w-3.5" />
-							</button>
-						</div>
 					{/if}
-				{/if}
 
 					<!-- Detalles de Calendario -->
 					<div class="border-t pt-3 space-y-3.5 text-xs">
-						<label class="flex items-start gap-2 rounded-lg border border-orange-200 bg-orange-50/60 p-2.5 text-xs font-semibold text-slate-700 cursor-pointer dark:border-orange-900/60 dark:bg-orange-950/20 dark:text-slate-200">
+						<label
+							class="flex items-start gap-2 rounded-lg border border-orange-200 bg-orange-50/60 p-2.5 text-xs font-semibold text-slate-700 cursor-pointer dark:border-orange-900/60 dark:bg-orange-950/20 dark:text-slate-200"
+						>
 							<input
 								type="checkbox"
 								bind:checked={draftPost.publicarAlAprobar}
@@ -1563,15 +1763,21 @@ class="w-full text-left rounded p-1.5 text-[10px] leading-tight border transitio
 							/>
 							<span>
 								Publicar al aprobar
-								<span class="mt-0.5 block text-[10px] font-normal text-muted-foreground">Se enviará automáticamente en el siguiente ciclo al aprobar la pieza.</span>
+								<span class="mt-0.5 block text-[10px] font-normal text-muted-foreground"
+									>Se enviará automáticamente en el siguiente ciclo al aprobar la pieza.</span
+								>
 							</span>
 						</label>
 						{#if draftPost.publicarAlAprobar}
-							<p class="rounded-md bg-muted px-2.5 py-2 text-[10px] text-muted-foreground">No necesitás seleccionar fecha ni hora de publicación.</p>
+							<p class="rounded-md bg-muted px-2.5 py-2 text-[10px] text-muted-foreground">
+								No necesitás seleccionar fecha ni hora de publicación.
+							</p>
 						{:else}
 							<div class="grid grid-cols-2 gap-3">
 								<div>
-									<label class="text-[9px] font-bold text-slate-400 uppercase block mb-1">Fecha de Publicación</label>
+									<label class="text-[9px] font-bold text-slate-400 uppercase block mb-1"
+										>Fecha de Publicación</label
+									>
 									<input
 										type="date"
 										min={getTodayStr()}
@@ -1581,7 +1787,9 @@ class="w-full text-left rounded p-1.5 text-[10px] leading-tight border transitio
 									/>
 								</div>
 								<div>
-									<label class="text-[9px] font-bold text-slate-400 uppercase block mb-1">Hora de Publicación</label>
+									<label class="text-[9px] font-bold text-slate-400 uppercase block mb-1"
+										>Hora de Publicación</label
+									>
 									<input
 										type="time"
 										bind:value={draftPost.time}
@@ -1593,7 +1801,11 @@ class="w-full text-left rounded p-1.5 text-[10px] leading-tight border transitio
 						<div>
 							<span class="text-[9px] font-bold text-slate-400 uppercase">Día Programado</span>
 							<p class="font-bold text-slate-800 dark:text-slate-200">
-								{draftPost.publicarAlAprobar ? 'Al aprobar' : (draftPost.date ? getDayNameFormatted(draftPost.date) : '-')}
+								{draftPost.publicarAlAprobar
+									? 'Al aprobar'
+									: draftPost.date
+										? getDayNameFormatted(draftPost.date)
+										: '-'}
 							</p>
 						</div>
 						<div>
@@ -1602,27 +1814,27 @@ class="w-full text-left rounded p-1.5 text-[10px] leading-tight border transitio
 						</div>
 					</div>
 
-					<!-- Configuración Manual de Estados en Meta (Checkboxes) -->
+					<!-- Configuración de pauta -->
 					<div class="border-t pt-3 space-y-2">
-						<p class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Estados de Publicación</p>
+						<p
+							class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300"
+						>
+							Estados de Publicación
+						</p>
 						<label class="flex items-center gap-2 text-xs font-semibold cursor-pointer">
-							<input type="checkbox" bind:checked={draftPost.designed} class="rounded border-slate-200" />
-							<span>🎨 Diseñado (Manual Adobe)</span>
-						</label>
-						<label class="flex items-center gap-2 text-xs font-semibold cursor-pointer">
-							<input type="checkbox" checked={draftPost.published} disabled class="rounded border-slate-200" />
-							<span class:text-slate-400={!draftPost.published}>📤 Publicada en Meta (se actualiza al enviar)</span>
-						</label>
-						<label class="flex items-center gap-2 text-xs font-semibold cursor-pointer">
-							<input type="checkbox" bind:checked={draftPost.promoted} class="rounded border-slate-200" />
+							<input
+								type="checkbox"
+								bind:checked={draftPost.promoted}
+								class="rounded border-slate-200"
+							/>
 							<span>🔥 Promocionada (Pauta)</span>
 						</label>
 					</div>
 				</div>
 
 				{#if isEditing}
-					<Button 
-						variant="outline" 
+					<Button
+						variant="outline"
 						class="w-full border-rose-200 text-rose-600 hover:bg-rose-50 dark:border-rose-950 dark:hover:bg-rose-950/20"
 						onclick={() => deletePost(draftPost.id)}
 					>
@@ -1634,37 +1846,45 @@ class="w-full text-left rounded p-1.5 text-[10px] leading-tight border transitio
 
 			<!-- Columna Derecha: Configuración Técnica del Post y Gemini AI -->
 			<div class="p-6 space-y-4">
-				
-<p class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 border-b pb-1.5">Configuración e Instrucciones para la IA</p>
+				<p
+					class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 border-b pb-1.5"
+				>
+					Configuración e Instrucciones para la IA
+				</p>
 
-			<!-- Modo Carrusel (toggle independiente del formato) -->
-			<label class="flex items-center gap-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
-				<input
-					type="checkbox"
-					checked={isCarruselMode}
-					onchange={toggleCarruselMode}
-					class="rounded border-slate-200 text-[#0D1E3D] focus:ring-[#0D1E3D] dark:border-slate-700"
-				/>
-				<span>🖼️ Es carrusel (varias imágenes)</span>
-			</label>
+				<!-- Modo Carrusel (toggle independiente del formato) -->
+				<label
+					class="flex items-center gap-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer"
+				>
+					<input
+						type="checkbox"
+						checked={isCarruselMode}
+						onchange={toggleCarruselMode}
+						class="rounded border-slate-200 text-[#0D1E3D] focus:ring-[#0D1E3D] dark:border-slate-700"
+					/>
+					<span>🖼️ Es carrusel (varias imágenes)</span>
+				</label>
 
-			<!-- Producto y Marca -->
+				<!-- Producto y Marca -->
 				<div class="grid gap-4 sm:grid-cols-2">
 					<div class="space-y-1">
-						<label class="text-[10px] font-bold uppercase text-muted-foreground block mb-1" for="post-title">
+						<label
+							class="text-[10px] font-bold uppercase text-muted-foreground block mb-1"
+							for="post-title"
+						>
 							Tipo de contenido (Producto/Tópico)
 						</label>
 						<div class="flex gap-2">
-							<input 
+							<input
 								id="post-title"
-								type="text" 
-								bind:value={draftPost.title} 
-								class="h-9.5 flex-1 rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D] font-semibold text-slate-800 dark:text-slate-100 min-w-0" 
+								type="text"
+								bind:value={draftPost.title}
+								class="h-9.5 flex-1 rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D] font-semibold text-slate-800 dark:text-slate-100 min-w-0"
 								placeholder="ej: Toyama Ahoyadora TEA52X-200"
 							/>
-							<Button 
-								type="button" 
-								variant="outline" 
+							<Button
+								type="button"
+								variant="outline"
 								class="h-9.5 text-xs font-semibold px-2.5 border-[#0D1E3D]/20 hover:bg-[#0D1E3D]/5 dark:border-blue-900/30 text-[#0D1E3D] dark:text-blue-400 gap-1.5 flex items-center shrink-0 cursor-pointer"
 								onclick={openProductSelector}
 							>
@@ -1674,7 +1894,10 @@ class="w-full text-left rounded p-1.5 text-[10px] leading-tight border transitio
 						</div>
 					</div>
 					<div class="space-y-1">
-						<label class="text-[10px] font-bold uppercase text-muted-foreground" for="post-cuenta-meta">
+						<label
+							class="text-[10px] font-bold uppercase text-muted-foreground"
+							for="post-cuenta-meta"
+						>
 							Cuenta Meta (destino de publicación)
 						</label>
 						<select
@@ -1685,7 +1908,7 @@ class="w-full text-left rounded p-1.5 text-[10px] leading-tight border transitio
 								const cta = cuentasMeta.find((c) => c.id === draftPost.cuentaId);
 								if (cta && Array.isArray(cta.redes_activas)) {
 									selectedNetworks = selectedNetworks.filter((nombre) => {
-const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
+										const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 										return red && cta.redes_activas.includes(red.id);
 									});
 									draftPost.network = selectedNetworks.join(', ');
@@ -1698,7 +1921,9 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 								<option value={null}>Sin cuentas conectadas — abrí Meta Hub → Conectar</option>
 							{:else}
 								{#each cuentasMeta as cta}
-									<option value={cta.id}>{cta.nombre}{cta.redes_activas?.includes(2) ? ' (+IG)' : ''}</option>
+									<option value={cta.id}
+										>{cta.nombre}{cta.redes_activas?.includes(2) ? ' (+IG)' : ''}</option
+									>
 								{/each}
 							{/if}
 						</select>
@@ -1709,10 +1934,12 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 						{/if}
 					</div>
 					<div class="space-y-1">
-						<label class="text-[10px] font-bold uppercase text-muted-foreground" for="post-brand">Marca (Dispara el System Prompt)</label>
-						<select 
+						<label class="text-[10px] font-bold uppercase text-muted-foreground" for="post-brand"
+							>Marca (Dispara el System Prompt)</label
+						>
+						<select
 							id="post-brand"
-							bind:value={draftPost.brand} 
+							bind:value={draftPost.brand}
 							class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D] font-bold"
 						>
 							{#each catalogos.marcas as marca}
@@ -1722,67 +1949,87 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 					</div>
 				</div>
 
-<!-- Brand Assets (botón que abre selector amplio + resumen inline) -->
-			<div class="space-y-1.5 border border-slate-100 dark:border-slate-800 rounded-lg p-3 bg-slate-50 dark:bg-slate-900/30">
-				<div class="flex items-center justify-between">
-					<label class="text-[10px] font-bold uppercase text-slate-700 dark:text-slate-300">
-						Assets de Marca
-						{#if marcaAssets.length > 0}
-							<span class="text-muted-foreground font-medium normal-case">({selectedAssetIds.size}/{marcaAssets.length})</span>
-						{/if}
-					</label>
-					<button
-						type="button"
-						onclick={() => { assetFilterType = 'todos'; assetPickerOpen = true; }}
-						disabled={loadingAssets || marcaAssets.length === 0}
-						class="inline-flex items-center gap-1.5 rounded-md border border-[#0D1E3D]/30 bg-[#0D1E3D]/5 px-2.5 py-1 text-[10px] font-bold text-[#0D1E3D] hover:bg-[#0D1E3D]/10 transition disabled:opacity-50 disabled:cursor-not-allowed"
-						title="Ver y seleccionar assets de marca"
-					>
-						<ImageIcon class="h-3.5 w-3.5" />
-						{#if loadingAssets}
-							Cargando...
-						{:else if marcaAssets.length === 0}
-							Sin assets
-						{:else if selectedAssetIds.size === 0}
-							Ver assets
-						{:else}
-							Editar selección
-						{/if}
-					</button>
-				</div>
-
-				{#if loadingAssets}
-					<div class="text-[10px] text-muted-foreground animate-pulse">Cargando assets de marca...</div>
-				{:else if marcaAssets.length === 0}
-					<div class="text-[10px] text-muted-foreground italic">Esta marca no tiene assets cargados.</div>
-				{:else if selectedAssetIds.size === 0}
-					<div class="text-[10px] text-muted-foreground">Ningún asset seleccionado. La IA usará el system prompt de la marca.</div>
-				{:else}
-					<div class="flex flex-wrap gap-1.5">
-						{#each marcaAssets as asset}
-							{#if selectedAssetIds.has(asset.id)}
-								<div class="flex items-center gap-1.5 px-1.5 py-1 rounded-md border border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20">
-									<img src={asset.file_path} alt={asset.nombre} class="h-5 w-5 object-contain" />
-									<span class="text-[9px] font-bold uppercase text-indigo-700 dark:text-indigo-300">{asset.tipo}</span>
-									<button
-										type="button"
-										onclick={() => toggleAsset(asset.id)}
-										class="text-muted-foreground hover:text-red-500 transition"
-										title="Quitar de la selección"
-									>
-										<X class="h-3 w-3" />
-									</button>
-								</div>
+				<!-- Brand Assets (botón que abre selector amplio + resumen inline) -->
+				<div
+					class="space-y-1.5 border border-slate-100 dark:border-slate-800 rounded-lg p-3 bg-slate-50 dark:bg-slate-900/30"
+				>
+					<div class="flex items-center justify-between">
+						<label class="text-[10px] font-bold uppercase text-slate-700 dark:text-slate-300">
+							Assets de Marca
+							{#if marcaAssets.length > 0}
+								<span class="text-muted-foreground font-medium normal-case"
+									>({selectedAssetIds.size}/{marcaAssets.length})</span
+								>
 							{/if}
-						{/each}
+						</label>
+						<button
+							type="button"
+							onclick={() => {
+								assetFilterType = 'todos';
+								assetPickerOpen = true;
+							}}
+							disabled={loadingAssets || marcaAssets.length === 0}
+							class="inline-flex items-center gap-1.5 rounded-md border border-[#0D1E3D]/30 bg-[#0D1E3D]/5 px-2.5 py-1 text-[10px] font-bold text-[#0D1E3D] hover:bg-[#0D1E3D]/10 transition disabled:opacity-50 disabled:cursor-not-allowed"
+							title="Ver y seleccionar assets de marca"
+						>
+							<ImageIcon class="h-3.5 w-3.5" />
+							{#if loadingAssets}
+								Cargando...
+							{:else if marcaAssets.length === 0}
+								Sin assets
+							{:else if selectedAssetIds.size === 0}
+								Ver assets
+							{:else}
+								Editar selección
+							{/if}
+						</button>
 					</div>
-				{/if}
-			</div>
+
+					{#if loadingAssets}
+						<div class="text-[10px] text-muted-foreground animate-pulse">
+							Cargando assets de marca...
+						</div>
+					{:else if marcaAssets.length === 0}
+						<div class="text-[10px] text-muted-foreground italic">
+							Esta marca no tiene assets cargados.
+						</div>
+					{:else if selectedAssetIds.size === 0}
+						<div class="text-[10px] text-muted-foreground">
+							Ningún asset seleccionado. La IA usará el system prompt de la marca.
+						</div>
+					{:else}
+						<div class="flex flex-wrap gap-1.5">
+							{#each marcaAssets as asset}
+								{#if selectedAssetIds.has(asset.id)}
+									<div
+										class="flex items-center gap-1.5 px-1.5 py-1 rounded-md border border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20"
+									>
+										<img src={asset.file_path} alt={asset.nombre} class="h-5 w-5 object-contain" />
+										<span
+											class="text-[9px] font-bold uppercase text-indigo-700 dark:text-indigo-300"
+											>{asset.tipo}</span
+										>
+										<button
+											type="button"
+											onclick={() => toggleAsset(asset.id)}
+											class="text-muted-foreground hover:text-red-500 transition"
+											title="Quitar de la selección"
+										>
+											<X class="h-3 w-3" />
+										</button>
+									</div>
+								{/if}
+							{/each}
+						</div>
+					{/if}
+				</div>
 
 				<!-- Contexto / Tópico central -->
 				<div class="space-y-1">
 					<div class="flex items-center justify-between">
-						<label class="text-[10px] font-bold uppercase text-muted-foreground" for="post-context">Contexto para post (Tópico central)</label>
+						<label class="text-[10px] font-bold uppercase text-muted-foreground" for="post-context"
+							>Contexto para post (Tópico central)</label
+						>
 						<button
 							type="button"
 							onclick={openFichasSelector}
@@ -1805,7 +2052,9 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 				<!-- Prompt para la IA (editable; se usa al generar la imagen) -->
 				<div class="space-y-1">
 					<div class="flex items-center justify-between">
-						<label class="text-[10px] font-bold uppercase text-muted-foreground" for="post-prompt">Prompt para la IA (imagen)</label>
+						<label class="text-[10px] font-bold uppercase text-muted-foreground" for="post-prompt"
+							>Prompt para la IA (imagen)</label
+						>
 						<button
 							type="button"
 							onclick={fillDefaultPrompt}
@@ -1823,12 +2072,17 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 						class="w-full rounded-md border bg-background px-3 py-2 text-xs outline-none focus:border-[#0D1E3D] leading-relaxed font-sans resize-y"
 						placeholder="Pulsa «Auto-generar» para partir del system prompt de la marca, o escribe aquí tus indicaciones específicas (fondo, composición, ángulos, etc.)."
 					></textarea>
-					<p class="text-[9px] text-muted-foreground">Si lo dejas vacío, se usará el system prompt de la marca por defecto.</p>
+					<p class="text-[9px] text-muted-foreground">
+						Si lo dejas vacío, se usará el system prompt de la marca por defecto.
+					</p>
 				</div>
 
 				<!-- Prompt de Copy (override opcional del manual para el texto) -->
 				<div class="space-y-1">
-					<label class="text-[10px] font-bold uppercase text-muted-foreground" for="post-prompt-copy">Prompt de Copy (opcional)</label>
+					<label
+						class="text-[10px] font-bold uppercase text-muted-foreground"
+						for="post-prompt-copy">Prompt de Copy (opcional)</label
+					>
 					<textarea
 						id="post-prompt-copy"
 						bind:value={draftPost.promptCopy}
@@ -1836,94 +2090,117 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 						class="w-full rounded-md border bg-background px-3 py-2 text-xs outline-none focus:border-[#0D1E3D] leading-relaxed font-sans resize-y"
 						placeholder="Indicaciones específicas para el copy (tono más humorístico, evitar hashtags, longitud, etc.). Vacío = usa el manual de marca."
 					></textarea>
-					<p class="text-[9px] text-muted-foreground">Sobreescribe el manual de marca solo para el texto de esta publicación.</p>
+					<p class="text-[9px] text-muted-foreground">
+						Sobreescribe el manual de marca solo para el texto de esta publicación.
+					</p>
 				</div>
 
-<!-- Redes Sociales de Destino -->
-			<div class="space-y-1.5">
-				<label class="text-[10px] font-bold uppercase text-muted-foreground block">Redes Sociales de Destino</label>
-				<div class="flex flex-wrap gap-2">
-					{#each catalogos.redes as red}
-						{@const redesActivasCuenta = (draftPost.cuentaId != null)
-							? (cuentasMeta.find((c) => c.id === draftPost.cuentaId)?.redes_activas ?? null)
-							: null}
-						{@const redHabilitada = redesActivasCuenta == null ? true : redesActivasCuenta.includes(red.id)}
-						<button 
-							type="button"
-							onclick={() => redHabilitada && toggleNetwork(red.nombre)}
-							disabled={!redHabilitada}
-							class={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all
+				<!-- Redes Sociales de Destino -->
+				<div class="space-y-1.5">
+					<label class="text-[10px] font-bold uppercase text-muted-foreground block"
+						>Redes Sociales de Destino</label
+					>
+					<div class="flex flex-wrap gap-2">
+						{#each catalogos.redes as red}
+							{@const redesActivasCuenta =
+								draftPost.cuentaId != null
+									? (cuentasMeta.find((c) => c.id === draftPost.cuentaId)?.redes_activas ?? null)
+									: null}
+							{@const redHabilitada =
+								redesActivasCuenta == null ? true : redesActivasCuenta.includes(red.id)}
+							<button
+								type="button"
+								onclick={() => redHabilitada && toggleNetwork(red.nombre)}
+								disabled={!redHabilitada}
+								class={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all
 								${redHabilitada ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'}
-								${selectedNetworks.includes(red.nombre) 
-									? 'bg-[#0D1E3D]/10 border-[#0D1E3D] text-[#0D1E3D] dark:bg-blue-950/40 dark:text-blue-400 font-bold' 
-									: 'bg-background hover:bg-slate-50 dark:hover:bg-slate-800 border-slate-200 text-slate-600 dark:text-slate-400'}`}
-							title={redHabilitada ? red.nombre : `${red.nombre} no está habilitada para esta cuenta`}
-						>
-							<span>{red.nombre}</span>
-						</button>
-					{/each}
+								${
+									selectedNetworks.includes(red.nombre)
+										? 'bg-[#0D1E3D]/10 border-[#0D1E3D] text-[#0D1E3D] dark:bg-blue-950/40 dark:text-blue-400 font-bold'
+										: 'bg-background hover:bg-slate-50 dark:hover:bg-slate-800 border-slate-200 text-slate-600 dark:text-slate-400'
+								}`}
+								title={redHabilitada
+									? red.nombre
+									: `${red.nombre} no está habilitada para esta cuenta`}
+							>
+								<span>{red.nombre}</span>
+							</button>
+						{/each}
+					</div>
+					{#if draftPost.cuentaId != null && cuentasMeta.find((c) => c.id === draftPost.cuentaId)?.redes_activas?.length === 0}
+						<p class="text-[9px] text-amber-600 dark:text-amber-400">
+							Esta cuenta no tiene redes habilitadas. Conéctalas desde el panel de cuentas Meta.
+						</p>
+					{/if}
 				</div>
-				{#if draftPost.cuentaId != null && cuentasMeta.find((c) => c.id === draftPost.cuentaId)?.redes_activas?.length === 0}
-					<p class="text-[9px] text-amber-600 dark:text-amber-400">Esta cuenta no tiene redes habilitadas. Conéctalas desde el panel de cuentas Meta.</p>
-				{/if}
-			</div>
 
-<!-- Relación de Aspecto, Público y Presupuesto -->
-			<div class="grid gap-4 sm:grid-cols-3">
-				<div class="space-y-1">
-					<label class="text-[10px] font-bold uppercase text-muted-foreground" for="post-format">Relación de Aspecto</label>
-					<select
-						id="post-format"
-						bind:value={draftPost.format}
-						class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D]"
-					>
-						{#each catalogos.formatos as formato}
-							<option value={formato.nombre}>{formato.nombre}</option>
-						{/each}
-					</select>
+				<!-- Relación de Aspecto, Público y Presupuesto -->
+				<div class="grid gap-4 sm:grid-cols-3">
+					<div class="space-y-1">
+						<label class="text-[10px] font-bold uppercase text-muted-foreground" for="post-format"
+							>Relación de Aspecto</label
+						>
+						<select
+							id="post-format"
+							bind:value={draftPost.format}
+							class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D]"
+						>
+							{#each catalogos.formatos as formato}
+								<option value={formato.nombre}>{formato.nombre}</option>
+							{/each}
+						</select>
+					</div>
+					<div class="space-y-1">
+						<label class="text-[10px] font-bold uppercase text-muted-foreground" for="post-audience"
+							>Público Objetivo</label
+						>
+						<select
+							id="post-audience"
+							bind:value={draftPost.audience}
+							class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D]"
+						>
+							{#each catalogos.audiencias as audiencia}
+								<option value={audiencia.nombre}>{audiencia.nombre}</option>
+							{/each}
+						</select>
+					</div>
+					<div class="space-y-1">
+						<label class="text-[10px] font-bold uppercase text-muted-foreground" for="post-budget"
+							>Presupuesto de pauta (¢)</label
+						>
+						<input
+							id="post-budget"
+							type="number"
+							bind:value={draftPost.budget}
+							class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D] text-right font-mono"
+						/>
+					</div>
 				</div>
-				<div class="space-y-1">
-					<label class="text-[10px] font-bold uppercase text-muted-foreground" for="post-audience">Público Objetivo</label>
-					<select
-						id="post-audience"
-						bind:value={draftPost.audience}
-						class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D]"
-					>
-						{#each catalogos.audiencias as audiencia}
-							<option value={audiencia.nombre}>{audiencia.nombre}</option>
-						{/each}
-					</select>
-				</div>
-				<div class="space-y-1">
-					<label class="text-[10px] font-bold uppercase text-muted-foreground" for="post-budget">Presupuesto de pauta (¢)</label>
-					<input
-						id="post-budget"
-						type="number"
-						bind:value={draftPost.budget}
-						class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D] text-right font-mono"
-					/>
-				</div>
-			</div>
 
 				<!-- CTA y KPI -->
 				<div class="grid gap-4 sm:grid-cols-2">
 					<div class="space-y-1">
-						<label class="text-[10px] font-bold uppercase text-muted-foreground" for="post-cta">Llamado a la acción (CTA)</label>
-						<input 
+						<label class="text-[10px] font-bold uppercase text-muted-foreground" for="post-cta"
+							>Llamado a la acción (CTA)</label
+						>
+						<input
 							id="post-cta"
-							type="text" 
-							bind:value={draftPost.cta} 
-							class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D]" 
+							type="text"
+							bind:value={draftPost.cta}
+							class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D]"
 							placeholder="ej: Cotizar ahora"
 						/>
 					</div>
 					<div class="space-y-1">
-						<label class="text-[10px] font-bold uppercase text-muted-foreground" for="post-objective">Objetivo</label>
-						<input 
+						<label
+							class="text-[10px] font-bold uppercase text-muted-foreground"
+							for="post-objective">Objetivo</label
+						>
+						<input
 							id="post-objective"
-							type="text" 
-							bind:value={draftPost.objective} 
-							class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D]" 
+							type="text"
+							bind:value={draftPost.objective}
+							class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D]"
 							placeholder="ej: Conversaciones iniciadas"
 						/>
 					</div>
@@ -1931,24 +2208,35 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 
 				<!-- Vigencia en Meta -->
 				<div class="space-y-2 border-t pt-4">
-					<p class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Vigencia / Programación en Meta</p>
+					<p class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+						Vigencia / Programación en Meta{draftPost.promoted ? ' *' : ''}
+					</p>
 					<div class="grid gap-4 sm:grid-cols-2">
 						<div class="space-y-1">
-							<label class="text-[10px] font-bold uppercase text-muted-foreground" for="post-meta-start-date">Fecha de Inicio</label>
-							<input 
+							<label
+								class="text-[10px] font-bold uppercase text-muted-foreground"
+								for="post-meta-start-date">Fecha de Inicio{draftPost.promoted ? ' *' : ''}</label
+							>
+							<input
 								id="post-meta-start-date"
-								type="date" 
-								bind:value={draftPost.metaStartDate} 
-								class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D] text-slate-800 dark:text-slate-100" 
+								type="date"
+								bind:value={draftPost.metaStartDate}
+								required={draftPost.promoted}
+								class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166] text-slate-800 dark:text-slate-100"
 							/>
 						</div>
 						<div class="space-y-1">
-							<label class="text-[10px] font-bold uppercase text-muted-foreground" for="post-meta-end-date">Fecha de Finalización</label>
-							<input 
+							<label
+								class="text-[10px] font-bold uppercase text-muted-foreground"
+								for="post-meta-end-date"
+								>Fecha de Finalización{draftPost.promoted ? ' *' : ''}</label
+							>
+							<input
 								id="post-meta-end-date"
-								type="date" 
-								bind:value={draftPost.metaEndDate} 
-								class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D] text-slate-800 dark:text-slate-100" 
+								type="date"
+								bind:value={draftPost.metaEndDate}
+								required={draftPost.promoted}
+								class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166] text-slate-800 dark:text-slate-100"
 							/>
 						</div>
 					</div>
@@ -1957,35 +2245,45 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 				<!-- Botones Finales de Guardado -->
 				<div class="flex justify-end gap-2.5 pt-6 border-t">
 					<Button variant="outline" onclick={requestCloseModal}>Cancelar</Button>
-					<Button class="bg-[#0D1E3D] hover:bg-[#0D1E3D]/90 text-white font-bold cursor-pointer" onclick={savePost}>Guardar Ficha</Button>
+					<Button
+						class="bg-[#0D1E3D] hover:bg-[#0D1E3D]/90 text-white font-bold cursor-pointer"
+						onclick={savePost}>Guardar Ficha</Button
+					>
 				</div>
-
 			</div>
-
 
 			<!-- Submodal: Seleccionar Ficha Técnica (Dentro del Dialog.Content para capturar puntero) -->
 			{#if showFichasSelectorModal}
-				<div 
+				<div
 					class="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-in fade-in duration-150 pointer-events-auto"
-					onclick={(e) => { e.stopPropagation(); }}
+					onclick={(e) => {
+						e.stopPropagation();
+					}}
 				>
-					<div 
+					<div
 						class="w-full max-w-xl rounded-xl border bg-background p-5 shadow-2xl space-y-4 max-h-[85vh] flex flex-col pointer-events-auto"
 						onclick={(e) => e.stopPropagation()}
 					>
 						<div class="flex items-center justify-between border-b pb-3">
 							<div class="flex items-center gap-2">
-								<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0D1E3D] text-white">
+								<div
+									class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0D1E3D] text-white"
+								>
 									<FileText class="h-4 w-4" />
 								</div>
 								<div>
 									<h3 class="text-sm font-bold">Seleccionar Ficha Técnica</h3>
-									<p class="text-[11px] text-muted-foreground">Marca actual: <strong class="text-[#0D1E3D]">{draftPost.brand}</strong></p>
+									<p class="text-[11px] text-muted-foreground">
+										Marca actual: <strong class="text-[#0D1E3D]">{draftPost.brand}</strong>
+									</p>
 								</div>
 							</div>
 							<button
 								type="button"
-								onclick={(e) => { e.stopPropagation(); showFichasSelectorModal = false; }}
+								onclick={(e) => {
+									e.stopPropagation();
+									showFichasSelectorModal = false;
+								}}
 								class="rounded-md p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground transition cursor-pointer"
 							>
 								<X class="h-4.5 w-4.5" />
@@ -1999,20 +2297,32 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 									<p class="text-xs text-muted-foreground">Cargando fichas de la marca...</p>
 								</div>
 							{:else if fichasDisponibles.length === 0}
-								<div class="flex flex-col items-center justify-center py-10 gap-2 text-center border rounded-lg bg-muted/20 p-4">
+								<div
+									class="flex flex-col items-center justify-center py-10 gap-2 text-center border rounded-lg bg-muted/20 p-4"
+								>
 									<FileText class="h-8 w-8 text-muted-foreground/50" />
-									<p class="text-xs font-semibold">No hay fichas técnicas registradas para {draftPost.brand}</p>
-									<p class="text-[11px] text-muted-foreground">Puedes crear nuevas fichas técnicas desde la pestaña «Fichas Técnicas» en el menú principal.</p>
+									<p class="text-xs font-semibold">
+										No hay fichas técnicas registradas para {draftPost.brand}
+									</p>
+									<p class="text-[11px] text-muted-foreground">
+										Puedes crear nuevas fichas técnicas desde la pestaña «Fichas Técnicas» en el
+										menú principal.
+									</p>
 								</div>
 							{:else}
 								<div class="grid grid-cols-1 gap-2.5">
 									{#each fichasDisponibles as ficha}
-										<div class="flex flex-col gap-2 p-3 border rounded-lg hover:border-[#0D1E3D]/50 bg-card transition">
+										<div
+											class="flex flex-col gap-2 p-3 border rounded-lg hover:border-[#0D1E3D]/50 bg-card transition"
+										>
 											<div class="flex items-center justify-between">
 												<h4 class="font-bold text-xs text-foreground">{ficha.nombre_producto}</h4>
 												<button
 													type="button"
-													onclick={(e) => { e.stopPropagation(); attachFichaToContext(ficha); }}
+													onclick={(e) => {
+														e.stopPropagation();
+														attachFichaToContext(ficha);
+													}}
 													class="inline-flex items-center gap-1 rounded-md bg-[#0D1E3D] px-2.5 py-1 text-[11px] font-bold text-white shadow-sm hover:bg-[#0A1730] transition cursor-pointer"
 												>
 													<Plus class="h-3 w-3" />
@@ -2020,9 +2330,13 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 												</button>
 											</div>
 											{#if ficha.descripcion}
-												<p class="text-[11px] text-muted-foreground line-clamp-1">{ficha.descripcion}</p>
+												<p class="text-[11px] text-muted-foreground line-clamp-1">
+													{ficha.descripcion}
+												</p>
 											{/if}
-											<div class="bg-muted/40 p-2 rounded text-[10px] font-mono line-clamp-3 text-muted-foreground border">
+											<div
+												class="bg-muted/40 p-2 rounded text-[10px] font-mono line-clamp-3 text-muted-foreground border"
+											>
 												{ficha.especificaciones_texto}
 											</div>
 										</div>
@@ -2034,7 +2348,10 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 						<div class="flex items-center justify-end border-t pt-3">
 							<button
 								type="button"
-								onclick={(e) => { e.stopPropagation(); showFichasSelectorModal = false; }}
+								onclick={(e) => {
+									e.stopPropagation();
+									showFichasSelectorModal = false;
+								}}
 								class="rounded-md border px-4 py-1.5 text-xs font-medium hover:bg-muted cursor-pointer"
 							>
 								Cerrar
@@ -2043,14 +2360,15 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 					</div>
 				</div>
 			{/if}
-
 		</div>
 	</Dialog.Content>
 </Dialog.Root>
 
 <!-- Modal Dialog del Selector de Productos -->
 <Dialog.Root bind:open={productSelectorOpen}>
-	<Dialog.Content class="max-w-5xl w-[95vw] max-h-[85vh] flex flex-col border bg-background p-0 shadow-lg text-foreground rounded-xl overflow-hidden">
+	<Dialog.Content
+		class="max-w-5xl w-[95vw] max-h-[85vh] flex flex-col border bg-background p-0 shadow-lg text-foreground rounded-xl overflow-hidden"
+	>
 		<!-- Cabecera -->
 		<div class="flex items-center justify-between border-b p-5 bg-muted/40 shrink-0">
 			<div>
@@ -2059,7 +2377,8 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 					Catálogo de Productos e Inventario
 				</Dialog.Title>
 				<Dialog.Description class="text-xs text-muted-foreground mt-0.5">
-					Selecciona un producto del catálogo para cargar automáticamente su marca, nombre y especificaciones.
+					Selecciona un producto del catálogo para cargar automáticamente su marca, nombre y
+					especificaciones.
 				</Dialog.Description>
 			</div>
 		</div>
@@ -2073,14 +2392,22 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 					placeholder="Buscar por nombre, SKU, marca o categoría..."
 					bind:value={productSearchQuery}
 					oninput={dispararBusquedaConDebounce}
-					onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); cargarProductos(); } }}
+					onkeydown={(e) => {
+						if (e.key === 'Enter') {
+							e.preventDefault();
+							cargarProductos();
+						}
+					}}
 					class="pl-9 h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D] text-slate-800 dark:text-slate-100"
 				/>
 				{#if productSearchQuery}
 					<button
 						type="button"
 						class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs font-semibold cursor-pointer"
-						onclick={() => { productSearchQuery = ''; cargarProductos(); }}
+						onclick={() => {
+							productSearchQuery = '';
+							cargarProductos();
+						}}
 					>
 						Limpiar
 					</button>
@@ -2140,13 +2467,17 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 
 		<!-- Aviso: bodegas no seleccionadas / sin VPN -->
 		{#if seleccionIncompleta || errorProductos}
-			<div class="px-5 py-2.5 border-b bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-200 text-[11px] flex items-center gap-2 shrink-0">
+			<div
+				class="px-5 py-2.5 border-b bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-200 text-[11px] flex items-center gap-2 shrink-0"
+			>
 				<Warehouse class="h-4 w-4 shrink-0" />
 				<span>
 					{#if errorProductos}
 						{errorProductos}
 					{:else}
-						No hay bodegas seleccionadas para Creador de Contenido. Ve a la pestaña <strong>Bodegas</strong> para elegir al menos una (requiere VPN activo a Exactus).
+						No hay bodegas seleccionadas para Creador de Contenido. Ve a la pestaña <strong
+							>Bodegas</strong
+						> para elegir al menos una (requiere VPN activo a Exactus).
 					{/if}
 				</span>
 			</div>
@@ -2163,16 +2494,21 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 					<Package class="h-8 w-8 mx-auto mb-2 opacity-40" />
 					No se encontraron productos con los filtros seleccionados.
 					{#if !seleccionIncompleta}
-						<div class="text-[10px] mt-1">Verifica que estés conectado al VPN y que haya stock en las bodegas seleccionadas.</div>
+						<div class="text-[10px] mt-1">
+							Verifica que estés conectado al VPN y que haya stock en las bodegas seleccionadas.
+						</div>
 					{/if}
 				</div>
 			{:else}
 				<div class="text-[10px] text-muted-foreground px-1">
-					{productos.length} producto(s) con stock en las bodegas seleccionadas. Haz clic en la flecha para ver el desglose por bodega.
+					{productos.length} producto(s) con stock en las bodegas seleccionadas. Haz clic en la flecha
+					para ver el desglose por bodega.
 				</div>
 				<div class="grid gap-2">
 					{#each productos as product (product.codigo)}
-						<div class="rounded-lg border bg-card border-slate-200 dark:border-slate-800 overflow-hidden transition-all hover:shadow-xs">
+						<div
+							class="rounded-lg border bg-card border-slate-200 dark:border-slate-800 overflow-hidden transition-all hover:shadow-xs"
+						>
 							<!-- Fila principal -->
 							<div class="flex items-stretch">
 								<!-- Área seleccionable (clic principal) -->
@@ -2183,19 +2519,27 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 								>
 									<div class="space-y-1 flex-1 min-w-0">
 										<div class="flex flex-wrap items-center gap-2">
-											<span class="font-bold text-slate-800 dark:text-slate-200 group-hover:text-[#0D1E3D] dark:group-hover:text-blue-400 transition-colors text-xs">
+											<span
+												class="font-bold text-slate-800 dark:text-slate-200 group-hover:text-[#0D1E3D] dark:group-hover:text-blue-400 transition-colors text-xs"
+											>
 												{product.descripcion || product.codigo}
 											</span>
-											<span class="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-[10px] font-medium text-slate-600 dark:text-slate-300 font-mono">
+											<span
+												class="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-[10px] font-medium text-slate-600 dark:text-slate-300 font-mono"
+											>
 												{product.codigo}
 											</span>
 											{#if product.marca}
-												<span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold tracking-wide uppercase bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-100 dark:border-blue-900/30">
+												<span
+													class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold tracking-wide uppercase bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-100 dark:border-blue-900/30"
+												>
 													{product.marca}
 												</span>
 											{/if}
 											{#if product.categoria}
-												<span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold tracking-wide uppercase bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-900/30">
+												<span
+													class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold tracking-wide uppercase bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-900/30"
+												>
 													{product.categoria}
 												</span>
 											{/if}
@@ -2203,49 +2547,77 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 									</div>
 
 									<!-- Stock total + acción seleccionar -->
-									<div class="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-0 border-slate-100 dark:border-slate-800">
+									<div
+										class="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-0 border-slate-100 dark:border-slate-800"
+									>
 										<div class="text-right flex flex-col items-start sm:items-end">
-											<span class="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Disponibilidad</span>
+											<span class="text-[9px] uppercase font-bold text-slate-400 tracking-wider"
+												>Disponibilidad</span
+											>
 											<div class="flex items-center gap-1.5 mt-0.5">
-												<span class={`h-2 w-2 rounded-full ${product.stock_total > 20 ? 'bg-emerald-500' : product.stock_total > 5 ? 'bg-amber-500' : 'bg-rose-500'}`}></span>
-												<span class={`text-[11px] font-bold ${product.stock_total > 20 ? 'text-emerald-600 dark:text-emerald-400' : product.stock_total > 5 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'}`}>
+												<span
+													class={`h-2 w-2 rounded-full ${product.stock_total > 20 ? 'bg-emerald-500' : product.stock_total > 5 ? 'bg-amber-500' : 'bg-rose-500'}`}
+												></span>
+												<span
+													class={`text-[11px] font-bold ${product.stock_total > 20 ? 'text-emerald-600 dark:text-emerald-400' : product.stock_total > 5 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'}`}
+												>
 													{product.stock_total} uds
 												</span>
-												<span class="text-[9px] text-muted-foreground">· {product.bodegas_con_stock} bod.</span>
+												<span class="text-[9px] text-muted-foreground"
+													>· {product.bodegas_con_stock} bod.</span
+												>
 											</div>
 										</div>
-										<div class="h-8 w-8 rounded-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-500 group-hover:bg-[#0D1E3D] group-hover:text-white group-hover:border-[#0D1E3D] dark:group-hover:bg-blue-600 dark:group-hover:border-blue-600 transition-all shadow-xs" title="Seleccionar producto">
+										<div
+											class="h-8 w-8 rounded-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-500 group-hover:bg-[#0D1E3D] group-hover:text-white group-hover:border-[#0D1E3D] dark:group-hover:bg-blue-600 dark:group-hover:border-blue-600 transition-all shadow-xs"
+											title="Seleccionar producto"
+										>
 											<Check class="h-4 w-4" />
 										</div>
 									</div>
 								</button>
 
 								<!-- Separador + botón expandir -->
-								<div class="w-9 shrink-0 border-l border-slate-200 dark:border-slate-800 flex items-center justify-center hover:bg-muted/50 transition cursor-pointer" title="Ver stock por bodega">
+								<div
+									class="w-9 shrink-0 border-l border-slate-200 dark:border-slate-800 flex items-center justify-center hover:bg-muted/50 transition cursor-pointer"
+									title="Ver stock por bodega"
+								>
 									<button
 										type="button"
 										class="h-full w-full flex items-center justify-center text-slate-500 hover:text-[#0D1E3D] dark:hover:text-blue-400"
 										onclick={() => toggleExpandirProducto(product.codigo)}
 										aria-label="Ver desglose por bodega"
 									>
-										<ChevronDown class={`h-4 w-4 transition-transform ${productoExpandido === product.codigo ? 'rotate-180' : ''}`} />
+										<ChevronDown
+											class={`h-4 w-4 transition-transform ${productoExpandido === product.codigo ? 'rotate-180' : ''}`}
+										/>
 									</button>
 								</div>
 							</div>
 
 							<!-- Desglose por bodega (expandible) -->
 							{#if productoExpandido === product.codigo}
-								<div class="border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 p-3">
+								<div
+									class="border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 p-3"
+								>
 									{#if cargandoDistribucion.has(product.codigo) && !distribucionPorCodigo[product.codigo]}
 										<div class="flex items-center gap-2 text-[11px] text-muted-foreground">
-											<span class="animate-spin inline-block h-3.5 w-3.5 border-2 border-current border-t-transparent rounded-full"></span>
+											<span
+												class="animate-spin inline-block h-3.5 w-3.5 border-2 border-current border-t-transparent rounded-full"
+											></span>
 											Cargando detalle por bodega...
 										</div>
 									{:else if distribucionPorCodigo[product.codigo]}
-										{@const sel = distribucionPorCodigo[product.codigo].filter((d) => d.seleccionada)}
-										{@const otras = distribucionPorCodigo[product.codigo].filter((d) => !d.seleccionada)}
+										{@const sel = distribucionPorCodigo[product.codigo].filter(
+											(d) => d.seleccionada
+										)}
+										{@const otras = distribucionPorCodigo[product.codigo].filter(
+											(d) => !d.seleccionada
+										)}
 										<div class="space-y-1.5">
-											<div class="text-[10px] font-bold uppercase tracking-wide text-slate-500 flex items-center gap-1.5">
+											<div
+												class="text-[10px] font-bold uppercase tracking-wide text-slate-500 flex items-center gap-1.5"
+											>
 												<Warehouse class="h-3.5 w-3.5" />
 												Bodegas seleccionadas
 											</div>
@@ -2256,36 +2628,67 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 											{:else}
 												<div class="grid sm:grid-cols-2 gap-1.5">
 													{#each sel as d (d.bodega_codigo)}
-														<div class="flex items-center justify-between gap-2 bg-white dark:bg-slate-900 border border-green-200 dark:border-green-900/40 rounded px-2.5 py-1.5">
+														<div
+															class="flex items-center justify-between gap-2 bg-white dark:bg-slate-900 border border-green-200 dark:border-green-900/40 rounded px-2.5 py-1.5"
+														>
 															<div class="min-w-0">
-																<div class="text-[11px] font-semibold text-slate-800 dark:text-slate-100 truncate">{d.bodega_nombre}</div>
-																<div class="text-[9px] text-muted-foreground font-mono">{d.bodega_codigo}{#if d.u_zona} · {d.u_zona}{/if}</div>
+																<div
+																	class="text-[11px] font-semibold text-slate-800 dark:text-slate-100 truncate"
+																>
+																	{d.bodega_nombre}
+																</div>
+																<div class="text-[9px] text-muted-foreground font-mono">
+																	{d.bodega_codigo}{#if d.u_zona}
+																		· {d.u_zona}{/if}
+																</div>
 															</div>
 															<div class="text-right shrink-0">
-																<div class="text-[12px] font-bold text-emerald-600 dark:text-emerald-400">{d.cant_disponible} uds</div>
+																<div
+																	class="text-[12px] font-bold text-emerald-600 dark:text-emerald-400"
+																>
+																	{d.cant_disponible} uds
+																</div>
 															</div>
 														</div>
 													{/each}
 												</div>
-												<div class="flex items-center justify-between border-t pt-1.5 mt-1 text-[11px]">
+												<div
+													class="flex items-center justify-between border-t pt-1.5 mt-1 text-[11px]"
+												>
 													<span class="text-muted-foreground">Total seleccionadas</span>
-													<span class="font-bold text-slate-800 dark:text-slate-100">{sel.reduce((s, d) => s + d.cant_disponible, 0)} uds</span>
+													<span class="font-bold text-slate-800 dark:text-slate-100"
+														>{sel.reduce((s, d) => s + d.cant_disponible, 0)} uds</span
+													>
 												</div>
 											{/if}
 
 											{#if otras.length > 0}
 												<details class="mt-2">
-													<summary class="text-[10px] text-muted-foreground cursor-pointer hover:text-foreground">
+													<summary
+														class="text-[10px] text-muted-foreground cursor-pointer hover:text-foreground"
+													>
 														Otras bodegas con stock ({otras.length}) — no incluidas en el catálogo
 													</summary>
 													<div class="grid sm:grid-cols-2 gap-1.5 mt-1.5">
 														{#each otras as d (d.bodega_codigo)}
-															<div class="flex items-center justify-between gap-2 bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded px-2.5 py-1.5 opacity-70">
+															<div
+																class="flex items-center justify-between gap-2 bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded px-2.5 py-1.5 opacity-70"
+															>
 																<div class="min-w-0">
-																	<div class="text-[11px] font-semibold text-slate-700 dark:text-slate-200 truncate">{d.bodega_nombre}</div>
-																	<div class="text-[9px] text-muted-foreground font-mono">{d.bodega_codigo}</div>
+																	<div
+																		class="text-[11px] font-semibold text-slate-700 dark:text-slate-200 truncate"
+																	>
+																		{d.bodega_nombre}
+																	</div>
+																	<div class="text-[9px] text-muted-foreground font-mono">
+																		{d.bodega_codigo}
+																	</div>
 																</div>
-																<div class="text-[12px] font-semibold text-slate-600 dark:text-slate-300">{d.cant_disponible} uds</div>
+																<div
+																	class="text-[12px] font-semibold text-slate-600 dark:text-slate-300"
+																>
+																	{d.cant_disponible} uds
+																</div>
 															</div>
 														{/each}
 													</div>
@@ -2293,7 +2696,9 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 											{/if}
 										</div>
 									{:else}
-										<div class="text-[11px] text-muted-foreground italic">No hay detalle disponible.</div>
+										<div class="text-[11px] text-muted-foreground italic">
+											No hay detalle disponible.
+										</div>
 									{/if}
 								</div>
 							{/if}
@@ -2305,7 +2710,7 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 
 		<!-- Footer -->
 		<div class="flex justify-end p-4 border-t bg-muted/20 gap-2.5 shrink-0">
-			<Button variant="outline" class="text-xs" onclick={() => productSelectorOpen = false}>
+			<Button variant="outline" class="text-xs" onclick={() => (productSelectorOpen = false)}>
 				Cerrar Catálogo
 			</Button>
 		</div>
@@ -2314,7 +2719,9 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 
 <!-- Modal selector de Assets de Marca -->
 <Dialog.Root bind:open={assetPickerOpen}>
-	<Dialog.Content class="max-w-3xl border bg-background p-0 shadow-lg text-foreground rounded-xl overflow-hidden">
+	<Dialog.Content
+		class="max-w-3xl border bg-background p-0 shadow-lg text-foreground rounded-xl overflow-hidden"
+	>
 		<!-- Cabecera -->
 		<div class="flex items-center justify-between border-b p-5 bg-muted/40">
 			<div>
@@ -2322,7 +2729,9 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 					<ImageIcon class="h-5 w-5 text-[#0D1E3D] dark:text-blue-400" />
 					Assets de Marca
 					{#if selectedAssetIds.size > 0}
-						<span class="ml-1 inline-flex items-center rounded-full bg-[#0D1E3D]/10 text-[#0D1E3D] dark:bg-blue-900/40 dark:text-blue-300 px-2 py-0.5 text-[10px] font-bold">
+						<span
+							class="ml-1 inline-flex items-center rounded-full bg-[#0D1E3D]/10 text-[#0D1E3D] dark:bg-blue-900/40 dark:text-blue-300 px-2 py-0.5 text-[10px] font-bold"
+						>
 							{selectedAssetIds.size} seleccionado(s)
 						</span>
 					{/if}
@@ -2338,15 +2747,21 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 			<div class="flex flex-wrap gap-1.5 p-3 border-b bg-card">
 				{#each ['todos', 'logo', 'isotipo', 'sello', 'fondo', 'other'] as tipo}
 					{@const active = assetFilterType === tipo}
-					{@const count = tipo === 'todos' ? marcaAssets.length : marcaAssets.filter((a) => a.tipo === tipo).length}
+					{@const count =
+						tipo === 'todos'
+							? marcaAssets.length
+							: marcaAssets.filter((a) => a.tipo === tipo).length}
 					{#if count > 0 || tipo === 'todos'}
 						<button
 							type="button"
-							onclick={() => assetFilterType = tipo as typeof assetFilterType}
+							onclick={() => (assetFilterType = tipo as typeof assetFilterType)}
 							class={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide transition ${active ? 'bg-[#0D1E3D] text-white dark:bg-blue-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
 						>
 							{tipo === 'todos' ? 'Todos' : tipo}
-							<span class={`rounded-full px-1 text-[9px] ${active ? 'bg-white/20' : 'bg-slate-200 dark:bg-slate-700'}`}>{count}</span>
+							<span
+								class={`rounded-full px-1 text-[9px] ${active ? 'bg-white/20' : 'bg-slate-200 dark:bg-slate-700'}`}
+								>{count}</span
+							>
 						</button>
 					{/if}
 				{/each}
@@ -2365,7 +2780,10 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 					Esta marca no tiene assets cargados.
 				</div>
 			{:else}
-				{@const visible = assetFilterType === 'todos' ? marcaAssets : marcaAssets.filter((a) => a.tipo === assetFilterType)}
+				{@const visible =
+					assetFilterType === 'todos'
+						? marcaAssets
+						: marcaAssets.filter((a) => a.tipo === assetFilterType)}
 				{#if visible.length === 0}
 					<div class="text-center py-10 text-muted-foreground text-xs">
 						No hay assets de tipo “{assetFilterType}”.
@@ -2380,28 +2798,45 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 								class={`group relative flex flex-col rounded-lg border overflow-hidden transition-all text-left ${selected ? 'border-[#0D1E3D] ring-2 ring-[#0D1E3D]/30 dark:border-blue-500 dark:ring-blue-500/30 bg-indigo-50/50 dark:bg-blue-950/20' : 'border-slate-200 dark:border-slate-800 bg-card hover:border-[#0D1E3D]/40 dark:hover:border-blue-500/40 hover:shadow-xs'}`}
 							>
 								<!-- Preview -->
-								<div class="aspect-square bg-slate-50 dark:bg-slate-900/40 flex items-center justify-center overflow-hidden border-b border-slate-100 dark:border-slate-800">
-									<img src={asset.file_path} alt={asset.nombre} class="h-full w-full object-contain p-2" loading="lazy" />
+								<div
+									class="aspect-square bg-slate-50 dark:bg-slate-900/40 flex items-center justify-center overflow-hidden border-b border-slate-100 dark:border-slate-800"
+								>
+									<img
+										src={asset.file_path}
+										alt={asset.nombre}
+										class="h-full w-full object-contain p-2"
+										loading="lazy"
+									/>
 								</div>
 								<!-- Badge selección -->
 								{#if selected}
-									<div class="absolute top-1.5 right-1.5 h-5 w-5 rounded-full bg-[#0D1E3D] dark:bg-blue-600 flex items-center justify-center shadow-sm">
+									<div
+										class="absolute top-1.5 right-1.5 h-5 w-5 rounded-full bg-[#0D1E3D] dark:bg-blue-600 flex items-center justify-center shadow-sm"
+									>
 										<Check class="h-3.5 w-3.5 text-white" />
 									</div>
 								{/if}
 								<!-- Badge tipo -->
-								<div class="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-black/60 text-white backdrop-blur-sm">
+								<div
+									class="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-black/60 text-white backdrop-blur-sm"
+								>
 									{asset.tipo}
 								</div>
 								<!-- Info -->
 								<div class="p-2 flex-1 min-w-0">
-									<div class="text-[11px] font-bold text-slate-800 dark:text-slate-100 truncate" title={asset.nombre}>{asset.nombre}</div>
+									<div
+										class="text-[11px] font-bold text-slate-800 dark:text-slate-100 truncate"
+										title={asset.nombre}
+									>
+										{asset.nombre}
+									</div>
 									<div class="text-[9px] text-muted-foreground truncate font-mono">
 										{#if asset.file_size}
 											{(asset.file_size / 1024).toFixed(0)} KB
 										{/if}
 										{#if asset.mime_type}
-											{#if asset.file_size}· {/if}{asset.mime_type.split('/')[1]?.toUpperCase()}
+											{#if asset.file_size}·
+											{/if}{asset.mime_type.split('/')[1]?.toUpperCase()}
 										{/if}
 									</div>
 								</div>
@@ -2416,12 +2851,13 @@ const red = catalogos.redes.find((r: RedSocial) => r.nombre === nombre);
 		<div class="flex items-center justify-between p-4 border-t bg-muted/20 gap-2.5">
 			<div class="text-[10px] text-muted-foreground">
 				{#if selectedAssetIds.size > 0}
-					<span class="font-bold text-slate-700 dark:text-slate-300">{selectedAssetIds.size}</span> asset(s) seleccionado(s) para esta publicación
+					<span class="font-bold text-slate-700 dark:text-slate-300">{selectedAssetIds.size}</span> asset(s)
+					seleccionado(s) para esta publicación
 				{:else}
 					Ningún asset seleccionado — la IA usará el system prompt de la marca
 				{/if}
 			</div>
-			<Button class="text-xs gap-1.5" onclick={() => assetPickerOpen = false}>
+			<Button class="text-xs gap-1.5" onclick={() => (assetPickerOpen = false)}>
 				<Check class="h-3.5 w-3.5" />
 				Listo
 			</Button>

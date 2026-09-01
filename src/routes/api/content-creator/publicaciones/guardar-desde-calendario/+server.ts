@@ -36,8 +36,8 @@ class ValidationError extends Error {}
 function validarCarousel(data: any) {
     if (!data.esCarrusel) return;
 
-    if (!Array.isArray(data.carouselImages) || data.carouselImages.length === 0) {
-        throw new ValidationError('El carrusel debe incluir al menos una imagen');
+    if (!Array.isArray(data.carouselImages) || data.carouselImages.length < 2 || data.carouselImages.length > 10) {
+        throw new ValidationError('El carrusel debe incluir entre 2 y 10 slides');
     }
 
     const promptGeneral = typeof data.prompt === 'string' ? data.prompt.trim() : '';
@@ -120,14 +120,25 @@ function resolverDatos(data: any) {
         throw new ValidationError('La fecha de publicación es requerida o selecciona "Publicar al aprobar"');
     }
 
+    const metaStartDate = typeof data.metaStartDate === 'string' ? data.metaStartDate.trim() : '';
+    const metaEndDate = typeof data.metaEndDate === 'string' ? data.metaEndDate.trim() : '';
+
+    if (data.promoted === true && (!metaStartDate || !metaEndDate)) {
+        throw new ValidationError('Las fechas de inicio y finalización de pauta son requeridas para una publicación promocionada');
+    }
+
+    if (metaStartDate && metaEndDate && metaEndDate < metaStartDate) {
+        throw new ValidationError('La fecha de finalización de pauta no puede ser anterior a la fecha de inicio');
+    }
+
     let meta_pauta_inicio: number | null = null;
-    if (data.metaStartDate) {
-        meta_pauta_inicio = Math.floor(new Date(data.metaStartDate + 'T12:00:00').getTime() / 1000);
+    if (metaStartDate) {
+        meta_pauta_inicio = Math.floor(new Date(metaStartDate + 'T12:00:00').getTime() / 1000);
     }
 
     let meta_pauta_fin: number | null = null;
-    if (data.metaEndDate) {
-        meta_pauta_fin = Math.floor(new Date(data.metaEndDate + 'T12:00:00').getTime() / 1000);
+    if (metaEndDate) {
+        meta_pauta_fin = Math.floor(new Date(metaEndDate + 'T12:00:00').getTime() / 1000);
     }
 
     // `published` es un indicador técnico que solo debe modificar el proceso
