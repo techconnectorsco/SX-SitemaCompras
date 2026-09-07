@@ -165,7 +165,7 @@ export function initializeDatabase() {
   CREATE INDEX IF NOT EXISTS idx_audit_created_at ON audit_logs(created_at);
   CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_logs(user_id);
 `);
-  // ===== VEDOVA & OBANDO =====
+  // ===== SX =====
 
   // SKUs
   db.exec(`

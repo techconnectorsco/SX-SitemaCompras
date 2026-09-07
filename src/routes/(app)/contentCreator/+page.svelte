@@ -136,7 +136,7 @@
 </script>
 
 <svelte:head>
-	<title>Vedoba - Creador de Contenido</title>
+	<title>SX - Creador de Contenido</title>
 </svelte:head>
 
 <!-- Estructura de layout unificada de la aplicación -->

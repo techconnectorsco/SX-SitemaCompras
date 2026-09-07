@@ -322,9 +322,7 @@
 					</div>
 					<div>
 						<h1 class="text-2xl font-bold tracking-tight">Dashboard de Compras</h1>
-						<p class="text-sm text-muted-foreground">
-							Sistema de Forecast y Análisis - Vedova & Obando
-						</p>
+						<p class="text-sm text-muted-foreground">Sistema de Forecast y Análisis - SX</p>
 					</div>
 				</div>
 
