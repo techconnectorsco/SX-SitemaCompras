@@ -4,17 +4,19 @@
 	import { AUTH_PATHS } from '$lib/features/auth/config/auth';
 	import { siteConfig } from '$lib/config/site';
 	import Footer from '$lib/components/app/nav/footer.svelte';
-	import { 
-		TrendingUp, 
-		Package, 
+	import {
+		TrendingUp,
+		Package,
 		BarChart3,
-		Zap, 
+		Zap,
 		ChevronRight,
 		CheckCircle2,
 		Sparkles,
 		Layers,
 		Share2,
-		Tag
+		Tag,
+		FileText,
+		Receipt
 	} from 'lucide-svelte';
 </script>
 
@@ -22,9 +24,11 @@
 	<title>{siteConfig.title} - Centro de Operaciones Inteligentes</title>
 </svelte:head>
 
-<div class="flex min-h-screen flex-col bg-linear-to-b from-white to-slate-50 dark:from-gray-950 dark:to-gray-900">
+<div
+	class="flex min-h-screen flex-col bg-linear-to-b from-white to-slate-50 dark:from-gray-950 dark:to-gray-900"
+>
 	<MainNav />
-	
+
 	<main class="flex-1">
 		<!-- Hero Section -->
 		<section class="relative overflow-hidden py-20 lg:py-10">
@@ -40,39 +44,40 @@
 					<div class="space-y-8">
 						<!-- Logo -->
 						<div class="flex items-center gap-3">
-							<img 
-								src="/logo-soportexperto.png" 
-								alt="SoporteXperto Logo" 
-								class="h-16 w-auto"
-							/>
+							<img src="/logo-soportexperto.png" alt="SoporteXperto Logo" class="h-16 w-auto" />
 							<div class="h-12 w-px bg-linear-to-b from-[#0D1E3D] to-[#1A73C2]"></div>
 							<div>
 								<p class="text-sm font-medium text-[#0D1E3D] dark:text-blue-400">
 									Sistema Inteligente
 								</p>
-								<p class="text-xs text-muted-foreground">
-									Grupo SoporteXperto
-								</p>
+								<p class="text-xs text-muted-foreground">Grupo SoporteXperto</p>
 							</div>
 						</div>
 
 						<!-- Headline -->
 						<div class="space-y-4">
-							<h1 class="text-4xl lg:text-6xl font-bold text-[#0D1E3D] dark:text-white leading-tight">
+							<h1
+								class="text-4xl lg:text-6xl font-bold text-[#0D1E3D] dark:text-white leading-tight"
+							>
 								Centro de Operaciones
-								<span class="block text-transparent bg-clip-text bg-linear-to-r from-[#0D1E3D] to-[#1A73C2]">
+								<span
+									class="block text-transparent bg-clip-text bg-linear-to-r from-[#0D1E3D] to-[#1A73C2]"
+								>
 									Inteligentes
 								</span>
 							</h1>
 							<p class="text-lg text-muted-foreground max-w-xl">
-								Herramientas inteligentes que combinan automatización de compras, forecast predictivo y creación de contenido con IA para potenciar tu operación.
+								Herramientas inteligentes que combinan automatización de compras, forecast
+								predictivo y creación de contenido con IA para potenciar tu operación.
 							</p>
 						</div>
 
 						<!-- Features list -->
 						<div class="space-y-3">
 							<div class="flex items-center gap-3">
-								<div class="shrink-0 w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center">
+								<div
+									class="shrink-0 w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center"
+								>
 									<CheckCircle2 class="h-4 w-4 text-green-600" />
 								</div>
 								<p class="text-sm text-muted-foreground">
@@ -80,15 +85,17 @@
 								</p>
 							</div>
 							<div class="flex items-center gap-3">
-								<div class="shrink-0 w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center">
+								<div
+									class="shrink-0 w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center"
+								>
 									<CheckCircle2 class="h-4 w-4 text-green-600" />
 								</div>
-								<p class="text-sm text-muted-foreground">
-									Creación de contenido impulsada por IA
-								</p>
+								<p class="text-sm text-muted-foreground">Creación de contenido impulsada por IA</p>
 							</div>
 							<div class="flex items-center gap-3">
-								<div class="shrink-0 w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center">
+								<div
+									class="shrink-0 w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center"
+								>
 									<CheckCircle2 class="h-4 w-4 text-green-600" />
 								</div>
 								<p class="text-sm text-muted-foreground">
@@ -98,36 +105,54 @@
 						</div>
 
 						<!-- CTA Buttons -->
-						<div class="flex flex-col sm:flex-row gap-4">
-							<Button 
-								href={AUTH_PATHS.LOGIN} 
-								size="lg" 
+						<div class="flex flex-wrap gap-4">
+							<Button
+								href={AUTH_PATHS.LOGIN}
+								size="lg"
 								class="text-base px-8 py-6 bg-[#0D1E3D] hover:bg-[#0D1E3D]/90 dark:bg-[#0D1E3D] dark:hover:bg-[#0D1E3D]/80"
 							>
 								Acceder al Sistema
 								<ChevronRight class="ml-2 h-5 w-5" />
 							</Button>
-							<Button 
-								href="/AsistenteCompras" 
-								size="lg" 
+							<Button
+								href="/AsistenteCompras"
+								size="lg"
 								variant="outline"
 								class="text-base px-8 py-6 border-[#0D1E3D] text-[#0D1E3D] hover:bg-[#0D1E3D]/5"
 							>
 								<BarChart3 class="mr-2 h-5 w-5" />
 								Asistente de Compras
 							</Button>
-							<Button 
-								href="/contentCreator" 
-								size="lg" 
+							<Button
+								href="http://104.43.244.83:3003"
+								size="lg"
+								variant="outline"
+								class="text-base px-8 py-6 border-[#0D1E3D] text-[#0D1E3D] hover:bg-[#0D1E3D]/5"
+							>
+								<FileText class="mr-2 h-5 w-5" />
+								Facturación
+							</Button>
+							<Button
+								href="/cuentasxcobrar"
+								size="lg"
+								variant="outline"
+								class="text-base px-8 py-6 border-[#0D1E3D] text-[#0D1E3D] hover:bg-[#0D1E3D]/5"
+							>
+								<Receipt class="mr-2 h-5 w-5" />
+								CXC
+							</Button>
+							<Button
+								href="/contentCreator"
+								size="lg"
 								variant="outline"
 								class="text-base px-8 py-6 border-[#0D1E3D] text-[#0D1E3D] hover:bg-[#0D1E3D]/5"
 							>
 								<Sparkles class="mr-2 h-5 w-5" />
 								Community Manager
 							</Button>
-							<Button 
-								href={AUTH_PATHS.REGISTER} 
-								size="lg" 
+							<Button
+								href={AUTH_PATHS.REGISTER}
+								size="lg"
 								class="text-base px-8 py-6 bg-[#1A73C2] hover:bg-[#1A73C2]/90 text-white"
 							>
 								Solicitar Acceso
@@ -139,13 +164,21 @@
 					<div class="hidden lg:flex items-center justify-center relative">
 						<div class="relative w-full max-w-lg">
 							<!-- Decorative circles -->
-							<div class="absolute -top-4 -right-4 w-72 h-72 bg-linear-to-br from-[#0D1E3D]/10 to-[#1A73C2]/10 rounded-full blur-2xl"></div>
-							<div class="absolute -bottom-4 -left-4 w-72 h-72 bg-linear-to-tr from-[#1A73C2]/10 to-[#0D1E3D]/10 rounded-full blur-2xl"></div>
-							
+							<div
+								class="absolute -top-4 -right-4 w-72 h-72 bg-linear-to-br from-[#0D1E3D]/10 to-[#1A73C2]/10 rounded-full blur-2xl"
+							></div>
+							<div
+								class="absolute -bottom-4 -left-4 w-72 h-72 bg-linear-to-tr from-[#1A73C2]/10 to-[#0D1E3D]/10 rounded-full blur-2xl"
+							></div>
+
 							<!-- Platform Preview -->
-							<div class="relative z-10 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 border border-gray-200 dark:border-gray-700 space-y-6">
+							<div
+								class="relative z-10 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 border border-gray-200 dark:border-gray-700 space-y-6"
+							>
 								<div class="flex items-center gap-3 border-b pb-4">
-									<div class="w-10 h-10 rounded-lg bg-[#1A73C2]/10 flex items-center justify-center">
+									<div
+										class="w-10 h-10 rounded-lg bg-[#1A73C2]/10 flex items-center justify-center"
+									>
 										<Layers class="h-5 w-5 text-[#1A73C2]" />
 									</div>
 									<div>
@@ -156,18 +189,28 @@
 
 								<div class="space-y-4">
 									<!-- Módulo 1 -->
-									<div class="p-4 rounded-xl border bg-gray-50 dark:bg-gray-900/50 hover:border-[#0D1E3D]/50 transition-colors">
+									<div
+										class="p-4 rounded-xl border bg-gray-50 dark:bg-gray-900/50 hover:border-[#0D1E3D]/50 transition-colors"
+									>
 										<div class="flex items-start justify-between">
 											<div class="flex items-center gap-3">
-												<div class="w-8 h-8 rounded bg-[#0D1E3D]/10 flex items-center justify-center">
+												<div
+													class="w-8 h-8 rounded bg-[#0D1E3D]/10 flex items-center justify-center"
+												>
 													<BarChart3 class="h-4 w-4 text-[#0D1E3D]" />
 												</div>
 												<div>
-													<p class="text-sm font-semibold text-[#0D1E3D] dark:text-white">Asistente de Compras</p>
-													<p class="text-xs text-muted-foreground mt-1">Forecast · SKUs · Alertas</p>
+													<p class="text-sm font-semibold text-[#0D1E3D] dark:text-white">
+														Asistente de Compras
+													</p>
+													<p class="text-xs text-muted-foreground mt-1">
+														Forecast · SKUs · Alertas
+													</p>
 												</div>
 											</div>
-											<div class="flex items-center gap-1.5 px-2 py-1 rounded-full bg-green-500/10 text-green-600 text-[10px] font-medium">
+											<div
+												class="flex items-center gap-1.5 px-2 py-1 rounded-full bg-green-500/10 text-green-600 text-[10px] font-medium"
+											>
 												<div class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
 												Operativo
 											</div>
@@ -175,18 +218,26 @@
 									</div>
 
 									<!-- Módulo 2 -->
-									<div class="p-4 rounded-xl border bg-gray-50 dark:bg-gray-900/50 hover:border-[#1A73C2]/50 transition-colors">
+									<div
+										class="p-4 rounded-xl border bg-gray-50 dark:bg-gray-900/50 hover:border-[#1A73C2]/50 transition-colors"
+									>
 										<div class="flex items-start justify-between">
 											<div class="flex items-center gap-3">
-												<div class="w-8 h-8 rounded bg-[#1A73C2]/10 flex items-center justify-center">
+												<div
+													class="w-8 h-8 rounded bg-[#1A73C2]/10 flex items-center justify-center"
+												>
 													<Sparkles class="h-4 w-4 text-[#1A73C2]" />
 												</div>
 												<div>
-													<p class="text-sm font-semibold text-[#0D1E3D] dark:text-white">Creador de Contenido</p>
+													<p class="text-sm font-semibold text-[#0D1E3D] dark:text-white">
+														Creador de Contenido
+													</p>
 													<p class="text-xs text-muted-foreground mt-1">IA · Redes · Meta Ads</p>
 												</div>
 											</div>
-											<div class="flex items-center gap-1.5 px-2 py-1 rounded-full bg-green-500/10 text-green-600 text-[10px] font-medium">
+											<div
+												class="flex items-center gap-1.5 px-2 py-1 rounded-full bg-green-500/10 text-green-600 text-[10px] font-medium"
+											>
 												<div class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
 												Activo
 											</div>
@@ -201,7 +252,9 @@
 									</div>
 									<div class="flex items-center gap-2">
 										<Zap class="h-4 w-4 text-[#1A73C2]" />
-										<span class="text-xs font-medium text-muted-foreground">Powered by SoporteXperto AI</span>
+										<span class="text-xs font-medium text-muted-foreground"
+											>Powered by SoporteXperto AI</span
+										>
 									</div>
 								</div>
 							</div>
@@ -219,27 +272,37 @@
 						Características Principales
 					</h2>
 					<p class="text-muted-foreground max-w-2xl mx-auto">
-						Módulos especializados que integran automatización, inteligencia artificial y gestión operativa
+						Módulos especializados que integran automatización, inteligencia artificial y gestión
+						operativa
 					</p>
 				</div>
 
 				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
 					<!-- Feature 1: Creación de Contenido con IA -->
-					<div class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#0D1E3D]/50 transition-all hover:shadow-lg">
-						<div class="w-12 h-12 rounded-lg bg-[#0D1E3D]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+					<div
+						class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#0D1E3D]/50 transition-all hover:shadow-lg"
+					>
+						<div
+							class="w-12 h-12 rounded-lg bg-[#0D1E3D]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"
+						>
 							<Sparkles class="h-6 w-6 text-[#0D1E3D]" />
 						</div>
 						<h3 class="text-xl font-semibold mb-2 text-[#0D1E3D] dark:text-white">
 							Creación de Contenido con IA
 						</h3>
 						<p class="text-muted-foreground">
-							Genera copy, hashtags y estrategias de publicación con inteligencia artificial para todas tus marcas.
+							Genera copy, hashtags y estrategias de publicación con inteligencia artificial para
+							todas tus marcas.
 						</p>
 					</div>
 
 					<!-- Feature 2: Indicadores en Tiempo Real -->
-					<div class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#1A73C2]/50 transition-all hover:shadow-lg">
-						<div class="w-12 h-12 rounded-lg bg-[#1A73C2]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+					<div
+						class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#1A73C2]/50 transition-all hover:shadow-lg"
+					>
+						<div
+							class="w-12 h-12 rounded-lg bg-[#1A73C2]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"
+						>
 							<BarChart3 class="h-6 w-6 text-[#1A73C2]" />
 						</div>
 						<h3 class="text-xl font-semibold mb-2 text-[#0D1E3D] dark:text-white">
@@ -251,34 +314,48 @@
 					</div>
 
 					<!-- Feature 3: Gestión de Inventarios -->
-					<div class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#0D1E3D]/50 transition-all hover:shadow-lg">
-						<div class="w-12 h-12 rounded-lg bg-[#0D1E3D]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+					<div
+						class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#0D1E3D]/50 transition-all hover:shadow-lg"
+					>
+						<div
+							class="w-12 h-12 rounded-lg bg-[#0D1E3D]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"
+						>
 							<Package class="h-6 w-6 text-[#0D1E3D]" />
 						</div>
 						<h3 class="text-xl font-semibold mb-2 text-[#0D1E3D] dark:text-white">
 							Gestión de Inventarios
 						</h3>
 						<p class="text-muted-foreground">
-							Control de inventarios mínimos, alertas de stock bajo y análisis de rotación por sucursal.
+							Control de inventarios mínimos, alertas de stock bajo y análisis de rotación por
+							sucursal.
 						</p>
 					</div>
 
 					<!-- Feature 4: Gestión Multi-Marca -->
-					<div class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#1A73C2]/50 transition-all hover:shadow-lg">
-						<div class="w-12 h-12 rounded-lg bg-[#1A73C2]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+					<div
+						class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#1A73C2]/50 transition-all hover:shadow-lg"
+					>
+						<div
+							class="w-12 h-12 rounded-lg bg-[#1A73C2]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"
+						>
 							<Tag class="h-6 w-6 text-[#1A73C2]" />
 						</div>
 						<h3 class="text-xl font-semibold mb-2 text-[#0D1E3D] dark:text-white">
 							Gestión Multi-Marca
 						</h3>
 						<p class="text-muted-foreground">
-							Administra múltiples marcas con prompts personalizados, brand assets y estrategias diferenciadas.
+							Administra múltiples marcas con prompts personalizados, brand assets y estrategias
+							diferenciadas.
 						</p>
 					</div>
 
 					<!-- Feature 5: Alertas Inteligentes -->
-					<div class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#0D1E3D]/50 transition-all hover:shadow-lg">
-						<div class="w-12 h-12 rounded-lg bg-[#0D1E3D]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+					<div
+						class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#0D1E3D]/50 transition-all hover:shadow-lg"
+					>
+						<div
+							class="w-12 h-12 rounded-lg bg-[#0D1E3D]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"
+						>
 							<Zap class="h-6 w-6 text-[#0D1E3D]" />
 						</div>
 						<h3 class="text-xl font-semibold mb-2 text-[#0D1E3D] dark:text-white">
@@ -290,15 +367,20 @@
 					</div>
 
 					<!-- Feature 6: Meta Hub & Publicación -->
-					<div class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#1A73C2]/50 transition-all hover:shadow-lg">
-						<div class="w-12 h-12 rounded-lg bg-[#1A73C2]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+					<div
+						class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#1A73C2]/50 transition-all hover:shadow-lg"
+					>
+						<div
+							class="w-12 h-12 rounded-lg bg-[#1A73C2]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"
+						>
 							<Share2 class="h-6 w-6 text-[#1A73C2]" />
 						</div>
 						<h3 class="text-xl font-semibold mb-2 text-[#0D1E3D] dark:text-white">
 							Meta Hub & Publicación
 						</h3>
 						<p class="text-muted-foreground">
-							Publica directamente en Facebook e Instagram, gestiona pautas y monitorea el rendimiento de tus campañas.
+							Publica directamente en Facebook e Instagram, gestiona pautas y monitorea el
+							rendimiento de tus campañas.
 						</p>
 					</div>
 				</div>
@@ -309,25 +391,24 @@
 		<section class="py-20 bg-linear-to-br from-[#0D1E3D] to-[#0D1E3D]/90 text-white">
 			<div class="container mx-auto px-4 text-center">
 				<div class="max-w-3xl mx-auto space-y-6">
-					<h2 class="text-3xl lg:text-4xl font-bold">
-						¿Listo para Transformar tu Operación?
-					</h2>
+					<h2 class="text-3xl lg:text-4xl font-bold">¿Listo para Transformar tu Operación?</h2>
 					<p class="text-lg text-blue-100">
-						Accede a la plataforma y potencia tus procesos de compras y creación de contenido con inteligencia artificial.
+						Accede a la plataforma y potencia tus procesos de compras y creación de contenido con
+						inteligencia artificial.
 					</p>
 					<div class="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-						<Button 
-							href={AUTH_PATHS.REGISTER} 
-							size="lg" 
+						<Button
+							href={AUTH_PATHS.REGISTER}
+							size="lg"
 							variant="secondary"
 							class="text-base px-8 py-6 bg-white text-[#0D1E3D] hover:bg-gray-100"
 						>
 							Solicitar Acceso
 							<ChevronRight class="ml-2 h-5 w-5" />
 						</Button>
-						<Button 
-							href="mailto:{siteConfig.contact.email}" 
-							size="lg" 
+						<Button
+							href="mailto:{siteConfig.contact.email}"
+							size="lg"
 							variant="secondary"
 							class="text-base px-8 py-6 bg-white text-[#0D1E3D] hover:bg-gray-100"
 						>
