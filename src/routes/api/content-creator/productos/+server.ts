@@ -162,8 +162,8 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 		console.error('[API CC productos GET]', error);
 		const msg = error?.message || String(error);
 		const amigable = /ECONNREFUSED|ENOTFOUND|ETIMEDOUT/i.test(msg)
-			? 'No se pudo conectar a Exactus. Verifica que estés conectado al VPN.'
-			: msg;
+			? 'No se pudo conectar al sistema de inventario. Intenta nuevamente más tarde.'
+			: msg.replace(/exactus/gi, 'el sistema de inventario');
 		return json({ success: false, error: amigable, productos: [], marcas: [], categorias: [] }, { status: 502 });
 	}
 };

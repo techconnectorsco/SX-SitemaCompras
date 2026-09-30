@@ -1883,17 +1883,7 @@
 								type="text"
 								bind:value={draftPost.title}
 								class="h-9.5 flex-1 rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D] font-semibold text-slate-800 dark:text-slate-100 min-w-0"
-								placeholder="ej: Toyama Ahoyadora TEA52X-200"
 							/>
-							<Button
-								type="button"
-								variant="outline"
-								class="h-9.5 text-xs font-semibold px-2.5 border-[#0D1E3D]/20 hover:bg-[#0D1E3D]/5 dark:border-blue-900/30 text-[#0D1E3D] dark:text-blue-400 gap-1.5 flex items-center shrink-0 cursor-pointer"
-								onclick={openProductSelector}
-							>
-								<Package class="h-3.5 w-3.5" />
-								<span class="hidden sm:inline">Catálogo</span>
-							</Button>
 						</div>
 					</div>
 					<div class="space-y-1">
@@ -2048,7 +2038,6 @@
 						bind:value={draftPost.context}
 						rows="3"
 						class="w-full rounded-md border bg-background px-3 py-2 text-xs outline-none focus:border-[#0D1E3D] leading-relaxed font-sans resize-y"
-						placeholder="ej: Especificaciones técnicas: Haga de su excavación algo fácil y rápido"
 					></textarea>
 				</div>
 
@@ -2483,7 +2472,7 @@
 					{:else}
 						No hay bodegas seleccionadas para Creador de Contenido. Ve a la pestaña <strong
 							>Bodegas</strong
-						> para elegir al menos una (requiere VPN activo a Exactus).
+						> para elegir al menos una.
 					{/if}
 				</span>
 			</div>

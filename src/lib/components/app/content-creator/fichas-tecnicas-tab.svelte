@@ -483,7 +483,6 @@
 						id="prod-name"
 						type="text"
 						bind:value={uploadNombreProducto}
-						placeholder="ej. Excavadora Caterpillar CAT 320"
 						required
 						class="w-full rounded-md border bg-background px-3 py-2 text-xs outline-none focus:border-[#0D1E3D]"
 					/>
@@ -498,7 +497,6 @@
 						id="prod-desc"
 						bind:value={uploadDescripcion}
 						rows="2"
-						placeholder="ej. Equipo pesado de excavación para obras civiles"
 						class="w-full rounded-md border bg-background px-3 py-2 text-xs outline-none focus:border-[#0D1E3D]"
 					></textarea>
 				</div>
