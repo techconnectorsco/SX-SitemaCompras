@@ -1328,7 +1328,7 @@
 		class="flex flex-wrap items-center justify-between gap-4 rounded-xl border bg-card p-4 shadow-sm"
 	>
 		<div class="flex items-center gap-3">
-			<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-[#253166]">
+			<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-[#0D1E3D]">
 				<CalendarIcon class="h-5.5 w-5.5 text-white" />
 			</div>
 			<div>
@@ -1361,7 +1361,7 @@
 
 			<Button
 				onclick={() => openCreateModal()}
-				class="h-8.5 bg-orange-500 hover:bg-orange-600 text-white gap-1.5 text-xs font-semibold shadow-xs rounded-lg cursor-pointer"
+				class="h-8.5 bg-[#1A73C2] hover:bg-[#1A73C2] text-white gap-1.5 text-xs font-semibold shadow-xs rounded-lg cursor-pointer"
 			>
 				<Plus class="h-4 w-4" />
 				Programar Publicación
@@ -1412,7 +1412,7 @@
 							<button
 								type="button"
 								onclick={() => openCreateModal(dateString)}
-								class="opacity-40 group-hover:opacity-100 transition-all rounded bg-orange-500 hover:bg-orange-600 text-white p-0.5 shadow-sm"
+								class="opacity-40 group-hover:opacity-100 transition-all rounded bg-[#1A73C2] hover:bg-[#1A73C2] text-white p-0.5 shadow-sm"
 								title="Programar post este día"
 							>
 								<Plus class="h-3 w-3" />
@@ -1542,7 +1542,7 @@
 				</Dialog.Description>
 			</div>
 			<div
-				class="font-mono text-xs bg-[#253166]/10 text-[#253166] dark:bg-blue-900/30 dark:text-blue-300 px-3 py-1.5 rounded-md font-semibold"
+				class="font-mono text-xs bg-[#0D1E3D]/10 text-[#0D1E3D] dark:bg-blue-900/30 dark:text-blue-300 px-3 py-1.5 rounded-md font-semibold"
 			>
 				{draftPost.id} · {draftPost.date}
 			</div>
@@ -1574,7 +1574,7 @@
 									step="1"
 									value={carouselImageCount}
 									onchange={updateCarouselCount}
-									class="w-14 px-2 py-1 text-xs rounded-md border border-slate-200 bg-background text-foreground focus:border-orange-500 outline-none"
+									class="w-14 px-2 py-1 text-xs rounded-md border border-slate-200 bg-background text-foreground focus:border-[#1A73C2] outline-none"
 								/>
 							</div>
 						{/if}
@@ -1595,7 +1595,7 @@
 												type="checkbox"
 												checked={slideModo === 'crear'}
 												onchange={() => toggleSlideModo(i)}
-												class="rounded border-slate-200 text-[#253166] focus:ring-[#253166] dark:border-slate-700"
+												class="rounded border-slate-200 text-[#0D1E3D] focus:ring-[#0D1E3D] dark:border-slate-700"
 											/>
 											<span>✨ Crear (sin ref)</span>
 										</label>
@@ -1642,9 +1642,9 @@
 										{/if}
 									{:else}
 										<div
-											class="flex min-h-[100px] flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-[#253166]/40 bg-[#253166]/5 px-3 py-4 text-center"
+											class="flex min-h-[100px] flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-[#0D1E3D]/40 bg-[#0D1E3D]/5 px-3 py-4 text-center"
 										>
-											<Sparkles class="h-5 w-5 text-[#253166]" />
+											<Sparkles class="h-5 w-5 text-[#0D1E3D]" />
 											<p class="text-[9px] font-semibold text-slate-700 dark:text-slate-200">
 												Generar imagen desde cero con IA
 											</p>
@@ -1661,7 +1661,7 @@
 											>
 											<button
 												type="button"
-												class="text-[9px] font-semibold text-[#253166] hover:underline"
+												class="text-[9px] font-semibold text-[#0D1E3D] hover:underline"
 												onclick={() => autoFillSlidePrompt(i)}>Auto-generar</button
 											>
 										</div>
@@ -1672,7 +1672,7 @@
 												? 'Describe qué generar (obligatorio en modo crear)…'
 												: 'Opcional: hereda el prompt general si lo dejas vacío…'}
 											bind:value={draftPost.carouselImages[i].prompt}
-											class="w-full rounded-md border border-slate-200 bg-background px-2 py-1.5 text-[10px] outline-none focus:border-[#253166] dark:border-slate-700"
+											class="w-full rounded-md border border-slate-200 bg-background px-2 py-1.5 text-[10px] outline-none focus:border-[#0D1E3D] dark:border-slate-700"
 										></textarea>
 									</div>
 								</div>
@@ -1689,7 +1689,7 @@
 										type="checkbox"
 										checked={draftPost.modo === 'crear'}
 										onchange={toggleSingleModo}
-										class="rounded border-slate-200 text-[#253166] focus:ring-[#253166] dark:border-slate-700"
+										class="rounded border-slate-200 text-[#0D1E3D] focus:ring-[#0D1E3D] dark:border-slate-700"
 									/>
 									<span>✨ Crear (sin ref)</span>
 								</label>
@@ -1724,9 +1724,9 @@
 								</label>
 							{:else}
 								<div
-									class="flex min-h-[140px] flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-[#253166]/40 bg-[#253166]/5 px-3 py-6 text-center"
+									class="flex min-h-[140px] flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-[#0D1E3D]/40 bg-[#0D1E3D]/5 px-3 py-6 text-center"
 								>
-									<Sparkles class="h-6 w-6 text-[#253166]" />
+									<Sparkles class="h-6 w-6 text-[#0D1E3D]" />
 									<p class="text-[10px] font-semibold text-slate-700 dark:text-slate-200">
 										Generar imagen desde cero con IA
 									</p>
@@ -1761,7 +1761,7 @@
 							<input
 								type="checkbox"
 								bind:checked={draftPost.publicarAlAprobar}
-								class="mt-0.5 rounded border-orange-300 text-orange-600 focus:ring-orange-500"
+								class="mt-0.5 rounded border-orange-300 text-[#1A73C2] focus:ring-[#1A73C2]"
 							/>
 							<span>
 								Publicar al aprobar
@@ -1785,7 +1785,7 @@
 										min={getTodayStr()}
 										value={draftPost.date}
 										onchange={(e) => handleDateChange(e.currentTarget.value)}
-										class="w-full px-2 py-1.5 text-xs rounded-md border border-slate-200 bg-background text-foreground shadow-xs focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 dark:border-slate-800"
+										class="w-full px-2 py-1.5 text-xs rounded-md border border-slate-200 bg-background text-foreground shadow-xs focus:outline-none focus:ring-1 focus:ring-[#1A73C2] focus:border-[#1A73C2] dark:border-slate-800"
 									/>
 								</div>
 								<div>
@@ -1795,7 +1795,7 @@
 									<input
 										type="time"
 										bind:value={draftPost.time}
-										class="w-full px-2 py-1.5 text-xs rounded-md border border-slate-200 bg-background text-foreground shadow-xs focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 dark:border-slate-800"
+										class="w-full px-2 py-1.5 text-xs rounded-md border border-slate-200 bg-background text-foreground shadow-xs focus:outline-none focus:ring-1 focus:ring-[#1A73C2] focus:border-[#1A73C2] dark:border-slate-800"
 									/>
 								</div>
 							</div>
@@ -1863,7 +1863,7 @@
 						type="checkbox"
 						checked={isCarruselMode}
 						onchange={toggleCarruselMode}
-						class="rounded border-slate-200 text-[#253166] focus:ring-[#253166] dark:border-slate-700"
+						class="rounded border-slate-200 text-[#0D1E3D] focus:ring-[#0D1E3D] dark:border-slate-700"
 					/>
 					<span>🖼️ Es carrusel (varias imágenes)</span>
 				</label>
@@ -1882,13 +1882,13 @@
 								id="post-title"
 								type="text"
 								bind:value={draftPost.title}
-								class="h-9.5 flex-1 rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166] font-semibold text-slate-800 dark:text-slate-100 min-w-0"
+								class="h-9.5 flex-1 rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D] font-semibold text-slate-800 dark:text-slate-100 min-w-0"
 								placeholder="ej: Toyama Ahoyadora TEA52X-200"
 							/>
 							<Button
 								type="button"
 								variant="outline"
-								class="h-9.5 text-xs font-semibold px-2.5 border-[#253166]/20 hover:bg-[#253166]/5 dark:border-blue-900/30 text-[#253166] dark:text-blue-400 gap-1.5 flex items-center shrink-0 cursor-pointer"
+								class="h-9.5 text-xs font-semibold px-2.5 border-[#0D1E3D]/20 hover:bg-[#0D1E3D]/5 dark:border-blue-900/30 text-[#0D1E3D] dark:text-blue-400 gap-1.5 flex items-center shrink-0 cursor-pointer"
 								onclick={openProductSelector}
 							>
 								<Package class="h-3.5 w-3.5" />
@@ -1917,7 +1917,7 @@
 									draftPost.network = selectedNetworks.join(', ');
 								}
 							}}
-							class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166] font-bold"
+							class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D] font-bold"
 							disabled={cuentasMeta.length === 0}
 						>
 							{#if cuentasMeta.length === 0}
@@ -1943,7 +1943,7 @@
 						<select
 							id="post-brand"
 							bind:value={draftPost.brand}
-							class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166] font-bold"
+							class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D] font-bold"
 						>
 							{#each catalogos.marcas as marca}
 								<option value={marca.nombre}>{marca.nombre}</option>
@@ -1972,7 +1972,7 @@
 								assetPickerOpen = true;
 							}}
 							disabled={loadingAssets || marcaAssets.length === 0}
-							class="inline-flex items-center gap-1.5 rounded-md border border-[#253166]/30 bg-[#253166]/5 px-2.5 py-1 text-[10px] font-bold text-[#253166] hover:bg-[#253166]/10 transition disabled:opacity-50 disabled:cursor-not-allowed"
+							class="inline-flex items-center gap-1.5 rounded-md border border-[#0D1E3D]/30 bg-[#0D1E3D]/5 px-2.5 py-1 text-[10px] font-bold text-[#0D1E3D] hover:bg-[#0D1E3D]/10 transition disabled:opacity-50 disabled:cursor-not-allowed"
 							title="Ver y seleccionar assets de marca"
 						>
 							<ImageIcon class="h-3.5 w-3.5" />
@@ -2036,7 +2036,7 @@
 						<button
 							type="button"
 							onclick={openFichasSelector}
-							class="inline-flex items-center gap-1.5 rounded-md border border-[#253166]/30 bg-[#253166]/5 px-2 py-1 text-[10px] font-bold text-[#253166] hover:bg-[#253166]/10 transition"
+							class="inline-flex items-center gap-1.5 rounded-md border border-[#0D1E3D]/30 bg-[#0D1E3D]/5 px-2 py-1 text-[10px] font-bold text-[#0D1E3D] hover:bg-[#0D1E3D]/10 transition"
 							title="Adjuntar especificaciones de una ficha técnica de esta marca"
 						>
 							<FileText class="h-3 w-3" />
@@ -2047,7 +2047,7 @@
 						id="post-context"
 						bind:value={draftPost.context}
 						rows="3"
-						class="w-full rounded-md border bg-background px-3 py-2 text-xs outline-none focus:border-[#253166] leading-relaxed font-sans resize-y"
+						class="w-full rounded-md border bg-background px-3 py-2 text-xs outline-none focus:border-[#0D1E3D] leading-relaxed font-sans resize-y"
 						placeholder="ej: Especificaciones técnicas: Haga de su excavación algo fácil y rápido"
 					></textarea>
 				</div>
@@ -2061,7 +2061,7 @@
 						<button
 							type="button"
 							onclick={fillDefaultPrompt}
-							class="inline-flex items-center gap-1 rounded-md border border-[#253166]/30 bg-[#253166]/5 px-2 py-1 text-[10px] font-bold text-[#253166] hover:bg-[#253166]/10 transition"
+							class="inline-flex items-center gap-1 rounded-md border border-[#0D1E3D]/30 bg-[#0D1E3D]/5 px-2 py-1 text-[10px] font-bold text-[#0D1E3D] hover:bg-[#0D1E3D]/10 transition"
 							title="Rellenar con el system prompt de la marca + contexto + objetivo"
 						>
 							<Sparkles class="h-3 w-3" />
@@ -2072,7 +2072,7 @@
 						id="post-prompt"
 						bind:value={draftPost.prompt}
 						rows="4"
-						class="w-full rounded-md border bg-background px-3 py-2 text-xs outline-none focus:border-[#253166] leading-relaxed font-sans resize-y"
+						class="w-full rounded-md border bg-background px-3 py-2 text-xs outline-none focus:border-[#0D1E3D] leading-relaxed font-sans resize-y"
 						placeholder="Pulsa «Auto-generar» para partir del system prompt de la marca, o escribe aquí tus indicaciones específicas (fondo, composición, ángulos, etc.)."
 					></textarea>
 					<p class="text-[9px] text-muted-foreground">
@@ -2090,7 +2090,7 @@
 						id="post-prompt-copy"
 						bind:value={draftPost.promptCopy}
 						rows="3"
-						class="w-full rounded-md border bg-background px-3 py-2 text-xs outline-none focus:border-[#253166] leading-relaxed font-sans resize-y"
+						class="w-full rounded-md border bg-background px-3 py-2 text-xs outline-none focus:border-[#0D1E3D] leading-relaxed font-sans resize-y"
 						placeholder="Indicaciones específicas para el copy (tono más humorístico, evitar hashtags, longitud, etc.). Vacío = usa el manual de marca."
 					></textarea>
 					<p class="text-[9px] text-muted-foreground">
@@ -2119,7 +2119,7 @@
 								${redHabilitada ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'}
 								${
 									selectedNetworks.includes(red.nombre)
-										? 'bg-[#253166]/10 border-[#253166] text-[#253166] dark:bg-blue-950/40 dark:text-blue-400 font-bold'
+										? 'bg-[#0D1E3D]/10 border-[#0D1E3D] text-[#0D1E3D] dark:bg-blue-950/40 dark:text-blue-400 font-bold'
 										: 'bg-background hover:bg-slate-50 dark:hover:bg-slate-800 border-slate-200 text-slate-600 dark:text-slate-400'
 								}`}
 								title={redHabilitada
@@ -2146,7 +2146,7 @@
 						<select
 							id="post-format"
 							bind:value={draftPost.format}
-							class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166]"
+							class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D]"
 						>
 							{#each catalogos.formatos as formato}
 								<option value={formato.nombre}>{formato.nombre}</option>
@@ -2160,7 +2160,7 @@
 						<select
 							id="post-audience"
 							bind:value={draftPost.audience}
-							class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166]"
+							class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D]"
 						>
 							{#each catalogos.audiencias as audiencia}
 								<option value={audiencia.nombre}>{audiencia.nombre}</option>
@@ -2175,7 +2175,7 @@
 							id="post-budget"
 							type="number"
 							bind:value={draftPost.budget}
-							class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166] text-right font-mono"
+							class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D] text-right font-mono"
 						/>
 					</div>
 				</div>
@@ -2190,7 +2190,7 @@
 							id="post-cta"
 							type="text"
 							bind:value={draftPost.cta}
-							class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166]"
+							class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D]"
 							placeholder="Cotizar ahora"
 						/>
 					</div>
@@ -2203,7 +2203,7 @@
 							id="post-objective"
 							type="text"
 							bind:value={draftPost.objective}
-							class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166]"
+							class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D]"
 							placeholder="Conseguir más mensajes"
 						/>
 					</div>
@@ -2228,7 +2228,7 @@
 									type="date"
 									bind:value={draftPost.metaStartDate}
 									required
-									class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166] text-slate-800 dark:text-slate-100"
+									class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D] text-slate-800 dark:text-slate-100"
 								/>
 							</div>
 							<div class="space-y-1">
@@ -2241,7 +2241,7 @@
 									type="date"
 									bind:value={draftPost.metaEndDate}
 									required
-									class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166] text-slate-800 dark:text-slate-100"
+									class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D] text-slate-800 dark:text-slate-100"
 								/>
 							</div>
 						</div>
@@ -2252,7 +2252,7 @@
 				<div class="flex justify-end gap-2.5 pt-6 border-t">
 					<Button variant="outline" onclick={requestCloseModal}>Cancelar</Button>
 					<Button
-						class="bg-[#253166] hover:bg-[#253166]/90 text-white font-bold cursor-pointer"
+						class="bg-[#0D1E3D] hover:bg-[#0D1E3D]/90 text-white font-bold cursor-pointer"
 						onclick={savePost}>Guardar Ficha</Button
 					>
 				</div>
@@ -2273,14 +2273,14 @@
 						<div class="flex items-center justify-between border-b pb-3">
 							<div class="flex items-center gap-2">
 								<div
-									class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#253166] text-white"
+									class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0D1E3D] text-white"
 								>
 									<FileText class="h-4 w-4" />
 								</div>
 								<div>
 									<h3 class="text-sm font-bold">Seleccionar Ficha Técnica</h3>
 									<p class="text-[11px] text-muted-foreground">
-										Marca actual: <strong class="text-[#253166]">{draftPost.brand}</strong>
+										Marca actual: <strong class="text-[#0D1E3D]">{draftPost.brand}</strong>
 									</p>
 								</div>
 							</div>
@@ -2299,7 +2299,7 @@
 						<div class="flex-1 overflow-y-auto space-y-3 pr-1">
 							{#if loadingFichasSelector}
 								<div class="flex flex-col items-center justify-center py-10 gap-2">
-									<RefreshCw class="h-6 w-6 animate-spin text-[#253166]" />
+									<RefreshCw class="h-6 w-6 animate-spin text-[#0D1E3D]" />
 									<p class="text-xs text-muted-foreground">Cargando fichas de la marca...</p>
 								</div>
 							{:else if fichasDisponibles.length === 0}
@@ -2319,7 +2319,7 @@
 								<div class="grid grid-cols-1 gap-2.5">
 									{#each fichasDisponibles as ficha}
 										<div
-											class="flex flex-col gap-2 p-3 border rounded-lg hover:border-[#253166]/50 bg-card transition"
+											class="flex flex-col gap-2 p-3 border rounded-lg hover:border-[#0D1E3D]/50 bg-card transition"
 										>
 											<div class="flex items-center justify-between">
 												<h4 class="font-bold text-xs text-foreground">{ficha.nombre_producto}</h4>
@@ -2329,7 +2329,7 @@
 														e.stopPropagation();
 														attachFichaToContext(ficha);
 													}}
-													class="inline-flex items-center gap-1 rounded-md bg-[#253166] px-2.5 py-1 text-[11px] font-bold text-white shadow-sm hover:bg-[#1a234a] transition cursor-pointer"
+													class="inline-flex items-center gap-1 rounded-md bg-[#0D1E3D] px-2.5 py-1 text-[11px] font-bold text-white shadow-sm hover:bg-[#0A1730] transition cursor-pointer"
 												>
 													<Plus class="h-3 w-3" />
 													<span>Adjuntar al Contexto</span>
@@ -2379,7 +2379,7 @@
 		<div class="flex items-center justify-between border-b p-5 bg-muted/40 shrink-0">
 			<div>
 				<Dialog.Title class="text-base font-bold flex items-center gap-2">
-					<Package class="h-5 w-5 text-[#253166] dark:text-blue-400" />
+					<Package class="h-5 w-5 text-[#0D1E3D] dark:text-blue-400" />
 					Catálogo de Productos e Inventario
 				</Dialog.Title>
 				<Dialog.Description class="text-xs text-muted-foreground mt-0.5">
@@ -2404,7 +2404,7 @@
 							cargarProductos();
 						}
 					}}
-					class="pl-9 h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166] text-slate-800 dark:text-slate-100"
+					class="pl-9 h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D] text-slate-800 dark:text-slate-100"
 				/>
 				{#if productSearchQuery}
 					<button
@@ -2424,7 +2424,7 @@
 				<select
 					bind:value={productBrandFilter}
 					onchange={cargarProductos}
-					class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166] font-semibold text-slate-800 dark:text-slate-100 cursor-pointer"
+					class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D] font-semibold text-slate-800 dark:text-slate-100 cursor-pointer"
 				>
 					<option value="Todas">Todas las marcas</option>
 					{#each marcasExactus as m}
@@ -2437,7 +2437,7 @@
 				<select
 					bind:value={productCategoryFilter}
 					onchange={cargarProductos}
-					class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166] font-semibold text-slate-800 dark:text-slate-100 cursor-pointer"
+					class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D] font-semibold text-slate-800 dark:text-slate-100 cursor-pointer"
 				>
 					<option value="Todas">Todas las categorías</option>
 					{#each categoriasExactus as cat}
@@ -2450,7 +2450,7 @@
 				<select
 					bind:value={productSortOrder}
 					onchange={cargarProductos}
-					class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#253166] font-semibold text-slate-800 dark:text-slate-100 cursor-pointer"
+					class="h-9.5 w-full rounded-md border bg-background px-3 text-xs outline-none focus:border-[#0D1E3D] font-semibold text-slate-800 dark:text-slate-100 cursor-pointer"
 				>
 					<option value="none">Orden por defecto</option>
 					<option value="highest">Mayor disponibilidad</option>
@@ -2493,7 +2493,7 @@
 		<div class="flex-1 min-h-0 overflow-y-auto p-4 space-y-2">
 			{#if cargandoProductos && productos.length === 0}
 				<div class="flex justify-center py-12">
-					<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#253166]"></div>
+					<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0D1E3D]"></div>
 				</div>
 			{:else if productos.length === 0}
 				<div class="text-center py-10 text-muted-foreground text-xs">
@@ -2526,7 +2526,7 @@
 									<div class="space-y-1 flex-1 min-w-0">
 										<div class="flex flex-wrap items-center gap-2">
 											<span
-												class="font-bold text-slate-800 dark:text-slate-200 group-hover:text-[#253166] dark:group-hover:text-blue-400 transition-colors text-xs"
+												class="font-bold text-slate-800 dark:text-slate-200 group-hover:text-[#0D1E3D] dark:group-hover:text-blue-400 transition-colors text-xs"
 											>
 												{product.descripcion || product.codigo}
 											</span>
@@ -2575,7 +2575,7 @@
 											</div>
 										</div>
 										<div
-											class="h-8 w-8 rounded-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-500 group-hover:bg-[#253166] group-hover:text-white group-hover:border-[#253166] dark:group-hover:bg-blue-600 dark:group-hover:border-blue-600 transition-all shadow-xs"
+											class="h-8 w-8 rounded-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-500 group-hover:bg-[#0D1E3D] group-hover:text-white group-hover:border-[#0D1E3D] dark:group-hover:bg-blue-600 dark:group-hover:border-blue-600 transition-all shadow-xs"
 											title="Seleccionar producto"
 										>
 											<Check class="h-4 w-4" />
@@ -2590,7 +2590,7 @@
 								>
 									<button
 										type="button"
-										class="h-full w-full flex items-center justify-center text-slate-500 hover:text-[#253166] dark:hover:text-blue-400"
+										class="h-full w-full flex items-center justify-center text-slate-500 hover:text-[#0D1E3D] dark:hover:text-blue-400"
 										onclick={() => toggleExpandirProducto(product.codigo)}
 										aria-label="Ver desglose por bodega"
 									>
@@ -2732,11 +2732,11 @@
 		<div class="flex items-center justify-between border-b p-5 bg-muted/40">
 			<div>
 				<Dialog.Title class="text-base font-bold flex items-center gap-2">
-					<ImageIcon class="h-5 w-5 text-[#253166] dark:text-blue-400" />
+					<ImageIcon class="h-5 w-5 text-[#0D1E3D] dark:text-blue-400" />
 					Assets de Marca
 					{#if selectedAssetIds.size > 0}
 						<span
-							class="ml-1 inline-flex items-center rounded-full bg-[#253166]/10 text-[#253166] dark:bg-blue-900/40 dark:text-blue-300 px-2 py-0.5 text-[10px] font-bold"
+							class="ml-1 inline-flex items-center rounded-full bg-[#0D1E3D]/10 text-[#0D1E3D] dark:bg-blue-900/40 dark:text-blue-300 px-2 py-0.5 text-[10px] font-bold"
 						>
 							{selectedAssetIds.size} seleccionado(s)
 						</span>
@@ -2761,7 +2761,7 @@
 						<button
 							type="button"
 							onclick={() => (assetFilterType = tipo as typeof assetFilterType)}
-							class={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide transition ${active ? 'bg-[#253166] text-white dark:bg-blue-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+							class={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide transition ${active ? 'bg-[#0D1E3D] text-white dark:bg-blue-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
 						>
 							{tipo === 'todos' ? 'Todos' : tipo}
 							<span
@@ -2778,7 +2778,7 @@
 		<div class="max-h-[60vh] overflow-y-auto p-4">
 			{#if loadingAssets}
 				<div class="flex justify-center py-12">
-					<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#253166]"></div>
+					<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0D1E3D]"></div>
 				</div>
 			{:else if marcaAssets.length === 0}
 				<div class="text-center py-10 text-muted-foreground text-xs">
@@ -2801,7 +2801,7 @@
 							<button
 								type="button"
 								onclick={() => toggleAsset(asset.id)}
-								class={`group relative flex flex-col rounded-lg border overflow-hidden transition-all text-left ${selected ? 'border-[#253166] ring-2 ring-[#253166]/30 dark:border-blue-500 dark:ring-blue-500/30 bg-indigo-50/50 dark:bg-blue-950/20' : 'border-slate-200 dark:border-slate-800 bg-card hover:border-[#253166]/40 dark:hover:border-blue-500/40 hover:shadow-xs'}`}
+								class={`group relative flex flex-col rounded-lg border overflow-hidden transition-all text-left ${selected ? 'border-[#0D1E3D] ring-2 ring-[#0D1E3D]/30 dark:border-blue-500 dark:ring-blue-500/30 bg-indigo-50/50 dark:bg-blue-950/20' : 'border-slate-200 dark:border-slate-800 bg-card hover:border-[#0D1E3D]/40 dark:hover:border-blue-500/40 hover:shadow-xs'}`}
 							>
 								<!-- Preview -->
 								<div
@@ -2817,7 +2817,7 @@
 								<!-- Badge selección -->
 								{#if selected}
 									<div
-										class="absolute top-1.5 right-1.5 h-5 w-5 rounded-full bg-[#253166] dark:bg-blue-600 flex items-center justify-center shadow-sm"
+										class="absolute top-1.5 right-1.5 h-5 w-5 rounded-full bg-[#0D1E3D] dark:bg-blue-600 flex items-center justify-center shadow-sm"
 									>
 										<Check class="h-3.5 w-3.5 text-white" />
 									</div>

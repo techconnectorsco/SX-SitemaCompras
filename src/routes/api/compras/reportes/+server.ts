@@ -234,7 +234,7 @@ function formatearFecha(fecha: string | null): string {
 
 async function generarAnalisis8020(codigoProcesamiento: string): Promise<ExcelJS.Workbook> {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'VYOWEB - Grupo Vedova & Obando';
+  workbook.creator = 'SoporteXperto';
   workbook.created = new Date();
   
   const sheet = workbook.addWorksheet('Análisis 80-20', {
@@ -342,7 +342,7 @@ async function generarAnalisis8020(codigoProcesamiento: string): Promise<ExcelJS
 
 async function generarControlCompras(codigoProcesamiento: string): Promise<ExcelJS.Workbook> {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'VYOWEB - Grupo Vedova & Obando';
+  workbook.creator = 'SoporteXperto';
   
   const sheet = workbook.addWorksheet('Control de Compras', {
     views: [{ state: 'frozen', ySplit: 4, xSplit: 2 }]
@@ -451,7 +451,7 @@ async function generarControlCompras(codigoProcesamiento: string): Promise<Excel
 
 async function generarABCRotacion(codigoProcesamiento: string): Promise<ExcelJS.Workbook> {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'VYOWEB - Grupo Vedova & Obando';
+  workbook.creator = 'SoporteXperto';
   
   // Hoja 1: Detalle por SKU
   const sheetDetalle = workbook.addWorksheet('Detalle ABC-Rotación', {
@@ -621,7 +621,7 @@ async function generarABCRotacion(codigoProcesamiento: string): Promise<ExcelJS.
 
 async function generarPedidoPrecios(codigoProcesamiento: string): Promise<ExcelJS.Workbook> {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'VYOWEB - Grupo Vedova & Obando';
+  workbook.creator = 'SoporteXperto';
   
   const sheet = workbook.addWorksheet('Pedido con Precios', {
     views: [{ state: 'frozen', ySplit: 4, xSplit: 2 }]
@@ -741,7 +741,7 @@ async function generarPedidoPrecios(codigoProcesamiento: string): Promise<ExcelJ
  */
 async function generarAntiguedadSKUs(codigoProcesamiento: string): Promise<ExcelJS.Workbook> {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'VYOWEB - Grupo Vedova & Obando';
+  workbook.creator = 'SoporteXperto';
   
   const sheet = workbook.addWorksheet('SKUs Sin Movimiento', {
     views: [{ state: 'frozen', ySplit: 4, xSplit: 2 }]
@@ -907,7 +907,7 @@ async function generarAntiguedadSKUs(codigoProcesamiento: string): Promise<Excel
  */
 async function generarProductosNuevos(codigoProcesamiento: string): Promise<ExcelJS.Workbook> {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'VYOWEB - Grupo Vedova & Obando';
+  workbook.creator = 'SoporteXperto';
   
   const sheet = workbook.addWorksheet('Productos Nuevos', {
     views: [{ state: 'frozen', ySplit: 4, xSplit: 2 }]
@@ -1017,7 +1017,7 @@ async function generarProductosNuevos(codigoProcesamiento: string): Promise<Exce
  */
 async function generarProductosReactivados(codigoProcesamiento: string): Promise<ExcelJS.Workbook> {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'VYOWEB - Grupo Vedova & Obando';
+  workbook.creator = 'SoporteXperto';
   
   const sheet = workbook.addWorksheet('Productos Reactivados', {
     views: [{ state: 'frozen', ySplit: 4, xSplit: 2 }]
@@ -1147,7 +1147,7 @@ async function generarProductosReactivados(codigoProcesamiento: string): Promise
 
 async function generarSugerenciasAnalista(codigoProcesamiento: string): Promise<ExcelJS.Workbook> {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'VYOWEB - Grupo Vedova & Obando';
+  workbook.creator = 'SoporteXperto';
   
   const sheet = workbook.addWorksheet('Sugerencias Analista', {
     views: [{ state: 'frozen', ySplit: 4, xSplit: 2 }]
@@ -1491,7 +1491,7 @@ async function generarSugerenciasAnalista(codigoProcesamiento: string): Promise<
  */
 async function generarSKUsConPedido(codigoProcesamiento: string): Promise<ExcelJS.Workbook> {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'VYOWEB - Grupo Vedova & Obando';
+  workbook.creator = 'SoporteXperto';
   
   const sheet = workbook.addWorksheet('SKUs con Pedido', {
     views: [{ state: 'frozen', ySplit: 4, xSplit: 2 }]
@@ -1740,7 +1740,7 @@ async function generarSKUsConPedido(codigoProcesamiento: string): Promise<ExcelJ
  */
 async function generarPedidoSugeridoYAnalista(codigoProcesamiento: string): Promise<ExcelJS.Workbook> {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'VYOWEB - Grupo Vedova & Obando';
+  workbook.creator = 'SoporteXperto';
   
   const sheet = workbook.addWorksheet('Pedido Sugerido y Analista', {
     views: [{ state: 'frozen', ySplit: 4, xSplit: 2 }]

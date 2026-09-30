@@ -113,7 +113,7 @@
 </script>
 
 <svelte:head>
-	<title>Vedoba - Creador de Contenido</title>
+	<title>SoporteXperto - Creador de Contenido</title>
 </svelte:head>
 
 <!-- Estructura de layout unificada de la aplicación -->
@@ -124,12 +124,12 @@
 		<div class="space-y-6">
 			<!-- Logo de marca del módulo -->
 			<div class="flex items-center gap-2.5 px-1.5 border-b pb-4">
-				<div class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#253166] text-white shadow-sm">
+				<div class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#0D1E3D] text-white shadow-sm">
 					<Layers class="h-4.5 w-4.5" />
 				</div>
 				<div>
 					<h2 class="text-xs font-bold tracking-tight text-foreground uppercase">Creador Contenido</h2>
-					<p class="text-[9px] font-semibold text-orange-500 uppercase tracking-widest">Vedoba AI</p>
+					<p class="text-[9px] font-semibold text-[#1A73C2] uppercase tracking-widest">SoporteXperto AI</p>
 				</div>
 			</div>
 
@@ -143,7 +143,7 @@
 				onclick={() => switchTab('dashboard')}
 				class={`flex w-full items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-left text-xs font-medium transition-all duration-200
 					${activeTab === 'dashboard'
-						? 'bg-[#253166] text-white shadow-sm dark:bg-blue-600'
+						? 'bg-[#0D1E3D] text-white shadow-sm dark:bg-blue-600'
 						: 'text-muted-foreground hover:bg-muted/80 hover:text-foreground'}`}
 			>
 				<LayoutDashboard class="h-4 w-4" />
@@ -156,7 +156,7 @@
 				onclick={() => switchTab('schedule')}
 				class={`flex w-full items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-left text-xs font-medium transition-all duration-200
 					${activeTab === 'schedule'
-						? 'bg-[#253166] text-white shadow-sm dark:bg-blue-600'
+						? 'bg-[#0D1E3D] text-white shadow-sm dark:bg-blue-600'
 						: 'text-muted-foreground hover:bg-muted/80 hover:text-foreground'}`}
 			>
 				<Calendar class="h-4 w-4" />
@@ -169,7 +169,7 @@
 				onclick={() => switchTab('review')}
 				class={`flex w-full items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-left text-xs font-medium transition-all duration-200
 					${activeTab === 'review'
-						? 'bg-[#253166] text-white shadow-sm dark:bg-blue-600'
+						? 'bg-[#0D1E3D] text-white shadow-sm dark:bg-blue-600'
 						: 'text-muted-foreground hover:bg-muted/80 hover:text-foreground'}`}
 			>
 				<ClipboardCheck class="h-4 w-4" />
@@ -182,7 +182,7 @@
 				onclick={() => switchTab('metrics')}
 				class={`flex w-full items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-left text-xs font-medium transition-all duration-200
 					${activeTab === 'metrics'
-						? 'bg-[#253166] text-white shadow-sm dark:bg-blue-600'
+						? 'bg-[#0D1E3D] text-white shadow-sm dark:bg-blue-600'
 						: 'text-muted-foreground hover:bg-muted/80 hover:text-foreground'}`}
 			>
 				<TrendingUp class="h-4 w-4" />
@@ -195,7 +195,7 @@
 				onclick={() => switchTab('meta-hub')}
 				class={`flex w-full items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-left text-xs font-medium transition-all duration-200
 					${activeTab === 'meta-hub'
-						? 'bg-[#253166] text-white shadow-sm dark:bg-blue-600'
+						? 'bg-[#0D1E3D] text-white shadow-sm dark:bg-blue-600'
 						: 'text-muted-foreground hover:bg-muted/80 hover:text-foreground'}`}
 			>
 				<Facebook class="h-4 w-4" />
@@ -208,7 +208,7 @@
 				onclick={() => switchTab('prompts')}
 				class={`flex w-full items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-left text-xs font-medium transition-all duration-200
 					${activeTab === 'prompts'
-						? 'bg-[#253166] text-white shadow-sm dark:bg-blue-600'
+						? 'bg-[#0D1E3D] text-white shadow-sm dark:bg-blue-600'
 						: 'text-muted-foreground hover:bg-muted/80 hover:text-foreground'}`}
 			>
 				<Image class="h-4 w-4" />
@@ -221,7 +221,7 @@
 				onclick={() => switchTab('assets')}
 				class={`flex w-full items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-left text-xs font-medium transition-all duration-200
 					${activeTab === 'assets'
-						? 'bg-[#253166] text-white shadow-sm dark:bg-blue-600'
+						? 'bg-[#0D1E3D] text-white shadow-sm dark:bg-blue-600'
 						: 'text-muted-foreground hover:bg-muted/80 hover:text-foreground'}`}
 			>
 <Tag class="h-4 w-4" />
@@ -234,7 +234,7 @@
 					onclick={() => switchTab('bodegas')}
 					class={`flex w-full items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-left text-xs font-medium transition-all duration-200
 						${activeTab === 'bodegas'
-							? 'bg-[#253166] text-white shadow-sm dark:bg-blue-600'
+							? 'bg-[#0D1E3D] text-white shadow-sm dark:bg-blue-600'
 							: 'text-muted-foreground hover:bg-muted/80 hover:text-foreground'}`}
 				>
 					<Warehouse class="h-4 w-4" />
@@ -247,7 +247,7 @@
 					onclick={() => switchTab('fichas')}
 					class={`flex w-full items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-left text-xs font-medium transition-all duration-200
 						${activeTab === 'fichas'
-							? 'bg-[#253166] text-white shadow-sm dark:bg-blue-600'
+							? 'bg-[#0D1E3D] text-white shadow-sm dark:bg-blue-600'
 							: 'text-muted-foreground hover:bg-muted/80 hover:text-foreground'}`}
 				>
 					<FileText class="h-4 w-4" />

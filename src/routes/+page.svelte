@@ -30,8 +30,8 @@
 		<section class="relative overflow-hidden py-20 lg:py-10">
 			<!-- Background decoration -->
 			<div class="absolute inset-0 -z-10">
-				<div class="absolute top-0 right-0 w-96 h-96 bg-[#253166]/5 rounded-full blur-3xl"></div>
-				<div class="absolute bottom-0 left-0 w-96 h-96 bg-orange-500/5 rounded-full blur-3xl"></div>
+				<div class="absolute top-0 right-0 w-96 h-96 bg-[#0D1E3D]/5 rounded-full blur-3xl"></div>
+				<div class="absolute bottom-0 left-0 w-96 h-96 bg-[#1A73C2]/5 rounded-full blur-3xl"></div>
 			</div>
 
 			<div class="container mx-auto px-4">
@@ -41,26 +41,26 @@
 						<!-- Logo -->
 						<div class="flex items-center gap-3">
 							<img 
-								src="/grupovyo-removebg-preview.png" 
-								alt="Grupo VYO Logo" 
+								src="/logo-soportexperto.png" 
+								alt="SoporteXperto Logo" 
 								class="h-16 w-auto"
 							/>
-							<div class="h-12 w-px bg-linear-to-b from-[#253166] to-orange-500"></div>
+							<div class="h-12 w-px bg-linear-to-b from-[#0D1E3D] to-[#1A73C2]"></div>
 							<div>
-								<p class="text-sm font-medium text-[#253166] dark:text-blue-400">
+								<p class="text-sm font-medium text-[#0D1E3D] dark:text-blue-400">
 									Sistema Inteligente
 								</p>
 								<p class="text-xs text-muted-foreground">
-									Grupo Vedova & Obando
+									Grupo SoporteXperto
 								</p>
 							</div>
 						</div>
 
 						<!-- Headline -->
 						<div class="space-y-4">
-							<h1 class="text-4xl lg:text-6xl font-bold text-[#253166] dark:text-white leading-tight">
+							<h1 class="text-4xl lg:text-6xl font-bold text-[#0D1E3D] dark:text-white leading-tight">
 								Centro de Operaciones
-								<span class="block text-transparent bg-clip-text bg-linear-to-r from-[#253166] to-orange-500">
+								<span class="block text-transparent bg-clip-text bg-linear-to-r from-[#0D1E3D] to-[#1A73C2]">
 									Inteligentes
 								</span>
 							</h1>
@@ -102,7 +102,7 @@
 							<Button 
 								href={AUTH_PATHS.LOGIN} 
 								size="lg" 
-								class="text-base px-8 py-6 bg-[#253166] hover:bg-[#253166]/90 dark:bg-[#253166] dark:hover:bg-[#253166]/80"
+								class="text-base px-8 py-6 bg-[#0D1E3D] hover:bg-[#0D1E3D]/90 dark:bg-[#0D1E3D] dark:hover:bg-[#0D1E3D]/80"
 							>
 								Acceder al Sistema
 								<ChevronRight class="ml-2 h-5 w-5" />
@@ -111,7 +111,7 @@
 								href="/AsistenteCompras" 
 								size="lg" 
 								variant="outline"
-								class="text-base px-8 py-6 border-[#253166] text-[#253166] hover:bg-[#253166]/5"
+								class="text-base px-8 py-6 border-[#0D1E3D] text-[#0D1E3D] hover:bg-[#0D1E3D]/5"
 							>
 								<BarChart3 class="mr-2 h-5 w-5" />
 								Asistente de Compras
@@ -120,7 +120,7 @@
 								href="/contentCreator" 
 								size="lg" 
 								variant="outline"
-								class="text-base px-8 py-6 border-[#253166] text-[#253166] hover:bg-[#253166]/5"
+								class="text-base px-8 py-6 border-[#0D1E3D] text-[#0D1E3D] hover:bg-[#0D1E3D]/5"
 							>
 								<Sparkles class="mr-2 h-5 w-5" />
 								Community Manager
@@ -128,7 +128,7 @@
 							<Button 
 								href={AUTH_PATHS.REGISTER} 
 								size="lg" 
-								class="text-base px-8 py-6 bg-orange-500 hover:bg-orange-500/90 text-white"
+								class="text-base px-8 py-6 bg-[#1A73C2] hover:bg-[#1A73C2]/90 text-white"
 							>
 								Solicitar Acceso
 							</Button>
@@ -139,31 +139,31 @@
 					<div class="hidden lg:flex items-center justify-center relative">
 						<div class="relative w-full max-w-lg">
 							<!-- Decorative circles -->
-							<div class="absolute -top-4 -right-4 w-72 h-72 bg-linear-to-br from-[#253166]/10 to-orange-500/10 rounded-full blur-2xl"></div>
-							<div class="absolute -bottom-4 -left-4 w-72 h-72 bg-linear-to-tr from-orange-500/10 to-[#253166]/10 rounded-full blur-2xl"></div>
+							<div class="absolute -top-4 -right-4 w-72 h-72 bg-linear-to-br from-[#0D1E3D]/10 to-[#1A73C2]/10 rounded-full blur-2xl"></div>
+							<div class="absolute -bottom-4 -left-4 w-72 h-72 bg-linear-to-tr from-[#1A73C2]/10 to-[#0D1E3D]/10 rounded-full blur-2xl"></div>
 							
 							<!-- Platform Preview -->
 							<div class="relative z-10 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 border border-gray-200 dark:border-gray-700 space-y-6">
 								<div class="flex items-center gap-3 border-b pb-4">
-									<div class="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center">
-										<Layers class="h-5 w-5 text-orange-500" />
+									<div class="w-10 h-10 rounded-lg bg-[#1A73C2]/10 flex items-center justify-center">
+										<Layers class="h-5 w-5 text-[#1A73C2]" />
 									</div>
 									<div>
-										<p class="font-semibold text-sm">Plataforma Vedoba</p>
+										<p class="font-semibold text-sm">Plataforma SoporteXperto</p>
 										<p class="text-xs text-muted-foreground">Centro de Operaciones Inteligentes</p>
 									</div>
 								</div>
 
 								<div class="space-y-4">
 									<!-- Módulo 1 -->
-									<div class="p-4 rounded-xl border bg-gray-50 dark:bg-gray-900/50 hover:border-[#253166]/50 transition-colors">
+									<div class="p-4 rounded-xl border bg-gray-50 dark:bg-gray-900/50 hover:border-[#0D1E3D]/50 transition-colors">
 										<div class="flex items-start justify-between">
 											<div class="flex items-center gap-3">
-												<div class="w-8 h-8 rounded bg-[#253166]/10 flex items-center justify-center">
-													<BarChart3 class="h-4 w-4 text-[#253166]" />
+												<div class="w-8 h-8 rounded bg-[#0D1E3D]/10 flex items-center justify-center">
+													<BarChart3 class="h-4 w-4 text-[#0D1E3D]" />
 												</div>
 												<div>
-													<p class="text-sm font-semibold text-[#253166] dark:text-white">Asistente de Compras</p>
+													<p class="text-sm font-semibold text-[#0D1E3D] dark:text-white">Asistente de Compras</p>
 													<p class="text-xs text-muted-foreground mt-1">Forecast · SKUs · Alertas</p>
 												</div>
 											</div>
@@ -175,14 +175,14 @@
 									</div>
 
 									<!-- Módulo 2 -->
-									<div class="p-4 rounded-xl border bg-gray-50 dark:bg-gray-900/50 hover:border-orange-500/50 transition-colors">
+									<div class="p-4 rounded-xl border bg-gray-50 dark:bg-gray-900/50 hover:border-[#1A73C2]/50 transition-colors">
 										<div class="flex items-start justify-between">
 											<div class="flex items-center gap-3">
-												<div class="w-8 h-8 rounded bg-orange-500/10 flex items-center justify-center">
-													<Sparkles class="h-4 w-4 text-orange-500" />
+												<div class="w-8 h-8 rounded bg-[#1A73C2]/10 flex items-center justify-center">
+													<Sparkles class="h-4 w-4 text-[#1A73C2]" />
 												</div>
 												<div>
-													<p class="text-sm font-semibold text-[#253166] dark:text-white">Creador de Contenido</p>
+													<p class="text-sm font-semibold text-[#0D1E3D] dark:text-white">Creador de Contenido</p>
 													<p class="text-xs text-muted-foreground mt-1">IA · Redes · Meta Ads</p>
 												</div>
 											</div>
@@ -200,8 +200,8 @@
 										<span class="text-xs font-medium text-muted-foreground">2 Módulos</span>
 									</div>
 									<div class="flex items-center gap-2">
-										<Zap class="h-4 w-4 text-orange-500" />
-										<span class="text-xs font-medium text-muted-foreground">Powered by Vedoba AI</span>
+										<Zap class="h-4 w-4 text-[#1A73C2]" />
+										<span class="text-xs font-medium text-muted-foreground">Powered by SoporteXperto AI</span>
 									</div>
 								</div>
 							</div>
@@ -215,7 +215,7 @@
 		<section class="py-10 bg-white dark:bg-gray-900">
 			<div class="container mx-auto px-4">
 				<div class="text-center mb-12">
-					<h2 class="text-3xl lg:text-4xl font-bold text-[#253166] dark:text-white mb-4">
+					<h2 class="text-3xl lg:text-4xl font-bold text-[#0D1E3D] dark:text-white mb-4">
 						Características Principales
 					</h2>
 					<p class="text-muted-foreground max-w-2xl mx-auto">
@@ -225,11 +225,11 @@
 
 				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
 					<!-- Feature 1: Creación de Contenido con IA -->
-					<div class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#253166]/50 transition-all hover:shadow-lg">
-						<div class="w-12 h-12 rounded-lg bg-[#253166]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-							<Sparkles class="h-6 w-6 text-[#253166]" />
+					<div class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#0D1E3D]/50 transition-all hover:shadow-lg">
+						<div class="w-12 h-12 rounded-lg bg-[#0D1E3D]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+							<Sparkles class="h-6 w-6 text-[#0D1E3D]" />
 						</div>
-						<h3 class="text-xl font-semibold mb-2 text-[#253166] dark:text-white">
+						<h3 class="text-xl font-semibold mb-2 text-[#0D1E3D] dark:text-white">
 							Creación de Contenido con IA
 						</h3>
 						<p class="text-muted-foreground">
@@ -238,11 +238,11 @@
 					</div>
 
 					<!-- Feature 2: Indicadores en Tiempo Real -->
-					<div class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-orange-500/50 transition-all hover:shadow-lg">
-						<div class="w-12 h-12 rounded-lg bg-orange-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-							<BarChart3 class="h-6 w-6 text-orange-500" />
+					<div class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#1A73C2]/50 transition-all hover:shadow-lg">
+						<div class="w-12 h-12 rounded-lg bg-[#1A73C2]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+							<BarChart3 class="h-6 w-6 text-[#1A73C2]" />
 						</div>
-						<h3 class="text-xl font-semibold mb-2 text-[#253166] dark:text-white">
+						<h3 class="text-xl font-semibold mb-2 text-[#0D1E3D] dark:text-white">
 							Indicadores en Tiempo Real
 						</h3>
 						<p class="text-muted-foreground">
@@ -251,11 +251,11 @@
 					</div>
 
 					<!-- Feature 3: Gestión de Inventarios -->
-					<div class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#253166]/50 transition-all hover:shadow-lg">
-						<div class="w-12 h-12 rounded-lg bg-[#253166]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-							<Package class="h-6 w-6 text-[#253166]" />
+					<div class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#0D1E3D]/50 transition-all hover:shadow-lg">
+						<div class="w-12 h-12 rounded-lg bg-[#0D1E3D]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+							<Package class="h-6 w-6 text-[#0D1E3D]" />
 						</div>
-						<h3 class="text-xl font-semibold mb-2 text-[#253166] dark:text-white">
+						<h3 class="text-xl font-semibold mb-2 text-[#0D1E3D] dark:text-white">
 							Gestión de Inventarios
 						</h3>
 						<p class="text-muted-foreground">
@@ -264,11 +264,11 @@
 					</div>
 
 					<!-- Feature 4: Gestión Multi-Marca -->
-					<div class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-orange-500/50 transition-all hover:shadow-lg">
-						<div class="w-12 h-12 rounded-lg bg-orange-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-							<Tag class="h-6 w-6 text-orange-500" />
+					<div class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#1A73C2]/50 transition-all hover:shadow-lg">
+						<div class="w-12 h-12 rounded-lg bg-[#1A73C2]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+							<Tag class="h-6 w-6 text-[#1A73C2]" />
 						</div>
-						<h3 class="text-xl font-semibold mb-2 text-[#253166] dark:text-white">
+						<h3 class="text-xl font-semibold mb-2 text-[#0D1E3D] dark:text-white">
 							Gestión Multi-Marca
 						</h3>
 						<p class="text-muted-foreground">
@@ -277,11 +277,11 @@
 					</div>
 
 					<!-- Feature 5: Alertas Inteligentes -->
-					<div class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#253166]/50 transition-all hover:shadow-lg">
-						<div class="w-12 h-12 rounded-lg bg-[#253166]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-							<Zap class="h-6 w-6 text-[#253166]" />
+					<div class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#0D1E3D]/50 transition-all hover:shadow-lg">
+						<div class="w-12 h-12 rounded-lg bg-[#0D1E3D]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+							<Zap class="h-6 w-6 text-[#0D1E3D]" />
 						</div>
-						<h3 class="text-xl font-semibold mb-2 text-[#253166] dark:text-white">
+						<h3 class="text-xl font-semibold mb-2 text-[#0D1E3D] dark:text-white">
 							Alertas Inteligentes
 						</h3>
 						<p class="text-muted-foreground">
@@ -290,11 +290,11 @@
 					</div>
 
 					<!-- Feature 6: Meta Hub & Publicación -->
-					<div class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-orange-500/50 transition-all hover:shadow-lg">
-						<div class="w-12 h-12 rounded-lg bg-orange-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-							<Share2 class="h-6 w-6 text-orange-500" />
+					<div class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#1A73C2]/50 transition-all hover:shadow-lg">
+						<div class="w-12 h-12 rounded-lg bg-[#1A73C2]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+							<Share2 class="h-6 w-6 text-[#1A73C2]" />
 						</div>
-						<h3 class="text-xl font-semibold mb-2 text-[#253166] dark:text-white">
+						<h3 class="text-xl font-semibold mb-2 text-[#0D1E3D] dark:text-white">
 							Meta Hub & Publicación
 						</h3>
 						<p class="text-muted-foreground">
@@ -306,7 +306,7 @@
 		</section>
 
 		<!-- CTA Section -->
-		<section class="py-20 bg-linear-to-br from-[#253166] to-[#253166]/90 text-white">
+		<section class="py-20 bg-linear-to-br from-[#0D1E3D] to-[#0D1E3D]/90 text-white">
 			<div class="container mx-auto px-4 text-center">
 				<div class="max-w-3xl mx-auto space-y-6">
 					<h2 class="text-3xl lg:text-4xl font-bold">
@@ -320,7 +320,7 @@
 							href={AUTH_PATHS.REGISTER} 
 							size="lg" 
 							variant="secondary"
-							class="text-base px-8 py-6 bg-white text-[#253166] hover:bg-gray-100"
+							class="text-base px-8 py-6 bg-white text-[#0D1E3D] hover:bg-gray-100"
 						>
 							Solicitar Acceso
 							<ChevronRight class="ml-2 h-5 w-5" />
@@ -329,7 +329,7 @@
 							href="mailto:{siteConfig.contact.email}" 
 							size="lg" 
 							variant="secondary"
-							class="text-base px-8 py-6 bg-white text-[#253166] hover:bg-gray-100"
+							class="text-base px-8 py-6 bg-white text-[#0D1E3D] hover:bg-gray-100"
 						>
 							Contactar Soporte
 						</Button>

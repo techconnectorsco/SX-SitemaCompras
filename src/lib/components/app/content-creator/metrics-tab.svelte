@@ -260,7 +260,7 @@
 	<!-- Cabecera -->
 	<div class="flex flex-wrap items-center justify-between gap-4 rounded-xl border bg-card p-4 shadow-sm">
 		<div class="flex items-center gap-3">
-			<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-[#253166]">
+			<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-[#0D1E3D]">
 				<TrendingUp class="h-5.5 w-5.5 text-white" />
 			</div>
 			<div>
@@ -284,7 +284,7 @@
 		<div class="flex flex-wrap gap-2 items-center">
 			<select
 				bind:value={selectedPeriod}
-				class="rounded-md border bg-background px-3 py-1.5 text-xs font-semibold outline-none focus:border-[#253166]"
+				class="rounded-md border bg-background px-3 py-1.5 text-xs font-semibold outline-none focus:border-[#0D1E3D]"
 			>
 				<option value="7d">Últimos 7 días</option>
 				<option value="30d">Últimos 30 días</option>
@@ -293,7 +293,7 @@
 			</select>
 
 			<Button
-				class="bg-[#253166] text-white hover:bg-[#253166]/90 font-bold text-xs"
+				class="bg-[#0D1E3D] text-white hover:bg-[#0D1E3D]/90 font-bold text-xs"
 				onclick={loadFeed}
 				disabled={isLoading}
 			>
@@ -345,7 +345,7 @@
 					Verificá que la cuenta seleccionada tenga <code class="font-mono">meta_facebook_page_id</code> y
 					<code class="font-mono">meta_access_token</code> válidos. Si el token expiró, refrescalo desde el selector de cuentas.
 				</p>
-				<Button class="mt-4 bg-[#253166] text-white hover:bg-[#253166]/90 font-bold text-xs" onclick={loadFeed} disabled={isLoading}>
+				<Button class="mt-4 bg-[#0D1E3D] text-white hover:bg-[#0D1E3D]/90 font-bold text-xs" onclick={loadFeed} disabled={isLoading}>
 					<RefreshCw class="h-3.5 w-3.5 mr-1.5" /> Reintentar
 				</Button>
 			</Card.Content>
@@ -492,11 +492,11 @@
 								rel="noopener noreferrer"
 								class="flex items-center gap-3 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/80 hover:bg-slate-50/50 dark:hover:bg-slate-900/10 transition-colors group"
 							>
-								<div class="h-10 w-10 rounded-lg bg-[#253166]/10 flex items-center justify-center text-xs font-bold text-[#253166] dark:bg-[#253166]/20 shrink-0">
+								<div class="h-10 w-10 rounded-lg bg-[#0D1E3D]/10 flex items-center justify-center text-xs font-bold text-[#0D1E3D] dark:bg-[#0D1E3D]/20 shrink-0">
 									#{i + 1}
 								</div>
 								<div class="min-w-0 flex-1">
-									<h5 class="text-xs font-bold text-slate-900 line-clamp-1 dark:text-slate-100 group-hover:text-[#253166]">
+									<h5 class="text-xs font-bold text-slate-900 line-clamp-1 dark:text-slate-100 group-hover:text-[#0D1E3D]">
 										{preview(post.message, 50)}
 									</h5>
 									<div class="flex gap-2 text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 font-semibold">
@@ -540,7 +540,7 @@
 				</div>
 
 				<Button
-					class="bg-gradient-to-r from-[#253166] to-indigo-700 hover:from-[#253166]/90 hover:to-indigo-700/90 text-white font-bold shadow-sm"
+					class="bg-gradient-to-r from-[#0D1E3D] to-indigo-700 hover:from-[#0D1E3D]/90 hover:to-indigo-700/90 text-white font-bold shadow-sm"
 					onclick={analyzeWithGemini}
 					disabled={aiGenerating || kpis.posts === 0}
 				>
@@ -569,7 +569,7 @@
 				<p class="text-xs font-semibold text-rose-700 dark:text-rose-300">No se pudo completar el análisis IA</p>
 				<p class="text-[11px] text-rose-600/80 dark:text-rose-400/80 mt-1 max-w-md">{aiError}</p>
 				<div class="flex gap-2 mt-4">
-					<Button class="bg-[#253166] text-white hover:bg-[#253166]/90 font-bold text-xs" onclick={analyzeWithGemini} disabled={aiGenerating}>
+					<Button class="bg-[#0D1E3D] text-white hover:bg-[#0D1E3D]/90 font-bold text-xs" onclick={analyzeWithGemini} disabled={aiGenerating}>
 						<RefreshCw class="h-3.5 w-3.5 mr-1.5" /> Reintentar análisis
 					</Button>
 				</div>

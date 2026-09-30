@@ -18,7 +18,7 @@
 		autenticado = true,
 		codigoProcesamiento,
 		codigoSku,
-		titulo = 'Betti A.'
+		titulo = 'SoporteXperto IA'
 	}: Props = $props();
 
 	const TIMEOUT_MS = 120000; // 120s: una consulta con varias herramientas puede tardar.

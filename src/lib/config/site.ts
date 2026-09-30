@@ -33,9 +33,9 @@ export const siteConfig = {
 	title: 'Grupo V&O',
 	description: 'Sistema de Gestión de Compras y Forecast Automatizado',
 	name: 'VYO S.A.',
-	logo: '/logovo.png',
-	logoDark: '/logovo.png',
-	favicon: '/logovo.png',
+	logo: '/logo-soportexperto.png',
+	logoDark: '/logo-soportexperto1.png',
+	favicon: '/favicon.png',
 	contact: {
 		email: 'asist-digit-interno@vyo.cr',
 		phone: '+506 2222-2222'

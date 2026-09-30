@@ -17,7 +17,7 @@
 					<a
 						href="/admin/compras"
 						aria-current={comprasActivo ? 'page' : undefined}
-						class={`flex min-w-44 items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold transition-colors lg:min-w-0 ${comprasActivo ? 'bg-[#253166] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'}`}
+						class={`flex min-w-44 items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold transition-colors lg:min-w-0 ${comprasActivo ? 'bg-[#0D1E3D] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'}`}
 					>
 						<ShoppingCart class="h-4 w-4" />
 						Compras
@@ -25,7 +25,7 @@
 						<a
 							href="/admin/content-creator"
 							aria-current={contenidoActivo ? 'page' : undefined}
-							class={`flex min-w-52 items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold transition-colors lg:min-w-0 ${contenidoActivo ? 'bg-[#253166] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'}`}
+							class={`flex min-w-52 items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold transition-colors lg:min-w-0 ${contenidoActivo ? 'bg-[#0D1E3D] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'}`}
 						>
 							<Clapperboard class="h-4 w-4" />
 							<span class="flex-1">Creador de contenido</span>

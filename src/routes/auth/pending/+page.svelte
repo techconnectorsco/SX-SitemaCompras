@@ -34,7 +34,7 @@
 
 				<!-- Título -->
 				<div class="text-center space-y-2">
-					<h1 class="text-3xl font-bold text-[#253166] dark:text-white">
+					<h1 class="text-3xl font-bold text-[#0D1E3D] dark:text-white">
 						Cuenta Pendiente de Aprobación
 					</h1>
 					<p class="text-sm text-muted-foreground">
@@ -61,9 +61,9 @@
 				<!-- Pasos siguientes -->
 				<div class="bg-linear-to-br from-slate-50 to-slate-100 dark:from-gray-800 dark:to-gray-900 rounded-lg p-4 border">
 					<div class="flex items-start gap-3 mb-3">
-						<Shield class="h-5 w-5 text-[#253166] dark:text-orange-400 flex-shrink-0 mt-0.5" />
+						<Shield class="h-5 w-5 text-[#0D1E3D] dark:text-[#1A73C2] flex-shrink-0 mt-0.5" />
 						<div>
-							<p class="text-sm font-semibold text-[#253166] dark:text-white mb-2">
+							<p class="text-sm font-semibold text-[#0D1E3D] dark:text-white mb-2">
 								¿Qué sucede ahora?
 							</p>
 						</div>
@@ -71,8 +71,8 @@
 					
 					<div class="space-y-2.5">
 						<div class="flex items-start gap-3">
-							<div class="flex-shrink-0 w-6 h-6 rounded-full bg-[#253166]/10 flex items-center justify-center">
-								<span class="text-xs font-bold text-[#253166]">1</span>
+							<div class="flex-shrink-0 w-6 h-6 rounded-full bg-[#0D1E3D]/10 flex items-center justify-center">
+								<span class="text-xs font-bold text-[#0D1E3D]">1</span>
 							</div>
 							<p class="text-xs text-muted-foreground">
 								Un administrador revisará tu solicitud de acceso
@@ -80,8 +80,8 @@
 						</div>
 
 						<div class="flex items-start gap-3">
-							<div class="flex-shrink-0 w-6 h-6 rounded-full bg-[#253166]/10 flex items-center justify-center">
-								<span class="text-xs font-bold text-[#253166]">2</span>
+							<div class="flex-shrink-0 w-6 h-6 rounded-full bg-[#0D1E3D]/10 flex items-center justify-center">
+								<span class="text-xs font-bold text-[#0D1E3D]">2</span>
 							</div>
 							<p class="text-xs text-muted-foreground">
 								Recibirás un correo de confirmación cuando sea aprobada
@@ -89,8 +89,8 @@
 						</div>
 
 						<div class="flex items-start gap-3">
-							<div class="flex-shrink-0 w-6 h-6 rounded-full bg-[#253166]/10 flex items-center justify-center">
-								<span class="text-xs font-bold text-[#253166]">3</span>
+							<div class="flex-shrink-0 w-6 h-6 rounded-full bg-[#0D1E3D]/10 flex items-center justify-center">
+								<span class="text-xs font-bold text-[#0D1E3D]">3</span>
 							</div>
 							<p class="text-xs text-muted-foreground">
 								Podrás iniciar sesión con tus credenciales
@@ -110,7 +110,7 @@
 			<div class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
 	<Button
 		href="/auth?mode=login"
-		class="w-full h-11 text-sm font-semibold bg-[#253166] hover:bg-[#253166]/90"
+		class="w-full h-11 text-sm font-semibold bg-[#0D1E3D] hover:bg-[#0D1E3D]/90"
 	>
 		Iniciar Sesión
 	</Button>
@@ -118,7 +118,7 @@
 	<Button
 		href="/"
 		variant="outline"
-		class="w-full h-11 text-sm border-[#253166] text-[#253166] hover:bg-[#253166]/5"
+		class="w-full h-11 text-sm border-[#0D1E3D] text-[#0D1E3D] hover:bg-[#0D1E3D]/5"
 	>
 		Página Principal
 	</Button>
@@ -129,7 +129,7 @@
 				¿Necesitas ayuda?{' '}
 				<a 
 					href="mailto:{siteConfig.contact.email}" 
-					class="text-[#253166] font-medium hover:underline transition-colors"
+					class="text-[#0D1E3D] font-medium hover:underline transition-colors"
 				>
 					Contactar Soporte
 				</a>

@@ -63,8 +63,8 @@
 				<!-- Logo VYO -->
 				<div class="flex items-center gap-3">
 					<img 
-						src="/grupovyo-removebg-preview.png" 
-						alt="Grupo VYO Logo" 
+						src="/logo-soportexperto.png" 
+						alt="SoporteXperto Logo" 
 						class="h-12 w-auto"
 					/>
 				</div>
@@ -72,7 +72,7 @@
 				<!-- Título y Badge en línea -->
 				<div class="flex items-center justify-between">
 					<div>
-						<h1 class="text-3xl font-bold text-[#253166] dark:text-white">
+						<h1 class="text-3xl font-bold text-[#0D1E3D] dark:text-white">
 							Crear Cuenta
 						</h1>
 						<p class="text-sm text-muted-foreground mt-1">
@@ -123,14 +123,14 @@
 					Al registrarte aceptas{' '}
 					<a 
 						href="/terms" 
-						class="text-[#253166] hover:underline transition-colors"
+						class="text-[#0D1E3D] hover:underline transition-colors"
 					>
 						Términos
 					</a>
 					{' '}y{' '}
 					<a 
 						href="/privacy" 
-						class="text-[#253166] hover:underline transition-colors"
+						class="text-[#0D1E3D] hover:underline transition-colors"
 					>
 						Privacidad
 					</a>
@@ -139,7 +139,7 @@
 					Contacto:{' '}
 					<a 
 						href="mailto:{siteConfig.contact.email}" 
-						class="text-[#253166] hover:underline transition-colors"
+						class="text-[#0D1E3D] hover:underline transition-colors"
 					>
 						{siteConfig.contact.email}
 					</a>

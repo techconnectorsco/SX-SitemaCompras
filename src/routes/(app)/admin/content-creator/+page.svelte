@@ -166,7 +166,7 @@
 	class="min-h-0 flex-1 overflow-y-auto bg-[#f7f8fb] p-4 text-slate-900 dark:bg-slate-950 dark:text-slate-100 sm:p-7"
 >
 	<div class="mx-auto max-w-7xl space-y-6 pb-12">
-		<header class="rounded-2xl bg-[#253166] px-6 py-7 text-white shadow-sm sm:px-8">
+		<header class="rounded-2xl bg-[#0D1E3D] px-6 py-7 text-white shadow-sm sm:px-8">
 			<div class="flex flex-wrap items-start justify-between gap-4">
 				<div class="space-y-2">
 					<p
@@ -232,7 +232,7 @@
 			<button
 				type="submit"
 				disabled={loading}
-				class="h-10 rounded-md bg-orange-600 px-5 text-sm font-semibold text-white hover:bg-orange-700 disabled:opacity-50"
+				class="h-10 rounded-md bg-[#1A73C2] px-5 text-sm font-semibold text-white hover:bg-orange-700 disabled:opacity-50"
 				>Aplicar</button
 			>
 		</form>
@@ -251,14 +251,14 @@
 				type="button"
 				aria-current={activeTab === 'overview' ? 'page' : undefined}
 				onclick={() => (activeTab = 'overview')}
-				class={`border-b-2 px-4 py-3 text-sm font-semibold ${activeTab === 'overview' ? 'border-orange-600 text-orange-700 dark:text-orange-400' : 'border-transparent text-slate-500 hover:text-slate-900'}`}
+				class={`border-b-2 px-4 py-3 text-sm font-semibold ${activeTab === 'overview' ? 'border-[#1A73C2] text-orange-700 dark:text-[#1A73C2]' : 'border-transparent text-slate-500 hover:text-slate-900'}`}
 				>Resumen operativo</button
 			>
 			<button
 				type="button"
 				aria-current={activeTab === 'audit' ? 'page' : undefined}
 				onclick={() => (activeTab = 'audit')}
-				class={`border-b-2 px-4 py-3 text-sm font-semibold ${activeTab === 'audit' ? 'border-orange-600 text-orange-700 dark:text-orange-400' : 'border-transparent text-slate-500 hover:text-slate-900'}`}
+				class={`border-b-2 px-4 py-3 text-sm font-semibold ${activeTab === 'audit' ? 'border-[#1A73C2] text-orange-700 dark:text-[#1A73C2]' : 'border-transparent text-slate-500 hover:text-slate-900'}`}
 				>Auditoría</button
 			>
 		</nav>
@@ -277,7 +277,7 @@
 							class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
 						>
 							<div
-								class="mb-5 flex size-9 items-center justify-center rounded-lg bg-indigo-50 text-[#253166] dark:bg-indigo-950 dark:text-indigo-200"
+								class="mb-5 flex size-9 items-center justify-center rounded-lg bg-indigo-50 text-[#0D1E3D] dark:bg-indigo-950 dark:text-indigo-200"
 							>
 								<card.icon class="size-5" />
 							</div>
@@ -295,7 +295,7 @@
 						class="rounded-xl border bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
 					>
 						<h2 class="flex items-center gap-2 text-base font-semibold">
-							<BarChart3 class="size-4 text-orange-600" /> Uso diario de IA
+							<BarChart3 class="size-4 text-[#1A73C2]" /> Uso diario de IA
 						</h2>
 						{#if payload.report.trend.length}
 							<div
@@ -308,7 +308,7 @@
 										title={`${day.day}: ${number(day.tokens)} tokens, ${number(day.calls)} llamadas`}
 									>
 										<div
-											class="w-full rounded-t-sm bg-[#253166] transition-colors group-hover:bg-orange-500"
+											class="w-full rounded-t-sm bg-[#0D1E3D] transition-colors group-hover:bg-[#1A73C2]"
 											style={`height: ${Math.max(3, (day.tokens / maxTrend) * 100)}%`}
 										></div>
 									</div>
@@ -348,7 +348,7 @@
 						class="rounded-xl border bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
 					>
 						<h2 class="flex items-center gap-2 text-base font-semibold">
-							<AlertTriangle class="size-4 text-orange-600" /> Errores de publicación
+							<AlertTriangle class="size-4 text-[#1A73C2]" /> Errores de publicación
 							<span class="ml-auto rounded-full bg-red-50 px-2 py-0.5 text-xs text-red-700"
 								>{payload.report.publicationAlertCount}</span
 							>
@@ -375,7 +375,7 @@
 						class="rounded-xl border bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
 					>
 						<h2 class="flex items-center gap-2 text-base font-semibold">
-							<Clock3 class="size-4 text-orange-600" /> Conexiones Meta
+							<Clock3 class="size-4 text-[#1A73C2]" /> Conexiones Meta
 							<span class="ml-auto rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-800"
 								>{payload.report.accountAlertCount}</span
 							>
@@ -450,7 +450,7 @@
 					>
 						<div>
 							<h2 class="flex items-center gap-2 text-base font-semibold">
-								<FileClock class="size-4 text-orange-600" /> Auditoría de publicaciones
+								<FileClock class="size-4 text-[#1A73C2]" /> Auditoría de publicaciones
 							</h2>
 							<p class="mt-1 text-xs text-slate-500">
 								{number(payload.audit.total)} eventos. Las creaciones anteriores al registro se marcan

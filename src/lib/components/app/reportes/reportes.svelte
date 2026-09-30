@@ -76,8 +76,8 @@
 			descripcion:
 				'Consolidado con sugerencias del sistema, ajustes manuales del analista, costos y comentarios.',
 			icono: ShoppingCart,
-			color: 'text-orange-600',
-			darkColor: 'dark:text-orange-400',
+			color: 'text-[#1A73C2]',
+			darkColor: 'dark:text-[#1A73C2]',
 			bgColor: 'bg-orange-50 hover:bg-orange-100 border-orange-200',
 			darkBgColor: 'dark:bg-orange-950/30 dark:hover:bg-orange-950/50 dark:border-orange-800',
 			disponible: true
@@ -281,8 +281,8 @@
 	<!-- HEADER -->
 	<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 		<div class="flex items-center gap-3">
-			<div class="p-2.5 rounded-xl bg-[#253166]/10 dark:bg-blue-900/30">
-				<FileSpreadsheet class="h-6 w-6 text-[#253166] dark:text-blue-400" />
+			<div class="p-2.5 rounded-xl bg-[#0D1E3D]/10 dark:bg-blue-900/30">
+				<FileSpreadsheet class="h-6 w-6 text-[#0D1E3D] dark:text-blue-400" />
 			</div>
 			<div>
 				<h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">
@@ -298,7 +298,7 @@
 		<div class="relative">
 			<button
 				onclick={() => (mostrarSelectorProcesamiento = !mostrarSelectorProcesamiento)}
-				class="flex items-center gap-3 px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm hover:border-[#253166]/50 dark:hover:border-blue-500/50 transition-colors min-w-[280px]"
+				class="flex items-center gap-3 px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm hover:border-[#0D1E3D]/50 dark:hover:border-blue-500/50 transition-colors min-w-[280px]"
 			>
 				<Calendar class="h-4 w-4 text-slate-400 dark:text-slate-500" />
 				<div class="flex-1 text-left">
@@ -380,12 +380,12 @@
 		<div
 			class="flex items-center gap-4 p-4 bg-gradient-to-r from-slate-50 to-slate-100/50 dark:from-slate-900 dark:to-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700"
 		>
-			<div class="p-2 rounded-lg bg-[#253166]/10 dark:bg-blue-900/30">
-				<Info class="h-5 w-5 text-[#253166] dark:text-blue-400" />
+			<div class="p-2 rounded-lg bg-[#0D1E3D]/10 dark:bg-blue-900/30">
+				<Info class="h-5 w-5 text-[#0D1E3D] dark:text-blue-400" />
 			</div>
 			<div class="flex-1">
 				<p class="text-sm text-slate-600 dark:text-slate-300">
-					Generando reportes del procesamiento <strong class="text-[#253166] dark:text-blue-400"
+					Generando reportes del procesamiento <strong class="text-[#0D1E3D] dark:text-blue-400"
 						>{metadataProcesamiento.codigo}</strong
 					>
 				</p>
@@ -409,7 +409,7 @@
 	{#if cargando}
 		<div class="flex-1 flex items-center justify-center">
 			<div class="flex flex-col items-center gap-3">
-				<LoaderCircle class="h-8 w-8 animate-spin text-[#253166] dark:text-blue-400" />
+				<LoaderCircle class="h-8 w-8 animate-spin text-[#0D1E3D] dark:text-blue-400" />
 				<p class="text-sm text-muted-foreground dark:text-slate-400">
 					Cargando reportes disponibles...
 				</p>
