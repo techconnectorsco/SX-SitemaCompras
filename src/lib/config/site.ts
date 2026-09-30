@@ -30,9 +30,9 @@ import Database from "@lucide/svelte/icons/database";
  * @property {string} footer.rights - Aviso de derechos reservados
  */
 export const siteConfig = {
-	title: 'Grupo V&O',
+	title: 'Soportexperto',
 	description: 'Sistema de Gestión de Compras y Forecast Automatizado',
-	name: 'VYO S.A.',
+	name: 'SX',
 	logo: '/logo-soportexperto.png',
 	logoDark: '/logo-soportexperto1.png',
 	favicon: '/favicon.png',

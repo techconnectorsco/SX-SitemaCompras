@@ -99,8 +99,8 @@ export function runSeedCatalogos() {
     `);
 
     const cuentas = [
-        ['Vedoba'],
-        ['Grupo VYO'],
+        ['SX'],
+        ['Sx'],
         ['Outlet'],
         ['Retail Pro']
     ];
