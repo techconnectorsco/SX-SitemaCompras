@@ -1,5 +1,6 @@
 import db from '$lib/config/db-config';
 import type { Publicacion, CreatePublicacionDTO, UpdatePublicacionDTO, FiltrosPublicacion } from '../types';
+import { recordPublicationEvent } from './publication-audit-service';
 
 export class PublicacionService {
     static getByUser(userId: string, filtros?: FiltrosPublicacion): Publicacion[] {
@@ -114,6 +115,7 @@ export class PublicacionService {
                 }
             }
 
+            recordPublicationEvent(pubId, 'CREATED', userId);
             return pubId;
         });
 
@@ -121,6 +123,8 @@ export class PublicacionService {
     }
 
     static update(id: number, userId: string, data: UpdatePublicacionDTO): void {
+        const existing = db.prepare('SELECT id FROM publicaciones WHERE id = ? AND user_id = ? AND deleted_at IS NULL').get(id, userId);
+        if (!existing) return;
         const allowedFields = [
             'cuenta_id', 'marca_id', 'formato_id', 'audiencia_id', 
             'titulo', 'contexto', 'objetivo', 'cta', 'presupuesto_usd', 
@@ -163,18 +167,20 @@ export class PublicacionService {
             });
             transaction();
         }
+        if (updates.length > 0 || data.redes_ids) recordPublicationEvent(id, 'EDITED', userId);
     }
 
     static softDelete(id: number, userId: string): void {
-        db.prepare(`
+        const result = db.prepare(`
             UPDATE publicaciones 
             SET deleted_at = ?, modificado_por = ? 
-            WHERE id = ? AND user_id = ?
+            WHERE id = ? AND user_id = ? AND deleted_at IS NULL
         `).run(Math.floor(Date.now() / 1000), userId, id, userId);
+        if (result.changes) recordPublicationEvent(id, 'DELETED', userId);
     }
 
     static aprobar(id: number, aprobadorId: string): void {
-        db.prepare(`
+        const result = db.prepare(`
             UPDATE publicaciones 
             SET estado = 'Aprobado', 
                 aprobado_por = ?, 
@@ -182,10 +188,11 @@ export class PublicacionService {
                 updated_at = ?
             WHERE id = ? AND deleted_at IS NULL
         `).run(aprobadorId, Math.floor(Date.now() / 1000), Math.floor(Date.now() / 1000), id);
+        if (result.changes) recordPublicationEvent(id, 'APPROVED', aprobadorId);
     }
 
     static rechazar(id: number, userId: string, notas: string): void {
-        db.prepare(`
+        const result = db.prepare(`
             UPDATE publicaciones 
             SET estado = 'Borrador', 
                 notas_revision = ?,
@@ -193,5 +200,6 @@ export class PublicacionService {
                 updated_at = ?
             WHERE id = ? AND user_id = ? AND deleted_at IS NULL
         `).run(notas, userId, Math.floor(Date.now() / 1000), id, userId);
+        if (result.changes) recordPublicationEvent(id, 'REJECTED', userId);
     }
 }

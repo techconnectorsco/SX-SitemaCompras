@@ -123,18 +123,30 @@ export class SessionService {
   }
 
   /**
-   * Extend session expiration
+   * Extend session expiration.
+   * OPTIMIZACIÓN MULTIUSUARIO: solo reescribe si a la sesión ya le pasó ~1 día
+   * desde la última renovación (umbral: le quedan < 6 de los 7 días). Así evitamos
+   * un UPDATE por CADA request, que con muchos usuarios saturaba el lock de SQLite.
    */
   static extendSession(sessionId: string): boolean {
-    const newExpiration = getSessionExpiration();
-    
+    const now = Date.now();
+    // Umbral: renovar solo si faltan menos de 6 días para vencer (de los 7 totales).
+    const UMBRAL_RENOVACION_MS = 6 * 24 * 60 * 60 * 1000;
+
     const stmt = db.prepare(`
-      UPDATE sessions 
+      UPDATE sessions
       SET expires_at = ?
-      WHERE id = ? AND expires_at > ?
+      WHERE id = ?
+        AND expires_at > ?
+        AND expires_at < ?
     `);
 
-    const result = stmt.run(newExpiration, sessionId, Date.now());
+    const result = stmt.run(
+      getSessionExpiration(),      // nuevo vencimiento (now + 7 días)
+      sessionId,
+      now,                         // sigue vigente
+      now + UMBRAL_RENOVACION_MS   // y le queda menos de 6 días → toca renovar
+    );
     return result.changes > 0;
   }
 }

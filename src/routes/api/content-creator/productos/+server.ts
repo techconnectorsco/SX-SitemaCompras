@@ -4,7 +4,7 @@ import { db } from '$lib/config/db-config';
 import { createDataSource } from '$lib/services/data-source-factory';
 
 // CC incluye EQUIPOS (a diferencia del resto del sistema) para permitir publicaciones de equipos
-const CATEGORIAS_EXCLUIR = ['CI', 'PUBLICIDAD', 'OTROS'];
+const CATEGORIAS_EXCLUIR = ['CI', 'PUBLICIDAD', 'OTROS', 'REPUESTOS'];
 
 function escapeSQLSingleQuotes(value: string): string {
 	return value.replace(/'/g, "''");

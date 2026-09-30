@@ -44,3 +44,5 @@ ecosystem.config.cjs
 
 # Database backups
 backups/
+
+.tgrep

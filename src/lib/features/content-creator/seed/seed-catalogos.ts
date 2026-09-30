@@ -20,7 +20,8 @@ export function runSeedCatalogos() {
         ['Penagos', 'Actúa como experto de la marca Penagos. Tono enfocado en soluciones agroindustriales, molienda, picado de pasto y mecanización del alimento del ganado.'],
         ['GTM', 'Actúa como redactor para trituradoras GTM. Tono enfocado en ecología, reutilización de residuos (compost) y potencia de trituración forestal.'],
         ['Imacasa', 'Actúa como promotor de herramientas manuales Imacasa. Tono tradicional, fuerte, enfocado en la resistencia de herramientas agrícolas clásicas (machetes, palas).'],
-        ['Norwood', 'Actúa como experto forestal de aserraderos portátiles Norwood. Tono altamente técnico, enfocado en carpintería, procesamiento de madera y rentabilidad forestal.']
+        ['Norwood', 'Actúa como experto forestal de aserraderos portátiles Norwood. Tono altamente técnico, enfocado en carpintería, procesamiento de madera y rentabilidad forestal.'],
+        ['CIFARELLI', 'Actúa como experto en equipos CIFARELLI. Tono técnico y profesional, enfocado en pulverización, fumigación y soplado para agricultura, jardinería y mantenimiento de áreas verdes. Destaca la potencia, ergonomía, confiabilidad italiana y eficiencia en el trabajo.']
     ];
 
     let marcasInserted = 0;

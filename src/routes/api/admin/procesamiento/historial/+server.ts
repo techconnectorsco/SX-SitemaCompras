@@ -30,7 +30,8 @@ export const GET: RequestHandler = async ({ url, locals }) => {
                 usuario_procesamiento as usuario,
                 COUNT(*) as totalSKUs,
                 MIN(id) as id_minimo,
-                MAX(id) as id_maximo
+                MAX(id) as id_maximo,
+                MAX(fecha_actualizacion_snapshot) as fechaActualizacion
             FROM forecast_procesamiento
             WHERE codigo_procesamiento IS NOT NULL AND codigo_procesamiento != ''
             GROUP BY codigo_procesamiento
@@ -56,7 +57,10 @@ export const GET: RequestHandler = async ({ url, locals }) => {
             fechaRaw: h.fecha,
             usuario: h.usuario,
             totalSKUs: h.totalSKUs,
-            estado: 'COMPLETADO' 
+            estado: 'COMPLETADO',
+            // Última actualización de snapshot (null si nunca se refrescó)
+            fechaActualizacion: h.fechaActualizacion ? formatearFechaLocal(h.fechaActualizacion) : null,
+            fechaActualizacionRaw: h.fechaActualizacion || null
         }));
 
         // Obtener estadísticas

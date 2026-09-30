@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import db from '$lib/config/db-config';
+import { recordPublicationEvent } from '$lib/features/content-creator/services/publication-audit-service';
 
 /**
  * Persiste el reemplazo de la imagen de IA por el diseño final (Adobe).
@@ -79,6 +80,8 @@ export const PUT: RequestHandler = async ({ params, request, locals }) => {
                 return json({ error: 'Publicación no encontrada o no autorizada' }, { status: 404 });
             }
 
+            recordPublicationEvent(id, 'EDITED', locals.user.id, 'Diseño final actualizado');
+
             return json({ success: true, slideIndex });
         }
 
@@ -92,6 +95,8 @@ export const PUT: RequestHandler = async ({ params, request, locals }) => {
         if (info.changes === 0) {
             return json({ error: 'Publicación no encontrada o no autorizada' }, { status: 404 });
         }
+
+        recordPublicationEvent(id, 'EDITED', locals.user.id, 'Diseño final actualizado');
 
         return json({ success: true });
     } catch (error: any) {

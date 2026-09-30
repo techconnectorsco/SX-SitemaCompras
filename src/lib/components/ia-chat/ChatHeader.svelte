@@ -12,7 +12,7 @@
 		costoSesion,
 		moneda = 'USD',
 		onCerrar,
-		avatar = '/ia-chat/betti.png'
+		avatar = '/ia-chat/robot-abrir.png'
 	}: Props = $props();
 
 	const costoFmt = $derived(
@@ -53,7 +53,7 @@
 		align-items: center;
 		justify-content: space-between;
 		padding: 0.65rem 0.9rem;
-		background: #1A73C2;
+		background: #fe6a01;
 		color: #fff;
 		border-top-left-radius: 12px;
 		border-top-right-radius: 12px;
@@ -68,8 +68,9 @@
 		height: 38px;
 		border-radius: 50%;
 		object-fit: cover;
+		background: #2348c8;
 		flex-shrink: 0;
-		border: 2px solid white;
+		border: 1.5px solid rgba(255, 255, 255, 0.25);
 	}
 	.info {
 		display: flex;

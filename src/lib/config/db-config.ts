@@ -54,6 +54,16 @@ db.pragma('synchronous = NORMAL');
 db.pragma('cache_size = -64000');
 db.pragma('temp_store = MEMORY');
 
+// ===== CONCURRENCIA MULTIUSUARIO (10-20 usuarios, varias oficinas) =====
+// 1) Si la base está ocupada por otra escritura, esperar hasta 20s por el lock
+//    en vez de fallar con "database is locked".
+db.pragma('busy_timeout = 20000');
+// 2) WAL: permite que las lecturas NO se bloqueen mientras alguien escribe.
+//    Un checkpoint más grande evita frenar en cada escritura chica.
+db.pragma('wal_autocheckpoint = 1000');
+// 3) Un solo escritor a la vez negocia el lock de forma más limpia.
+db.pragma('wal_checkpoint(TRUNCATE)');
+
 /**
  * Inicialización del esquema
  */
@@ -135,20 +145,6 @@ export function initializeDatabase() {
     );
   `);
 
-  // Permisos del asistente por módulo. Es idempotente para instalaciones que
-  // ya tenían el esquema de IA y evita que una instalación nueva falle al
-  // resolver las capacidades del usuario.
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS ia_permisos_usuario (
-      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      modulo TEXT NOT NULL,
-      otorgado_por TEXT REFERENCES users(id) ON DELETE SET NULL,
-      fecha INTEGER NOT NULL DEFAULT (strftime('%s','now')),
-      PRIMARY KEY (user_id, modulo)
-    );
-    CREATE INDEX IF NOT EXISTS idx_ia_permisos_modulo ON ia_permisos_usuario(modulo);
-  `);
-
   // AUDITORÍA
  db.exec(`
   CREATE TABLE IF NOT EXISTS audit_logs (
@@ -165,7 +161,7 @@ export function initializeDatabase() {
   CREATE INDEX IF NOT EXISTS idx_audit_created_at ON audit_logs(created_at);
   CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_logs(user_id);
 `);
-  // ===== SX =====
+  // ===== VEDOVA & OBANDO =====
 
   // SKUs
   db.exec(`
@@ -265,61 +261,71 @@ export function initializeDatabase() {
   // 12. TABLA DE PROCESAMIENTO DE FORECAST
 db.exec(`
   CREATE TABLE IF NOT EXISTS forecast_procesamiento (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    
-    -- ===== AUDITORÍA DEL PROCESAMIENTO =====
-    fecha_procesamiento INTEGER NOT NULL,
-    usuario_procesamiento TEXT NOT NULL,  -- Admin que ejecutó el procesamiento
-    
-    -- ===== DATOS DEL SKU =====
-    codigo_sku TEXT NOT NULL,
-    codigo_proveedor TEXT,
-    descripcion TEXT,
-    linea TEXT,
-    marca TEXT,
-    abc TEXT,
-    abc_rotacion_frecuencia TEXT,
-    activo INTEGER,
-    existencia REAL,
-    transito REAL,
-    lead_time INTEGER,
-    meses_pedido TEXT,
-    
-    -- ===== ESTADÍSTICAS CALCULADAS =====
-    frecuencia_ventas_12m INTEGER,
-    venta_ultimos_12m REAL,
-    promedio_12m REAL,
-    promedio_6m REAL,
-    promedio_ajustado REAL,
-    desviacion_estandar REAL,
-    coeficiente_variacion REAL,
-    
-    -- ===== FORECAST CALCULADO =====
-    factor_seguridad REAL,
-    stock_seguridad REAL,
-    referencia_pedido_courier REAL,
-    referencia_pedido_aereo REAL,
-    referencia_pedido_maritimo REAL,
-    
-    -- ===== CANTIDADES CALCULADAS =====
-    cantidad_courier REAL,
-    mensaje_courier TEXT,
-    cantidad_final_courier REAL,
-    cantidad_aereo REAL,
-    mensaje_aereo TEXT,
-    cantidad_final_aereo REAL,
-    
-    -- ===== CAMPOS EDITABLES POR ANALISTA =====
-    sugerido_analista_urgente REAL DEFAULT 0,
-    sugerido_analista_aereo REAL DEFAULT 0,
-    
-    -- ===== AUDITORÍA DE MODIFICACIÓN =====
-    usuario_modificacion TEXT,           -- Analista que modificó los campos
-    fecha_modificacion INTEGER,          -- Timestamp de la modificación
-    
-    -- ===== METADATOS =====
-    created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
-  );
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  fecha_procesamiento INTEGER NOT NULL,        -- guarda ISO string (afinidad flexible)
+  usuario_procesamiento TEXT NOT NULL,
+  codigo_sku TEXT NOT NULL,
+  codigo_proveedor TEXT,
+  descripcion TEXT,
+  linea TEXT,
+  marca TEXT,
+  abc TEXT,
+  abc_rotacion_frecuencia TEXT,
+  activo INTEGER,
+  existencia REAL,
+  transito REAL,
+  lead_time INTEGER,
+  meses_pedido TEXT,
+  frecuencia_ventas_12m INTEGER,
+  venta_ultimos_12m REAL,
+  promedio_12m REAL,
+  promedio_6m REAL,
+  promedio_ajustado REAL,
+  desviacion_estandar REAL,
+  coeficiente_variacion REAL,
+  factor_seguridad REAL,
+  stock_seguridad REAL,
+  referencia_pedido_courier REAL,
+  referencia_pedido_aereo REAL,
+  referencia_pedido_maritimo REAL,
+  cantidad_courier REAL,
+  mensaje_courier TEXT,
+  cantidad_final_courier REAL,
+  cantidad_aereo REAL,
+  mensaje_aereo TEXT,
+  cantidad_final_aereo REAL,
+  sugerido_analista_urgente REAL DEFAULT 0,
+  sugerido_analista_aereo REAL DEFAULT 0,
+  usuario_modificacion TEXT,
+  fecha_modificacion INTEGER,                  -- guarda ISO string (afinidad flexible)
+  created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+  codigo_procesamiento TEXT,
+  costo_prom_loc REAL DEFAULT 0,
+  costo_prom_dol REAL DEFAULT 0,
+  costo_ult_loc REAL DEFAULT 0,
+  costo_ult_dol REAL DEFAULT 0,
+  costo_std_loc REAL DEFAULT 0,
+  costo_std_dol REAL DEFAULT 0,
+  costo_comparativo REAL DEFAULT 0,
+  costo_fiscal REAL DEFAULT 0,
+  costo_prom_comparativo_loc REAL DEFAULT 0,
+  cantidad_maritimo REAL DEFAULT 0,
+  mensaje_maritimo TEXT DEFAULT '',
+  cantidad_final_maritimo REAL DEFAULT 0,
+  categoria TEXT DEFAULT '',
+  fecha_creacion TEXT,
+  ultima_salida TEXT,
+  ultimo_movimiento TEXT,
+  sugerido_analista_maritimo REAL DEFAULT 0,
+  comentario_analista TEXT DEFAULT '',
+  meses_pedido_usado REAL DEFAULT 0,
+  lt_maritimo_usado REAL DEFAULT 0,
+  lt_courier_usado REAL DEFAULT 0,
+  lt_aereo_usado REAL DEFAULT 0,
+  fecha_actualizacion_snapshot INTEGER         
+);
+
+
   
   -- Índices para optimizar búsquedas
   CREATE INDEX IF NOT EXISTS idx_forecast_fecha ON forecast_procesamiento(fecha_procesamiento);
@@ -327,7 +333,59 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_forecast_fecha_sku ON forecast_procesamiento(fecha_procesamiento, codigo_sku);
   CREATE INDEX IF NOT EXISTS idx_forecast_usuario_proc ON forecast_procesamiento(usuario_procesamiento);
   CREATE INDEX IF NOT EXISTS idx_forecast_usuario_mod ON forecast_procesamiento(usuario_modificacion);
+  CREATE INDEX IF NOT EXISTS idx_forecast_proc_sku ON forecast_procesamiento(codigo_procesamiento, codigo_sku);
+
 `);
+
+// Migración idempotente: sello de última actualización del snapshot
+try {
+  const colsFP = db.prepare("PRAGMA table_info(forecast_procesamiento)").all() as any[];
+  if (!colsFP.some((c) => c.name === 'fecha_actualizacion_snapshot')) {
+    db.exec('ALTER TABLE forecast_procesamiento ADD COLUMN fecha_actualizacion_snapshot INTEGER');
+    console.log('[db] ➕ Columna fecha_actualizacion_snapshot añadida a forecast_procesamiento');
+  }
+} catch (e) {
+  console.error('[db] ⚠️ Migración fecha_actualizacion_snapshot:', e);
+}
+
+// Migración idempotente: mapeo de reemplazos de SKU ("CAMBIO POR/X")
+try {
+  const colsRe = db.prepare("PRAGMA table_info(forecast_procesamiento)").all() as any[];
+  const existentesRe = new Set(colsRe.map((c) => c.name));
+  const nuevasRe: [string, string][] = [
+    // 'reemplazado' = SKU viejo | 'reemplazo' = SKU vigente/final | 'revisar' = detectado sin resolver | NULL = normal
+    ['reemplazo_estado', 'TEXT'],
+    // Código con el que se relaciona: en el viejo, a quién apunta (destino FINAL); en el nuevo, de quién hereda
+    ['reemplazo_codigo', 'TEXT'],
+    // Id de grupo (= código final de la cadena) para mostrarlos juntos
+    ['reemplazo_grupo', 'TEXT'],
+    // Posición en la cadena: 0 = vigente, 1 = lo reemplazó, 2 = anterior... (para ordenar la vista)
+    ['reemplazo_orden', 'INTEGER']
+  ];
+
+
+  for (const [nombre, tipo] of nuevasRe) {
+    if (!existentesRe.has(nombre)) {
+      db.exec(`ALTER TABLE forecast_procesamiento ADD COLUMN ${nombre} ${tipo}`);
+      console.log(`[db] ➕ Columna ${nombre} añadida a forecast_procesamiento`);
+    }
+  }
+} catch (e) {
+  console.error('[db] ⚠️ Migración columnas de reemplazo:', e);
+}
+
+// Migración idempotente: Preferencias de interfaz de usuario para colapsar columnas en la tabla de compras
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS usuario_preferencias (
+      usuario_email TEXT PRIMARY KEY,
+      columnas_ocultas TEXT -- Guardado como JSON array
+    )
+  `);
+  console.log('[db] ➕ Tabla usuario_preferencias verificada/creada');
+} catch (e) {
+  console.error('[db] ⚠️ Error en migración usuario_preferencias:', e);
+}
 
   // ===== LEAD TIME POR MARCA (config del motor de forecast) =====
   // Vivía solo en la base; se agrega al código para que sea reproducible.
@@ -346,6 +404,21 @@ db.exec(`
       fecha_actualizacion TEXT
     );
   `);
+
+  // ===== ASIGNACIÓN DE MARCAS (etiquetas LT) POR USUARIO =====
+  // Muchos-a-muchos: un usuario puede tener varias etiquetas y una etiqueta varios usuarios.
+  // La usa el gestor de compras para mostrarle a cada analista solo sus marcas.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS usuario_marcas_lt (
+      usuario_id        TEXT NOT NULL,
+      etiqueta          TEXT NOT NULL,
+      asignado_por      TEXT,
+      fecha_asignacion  TEXT DEFAULT (datetime('now')),
+      PRIMARY KEY (usuario_id, etiqueta),
+      FOREIGN KEY (usuario_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+  `);
+
 
   // ===== MIGRACIÓN: columnas agregadas a forecast_procesamiento con el tiempo =====
   // Costos, lane marítimo, categoría/fechas y auditoría de lead time. En prod ya
@@ -652,6 +725,24 @@ db.exec(`
     CREATE INDEX IF NOT EXISTS idx_ai_logs_fecha ON ai_token_logs(created_at);
   `);
 
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS content_publication_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      publication_id INTEGER NOT NULL,
+      publication_owner_id TEXT NOT NULL,
+      actor_id TEXT REFERENCES users(id),
+      action TEXT NOT NULL CHECK(action IN ('CREATED', 'EDITED', 'APPROVED', 'REJECTED', 'PUBLISHED', 'PUBLISH_ERROR', 'DELETED')),
+      title TEXT NOT NULL,
+      brand_id INTEGER,
+      account_id INTEGER,
+      detail TEXT,
+      created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_content_events_date ON content_publication_events(created_at DESC, id DESC);
+    CREATE INDEX IF NOT EXISTS idx_content_events_owner ON content_publication_events(publication_owner_id);
+    CREATE INDEX IF NOT EXISTS idx_content_events_brand ON content_publication_events(brand_id);
+  `);
+
   // Las migraciones son idempotentes para bases existentes.
   for (const column of [
     'tokens_thinking INTEGER NOT NULL DEFAULT 0',
@@ -689,6 +780,23 @@ db.exec(`
   console.log('[db] ✅ Database schema initialized');
   ensureFirstUserLogic();
 }
+
+ // ===== USUARIO DE SISTEMA (para auditoría de tareas automáticas / RPA) =====
+  // Existe para satisfacer la FK de audit_logs cuando el proceso lo dispara el
+  // cron (no un humano). Idempotente: se crea una sola vez.
+  db.prepare(`
+    INSERT INTO users (
+      id, email, email_verified, display_name,
+      provider, is_anonymous, role, account_status,
+      created_at, updated_at
+    ) VALUES (
+      'SISTEMA_AUTOMATICO', 'sistema@vyoweb.local', 1, 'Sistema Automático',
+      'system', 0, 'ADMIN', 'ACTIVE',
+      strftime('%s','now'), strftime('%s','now')
+    )
+    ON CONFLICT(id) DO NOTHING
+  `).run();
+  console.log('[db] ✅ Usuario SISTEMA_AUTOMATICO verificado/creado');
 
 function ensureFirstUserLogic() {
   try {

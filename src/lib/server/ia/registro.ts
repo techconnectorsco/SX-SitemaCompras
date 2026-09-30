@@ -8,12 +8,9 @@
 
 import type { ModuloIA } from './tipos';
 import { moduloCompras } from './modulos/compras';
-import { moduloContentCreator } from './modulos/content-creator';
 
 export const MODULOS: ModuloIA[] = [
-	moduloCompras,
-	// Disponible para toda persona autenticada; no requiere una asignación en ia_permisos_usuario.
-	moduloContentCreator
+	moduloCompras
 	// , moduloFinanzas   <- futuro
 	// , moduloPais       <- futuro
 ];
@@ -32,8 +29,5 @@ export function modulosNoPermitidos(modulosUsuario: string[]): string[] {
 
 /** Lista de módulos de negocio (para la pantalla de gestión de permisos). */
 export function listaModulos(): Array<{ id: string; nombre: string }> {
-	return MODULOS.filter((m) => m.permisosRequeridos.length > 0).map((m) => ({
-		id: m.id,
-		nombre: m.nombre
-	}));
+	return MODULOS.map((m) => ({ id: m.id, nombre: m.nombre }));
 }

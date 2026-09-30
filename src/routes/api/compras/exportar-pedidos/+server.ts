@@ -11,7 +11,7 @@
  * - pedido_aereo.xlsx
  * - pedido_maritimo.xlsx
  * 
- * Campos: codigo, cantidad, fecha_entrega (+3 días hábiles)
+ * Campos: codigo, cantidad, fecha_entrega (+3 días hábiles), comentario
  */
 
 import { json } from '@sveltejs/kit';
@@ -20,6 +20,15 @@ import { db } from '$lib/config/db-config';
 import ExcelJS from 'exceljs';
 import JSZip from 'jszip';
 import { AuditService } from '$lib/features/security/services/audit-service';
+
+/**
+ * Interface para el mapeo de SKUs con comentario
+ */
+interface ItemPedido {
+  codigo: string;
+  cantidad: number;
+  comentario: string | null;
+}
 
 /**
  * Calcula la fecha de entrega sumando 3 días hábiles (lunes a viernes)
@@ -51,21 +60,22 @@ function formatearFecha(fecha: Date): string {
 }
 
 /**
- * Crea un archivo Excel con los datos de pedido
+ * Crea un archivo Excel con los datos de pedido incluyendo el comentario
  */
 async function crearExcelPedido(
-  datos: Array<{ codigo: string; cantidad: number }>,
+  datos: Array<ItemPedido>,
   fechaEntrega: string,
   nombreTipo: string
 ): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet('Pedido');
 
-  // Encabezados
+  // Encabezados (se agrega la columna Comentario)
   sheet.columns = [
     { header: 'Referencia', key: 'codigo', width: 20 },
     { header: 'Cantidad', key: 'cantidad', width: 15 },
-    { header: 'Fecha Entrega', key: 'fecha_entrega', width: 15 }
+    { header: 'Fecha Entrega', key: 'fecha_entrega', width: 15 },
+    { header: 'Comentario del Analista', key: 'comentario', width: 35 }
   ];
 
   // Estilo de encabezados
@@ -75,10 +85,15 @@ async function crearExcelPedido(
 
   // Agregar datos
   for (const item of datos) {
+    const textoComentario = item.comentario && item.comentario.trim() !== '' 
+      ? item.comentario 
+      : '-';
+
     sheet.addRow({
       codigo: item.codigo,
       cantidad: item.cantidad,
-      fecha_entrega: fechaEntrega
+      fecha_entrega: fechaEntrega,
+      comentario: textoComentario
     });
   }
 
@@ -115,41 +130,48 @@ export const GET: RequestHandler = async ({ url, locals, request }) => {
     const fechaEntregaStr = formatearFecha(fechaEntrega);
 
     // Construir condición de línea
-    // Husqvarna: línea contiene 'HUSQVARNA' (case insensitive)
-    // Otros: línea NO contiene 'HUSQVARNA' o es NULL
     const condicionLinea = tipo === 'husqvarna'
       ? `AND (UPPER(linea) LIKE '%HUSQVARNA%' OR UPPER(marca) LIKE '%HUSQVARNA%')`
       : `AND (UPPER(linea) NOT LIKE '%HUSQVARNA%' OR linea IS NULL) AND (UPPER(marca) NOT LIKE '%HUSQVARNA%' OR marca IS NULL)`;
 
     // Query para Courier (sugerido_analista_urgente > 0)
     const datosCourier = db.prepare(`
-      SELECT codigo_sku as codigo, sugerido_analista_urgente as cantidad
+      SELECT 
+        codigo_sku as codigo, 
+        sugerido_analista_urgente as cantidad,
+        comentario_analista as comentario
       FROM forecast_procesamiento
       WHERE codigo_procesamiento = ?
         AND sugerido_analista_urgente > 0
         ${condicionLinea}
       ORDER BY codigo_sku
-    `).all(codigoProcesamiento) as Array<{ codigo: string; cantidad: number }>;
+    `).all(codigoProcesamiento) as Array<ItemPedido>;
 
     // Query para Aéreo (sugerido_analista_aereo > 0)
     const datosAereo = db.prepare(`
-      SELECT codigo_sku as codigo, sugerido_analista_aereo as cantidad
+      SELECT 
+        codigo_sku as codigo, 
+        sugerido_analista_aereo as cantidad,
+        comentario_analista as comentario
       FROM forecast_procesamiento
       WHERE codigo_procesamiento = ?
         AND sugerido_analista_aereo > 0
         ${condicionLinea}
       ORDER BY codigo_sku
-    `).all(codigoProcesamiento) as Array<{ codigo: string; cantidad: number }>;
+    `).all(codigoProcesamiento) as Array<ItemPedido>;
 
     // Query para Marítimo (sugerido_analista_maritimo > 0)
     const datosMaritimo = db.prepare(`
-      SELECT codigo_sku as codigo, sugerido_analista_maritimo as cantidad
+      SELECT 
+        codigo_sku as codigo, 
+        sugerido_analista_maritimo as cantidad,
+        comentario_analista as comentario
       FROM forecast_procesamiento
       WHERE codigo_procesamiento = ?
         AND sugerido_analista_maritimo > 0
         ${condicionLinea}
       ORDER BY codigo_sku
-    `).all(codigoProcesamiento) as Array<{ codigo: string; cantidad: number }>;
+    `).all(codigoProcesamiento) as Array<ItemPedido>;
 
     // Verificar si hay datos
     if (datosCourier.length === 0 && datosAereo.length === 0 && datosMaritimo.length === 0) {

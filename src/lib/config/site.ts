@@ -13,7 +13,7 @@ import History from "@lucide/svelte/icons/history";
 import Database from "@lucide/svelte/icons/database";
 
 /**
- * Configuración del sistema SoporteXperto - Asistente de Compras y Forecast
+ * Configuración del sistema VYO - Asistente de Compras y Forecast
  * @constant
  * @type {object}
  * @property {string} title - Título principal del sistema
@@ -30,21 +30,21 @@ import Database from "@lucide/svelte/icons/database";
  * @property {string} footer.rights - Aviso de derechos reservados
  */
 export const siteConfig = {
-	title: 'SoporteXperto',
+	title: 'Grupo V&O',
 	description: 'Sistema de Gestión de Compras y Forecast Automatizado',
-	name: 'SoporteXperto',
-	logo: '/logo-soportexperto.png',
-	logoDark: '/logo-soportexperto1.png',
-	favicon: '/logo-soportexperto.png',
+	name: 'VYO S.A.',
+	logo: '/logovo.png',
+	logoDark: '/logovo.png',
+	favicon: '/logovo.png',
 	contact: {
-		email: 'omar.hernandez@soportexperto.com',
+		email: 'asist-digit-interno@vyo.cr',
 		phone: '+506 2222-2222'
 	},
 	company: {
-		name: 'SoporteXperto'
+		name: 'VYO S.A.'
 	},
 	footer: {
-		rights: '© 2025 SoporteXperto. Todos los derechos reservados.'
+		rights: '© 2025 VYO S.A. Todos los derechos reservados.'
 	}
 };
 

@@ -13,27 +13,40 @@ import { db } from '$lib/config/db-config';
 import { createDataSource } from '$lib/services/data-source-factory';
 import { AuditService } from '$lib/features/security/services/audit-service';
 import { ejecutarSnapshot, registrarCorrida } from '$lib/services/forecast-snapshot.server';
+import {
+	FACTORES_SEGURIDAD,
+	LT_RESPALDO,
+	resolverClaveLt,
+	calcularEstadisticas,
+	calcularForecast,
+	type Lt
+} from '$lib/services/forecast-core';
+import { detectarYMarcarReemplazos } from '$lib/services/reemplazos-detector.server';
+import { fusionarCalculosReemplazo } from '$lib/services/fusionar-reemplazos.server';
+
+import { env } from '$env/dynamic/private';
+const CRON_SECRET = env.CRON_SECRET || '';
 
 const BATCH_SIZE = 500; // Procesar en lotes de 500 SKUs
 const DIA_CORTE_INCLUSION = 20;
 
 //const FECHA_CORTE_TEST: Date | null = new Date('2025-01-30');
-const FECHA_CORTE_TEST: Date | null = null; // null = usar fecha actual
+//const FECHA_CORTE_TEST: Date | null = null; // null = usar fecha actual
 
 // Factores de seguridad
-const FACTORES_SEGURIDAD: Record<string, number> = {
-  'A': 2.500551790,
-  'B': 2.326347870,
-  'C': 1.281551570,
-  'D': 0,
-  'E': 0
-};
+//const FACTORES_SEGURIDAD: Record<string, number> = {
+//   'A': 2.500551790,
+//   'B': 2.326347870,
+//   'C': 1.281551570,
+//   'D': 0,
+//   'E': 0
+// };
 
 // L.T. de respaldo si NO existe la fila '__DEFAULT__' en la tabla
 // (equivale al comportamiento histórico 1/1/1/1).
-const LT_RESPALDO = { lt_courier: 1, lt_aereo: 1, lt_maritimo: 1, meses_pedido: 1 };
+//const LT_RESPALDO = { lt_courier: 1, lt_aereo: 1, lt_maritimo: 1, meses_pedido: 1 };
 
-type Lt = { lt_courier: number; lt_aereo: number; lt_maritimo: number; meses_pedido: number };
+//type Lt = { lt_courier: number; lt_aereo: number; lt_maritimo: number; meses_pedido: number };
 
 /**
  * Genera un código único de procesamiento
@@ -53,18 +66,21 @@ function generarCodigoProcesamiento(): string {
   return `PROC-${año}${mes}${dia}-${hora}${minuto}${segundo}`;
 }
 
-export const POST: RequestHandler = async ({ locals }) => {
+export const POST: RequestHandler = async ({ locals, request }) => {
   // ===== VERIFICAR SESIÓN =====
-  const user = locals.user || locals.session?.user;
-  
-  if (!user) {
+ // Puerta para automatización: Python entra con el token; humanos con su sesión ADMIN.
+  const isCron = !!CRON_SECRET && request.headers.get('x-cron-secret') === CRON_SECRET;
+  const sessionUser = locals.user || locals.session?.user;
+
+  if (!sessionUser && !isCron) {
     return json({ error: 'No autenticado' }, { status: 401 });
   }
-
-  const userRole = String(user.role).toUpperCase();
-  if (userRole !== 'ADMIN') {
+  if (!isCron && String(sessionUser?.role).toUpperCase() !== 'ADMIN') {
     return json({ error: 'Solo administradores' }, { status: 403 });
   }
+
+  // Usuario efectivo (real o sistema) para auditoría y firma del procesamiento
+  const user = sessionUser ?? { id: 'SISTEMA_AUTOMATICO', email: 'SISTEMA_AUTOMATICO', name: 'SISTEMA_AUTOMATICO', role: 'ADMIN' } as any;
 
   const usuarioProcesamiento = user.email;
   const fechaProcesamiento = new Date().toISOString();
@@ -318,15 +334,20 @@ export const POST: RequestHandler = async ({ locals }) => {
   //    - HUSQVARNA se parte en A/B según la línea (CLASIFICACION_3 = articulo.linea).
   //    - El resto matchea por su marca (CLASIFICACION_4).
   //    - Si la clave no está en la tabla, usa el default editable.
-  const marca = (articulo.marca || '').toUpperCase().trim();
+  /* const marca = (articulo.marca || '').toUpperCase().trim();
   const linea = (articulo.linea || '').toUpperCase().trim();
   const clave = marca === 'HUSQVARNA'
     ? (linea.startsWith('RP') ? 'HUSQVARNA-A' : 'HUSQVARNA-B')
-    : marca;
+    : marca; */
+    //  Resolver la CLAVE de L.T. del SKU (misma lógica, ahora en forecast-core)
+  const clave = resolverClaveLt(articulo.marca, articulo.linea);
 
   const ltAplicado = marcasLtMap.get(clave) || defaultLt;
 
-  const forecast = calcularForecast(stats, factorSeg, existenciaData, ltAplicado);
+  // REGLA DE NEGOCIO: Los artículos Husqvarna B (Maquinaria/No RP) solo se piden por mar.
+  const esSoloMaritimo = clave === 'HUSQVARNA-B';
+
+  const forecast = calcularForecast(stats, factorSeg, existenciaData, ltAplicado, esSoloMaritimo);
 
   rowsToInsert.push([
   codigoProcesamiento,           // codigo_procesamiento
@@ -408,6 +429,14 @@ export const POST: RequestHandler = async ({ locals }) => {
 
                // ===== DURACIÓN DEL FORECAST (antes del snapshot) =====
         const duracionForecastSeg = (Date.now() - tiempoInicio) / 1000;
+
+         // 🔗 Detección de reemplazos de SKU ("CAMBIO POR/X"). Comentar esta línea para desactivar.
+        try {
+          detectarYMarcarReemplazos(codigoProcesamiento);
+          fusionarCalculosReemplazo(codigoProcesamiento);
+        } catch (e) {
+          console.error('[reemplazos] ❌ (no afecta el forecast):', e);
+        }
 
         // ===== PASO NUEVO: SNAPSHOT (tolerante a fallos) =====
         sendEvent({
@@ -508,6 +537,7 @@ export const POST: RequestHandler = async ({ locals }) => {
   });
 };
 
+//los comentarios de la función calcularEstadisticas() y calcularForecast() se encuentran en src/lib/services/forecast-core.ts, que es donde se implementan.
 // ===== FUNCIONES DE CÁLCULO =====
 
 /**
@@ -517,197 +547,197 @@ export const POST: RequestHandler = async ({ locals }) => {
  * - Si hoy es día < 15: El mes actual es INCOMPLETO → Busca últimos 12 meses (excluye mes actual)
  * - Si hoy es día >= 15: El mes actual tiene suficientes datos → Busca últimos 11 meses (incluye mes actual)
  */
-function calcularEstadisticas(ventas: any[]) {
-  const hoy = FECHA_CORTE_TEST || new Date();
+// function calcularEstadisticas(ventas: any[]) {
+//   const hoy = FECHA_CORTE_TEST || new Date();
   
-  const diaActual = hoy.getDate();
-  const yearActual = hoy.getFullYear();
-  const mesActual = hoy.getMonth() + 1; // 1-12
+//   const diaActual = hoy.getDate();
+//   const yearActual = hoy.getFullYear();
+//   const mesActual = hoy.getMonth() + 1; // 1-12
  
-  console.log(`\n  🔍 [ESTADÍSTICAS] Fecha: ${hoy.toLocaleDateString('es-CR')} (Día ${diaActual})`);
+//   console.log(`\n  🔍 [ESTADÍSTICAS] Fecha: ${hoy.toLocaleDateString('es-CR')} (Día ${diaActual})`);
  
-  // ==========================================
-  // 1. DETERMINAR SI INCLUIR MES ACTUAL O NO
-  // ==========================================
+//   // ==========================================
+//   // 1. DETERMINAR SI INCLUIR MES ACTUAL O NO
+//   // ==========================================
   
-  const DIA_CORTE_INCLUSION = 15;
-  let mesesARetroceder: number;
-  let incluirMesActual: boolean;
+//   const DIA_CORTE_INCLUSION = 15;
+//   let mesesARetroceder: number;
+//   let incluirMesActual: boolean;
   
-  if (diaActual < DIA_CORTE_INCLUSION) {
-    mesesARetroceder = 12;
-    incluirMesActual = false;
-    console.log(`  📅 Día ${diaActual} < ${DIA_CORTE_INCLUSION}: Mes actual INCOMPLETO`);
-    console.log(`  📊 Buscaremos: Últimos 12 meses COMPLETOS (excluye mes actual)`);
-  } else {
-    mesesARetroceder = 11;
-    incluirMesActual = true;
-  }
+//   if (diaActual < DIA_CORTE_INCLUSION) {
+//     mesesARetroceder = 12;
+//     incluirMesActual = false;
+//     console.log(`  📅 Día ${diaActual} < ${DIA_CORTE_INCLUSION}: Mes actual INCOMPLETO`);
+//     console.log(`  📊 Buscaremos: Últimos 12 meses COMPLETOS (excluye mes actual)`);
+//   } else {
+//     mesesARetroceder = 11;
+//     incluirMesActual = true;
+//   }
  
-  // ==========================================
-  // 2. CALCULAR MES DE INICIO
-  // ==========================================
+//   // ==========================================
+//   // 2. CALCULAR MES DE INICIO
+//   // ==========================================
   
-  let yearInicio = yearActual;
-  let mesInicio = mesActual - mesesARetroceder;
+//   let yearInicio = yearActual;
+//   let mesInicio = mesActual - mesesARetroceder;
   
-  while (mesInicio <= 0) {
-    mesInicio += 12;
-    yearInicio -= 1;
-  }
+//   while (mesInicio <= 0) {
+//     mesInicio += 12;
+//     yearInicio -= 1;
+//   }
  
-  // ==========================================
-  // 3. CONSTRUIR ARRAY DE 12 MESES CONSECUTIVOS
-  // ==========================================
+//   // ==========================================
+//   // 3. CONSTRUIR ARRAY DE 12 MESES CONSECUTIVOS
+//   // ==========================================
   
-  const mesesConsecutivos: Array<{año: number, mes: number}> = [];
-  const ventasOrdenadas: number[] = [];
+//   const mesesConsecutivos: Array<{año: number, mes: number}> = [];
+//   const ventasOrdenadas: number[] = [];
   
-  let yearTemp = yearInicio;
-  let mesTemp = mesInicio;
+//   let yearTemp = yearInicio;
+//   let mesTemp = mesInicio;
   
-  for (let i = 0; i < 12; i++) {
-    mesesConsecutivos.push({año: yearTemp, mes: mesTemp});
-    mesTemp += 1;
-    if (mesTemp > 12) {
-      mesTemp = 1;
-      yearTemp += 1;
-    }
-  }
+//   for (let i = 0; i < 12; i++) {
+//     mesesConsecutivos.push({año: yearTemp, mes: mesTemp});
+//     mesTemp += 1;
+//     if (mesTemp > 12) {
+//       mesTemp = 1;
+//       yearTemp += 1;
+//     }
+//   }
  
-  // ==========================================
-  // 4. BUSCAR VENTAS PARA CADA MES
-  // ==========================================
+//   // ==========================================
+//   // 4. BUSCAR VENTAS PARA CADA MES
+//   // ==========================================
   
-  let totalVentas = 0;
-  let frecuencia = 0;
+//   let totalVentas = 0;
+//   let frecuencia = 0;
   
-  for (const mes of mesesConsecutivos) {
-    const venta = ventas.find(v => v.año === mes.año && v.mes === mes.mes);
-    const cantidad = venta ? venta.cantidad : 0;
+//   for (const mes of mesesConsecutivos) {
+//     const venta = ventas.find(v => v.año === mes.año && v.mes === mes.mes);
+//     const cantidad = venta ? venta.cantidad : 0;
     
-    ventasOrdenadas.push(cantidad);
-    totalVentas += cantidad;
+//     ventasOrdenadas.push(cantidad);
+//     totalVentas += cantidad;
     
-    if (cantidad > 0) {
-      frecuencia += 1;
-    }
-  }
+//     if (cantidad > 0) {
+//       frecuencia += 1;
+//     }
+//   }
  
-  const prom12 = totalVentas / 12;
+//   const prom12 = totalVentas / 12;
  
-  // ==========================================
-  // 5. LÓGICA DE CORTE DE FECHA (REGLA CLIENTE - PROYECCIÓN)
-  // ==========================================
+//   // ==========================================
+//   // 5. LÓGICA DE CORTE DE FECHA (REGLA CLIENTE - PROYECCIÓN)
+//   // ==========================================
   
-  const DIA_CORTE = 15;
-  let fechaInicioProyeccion = new Date(hoy);
+//   const DIA_CORTE = 15;
+//   let fechaInicioProyeccion = new Date(hoy);
   
-  if (hoy.getDate() > DIA_CORTE) {
-    fechaInicioProyeccion.setMonth(fechaInicioProyeccion.getMonth() + 1);
-  }
+//   if (hoy.getDate() > DIA_CORTE) {
+//     fechaInicioProyeccion.setMonth(fechaInicioProyeccion.getMonth() + 1);
+//   }
  
-  // ==========================================
-  // 6. CALCULAR "PROM. 6 MESES POR TEMPORADA" (ESPEJO AÑO ANTERIOR)
-  // ==========================================
+//   // ==========================================
+//   // 6. CALCULAR "PROM. 6 MESES POR TEMPORADA" (ESPEJO AÑO ANTERIOR)
+//   // ==========================================
   
-  let sumaVentasTemporada = 0;
+//   let sumaVentasTemporada = 0;
   
-  for (let i = 0; i < 6; i++) {
-    const fechaFutura = new Date(fechaInicioProyeccion);
-    fechaFutura.setMonth(fechaInicioProyeccion.getMonth() + i);
+//   for (let i = 0; i < 6; i++) {
+//     const fechaFutura = new Date(fechaInicioProyeccion);
+//     fechaFutura.setMonth(fechaInicioProyeccion.getMonth() + i);
  
-    const anioHistorico = fechaFutura.getFullYear() - 1;
-    const mesHistorico = fechaFutura.getMonth() + 1;
+//     const anioHistorico = fechaFutura.getFullYear() - 1;
+//     const mesHistorico = fechaFutura.getMonth() + 1;
  
-    const venta = ventas.find(v => v.año === anioHistorico && v.mes === mesHistorico);
+//     const venta = ventas.find(v => v.año === anioHistorico && v.mes === mesHistorico);
     
-    if (venta) {
-      sumaVentasTemporada += venta.cantidad;
-    }
-  }
+//     if (venta) {
+//       sumaVentasTemporada += venta.cantidad;
+//     }
+//   }
  
-  const prom6 = sumaVentasTemporada / 6;
+//   const prom6 = sumaVentasTemporada / 6;
  
-  // ==========================================
-  // 7. ESTADÍSTICAS FINALES
-  // ==========================================
+//   // ==========================================
+//   // 7. ESTADÍSTICAS FINALES
+//   // ==========================================
   
-  const promAjustado = Math.max(prom6, prom12);
+//   const promAjustado = Math.max(prom6, prom12);
   
-  const varianza = ventasOrdenadas.reduce((sum, v) => sum + Math.pow(v - prom12, 2), 0) / 11;
-  const desviacion = Math.sqrt(varianza);
+//   const varianza = ventasOrdenadas.reduce((sum, v) => sum + Math.pow(v - prom12, 2), 0) / 11;
+//   const desviacion = Math.sqrt(varianza);
   
-  const denominadorCV = prom12 / 1.2;
-  const cv = denominadorCV > 0 ? desviacion / denominadorCV : 0;
+//   const denominadorCV = prom12 / 1.2;
+//   const cv = denominadorCV > 0 ? desviacion / denominadorCV : 0;
   
-  let abcRotacion = 'E';
-  if (frecuencia >= 6) abcRotacion = 'A';
-  else if (frecuencia >= 4) abcRotacion = 'B';
-  else if (frecuencia === 3) abcRotacion = 'C';
-  else if (frecuencia === 2) abcRotacion = 'D';
+//   let abcRotacion = 'E';
+//   if (frecuencia >= 6) abcRotacion = 'A';
+//   else if (frecuencia >= 4) abcRotacion = 'B';
+//   else if (frecuencia === 3) abcRotacion = 'C';
+//   else if (frecuencia === 2) abcRotacion = 'D';
  
-  console.log(`  📈 ABC Rotación: ${abcRotacion}, Prom6m: ${prom6.toFixed(2)}, PromAjustado: ${promAjustado.toFixed(2)}\n`);
+//   console.log(`  📈 ABC Rotación: ${abcRotacion}, Prom6m: ${prom6.toFixed(2)}, PromAjustado: ${promAjustado.toFixed(2)}\n`);
   
-  return { frecuencia, total: totalVentas, prom12, prom6, promAjustado, desviacion, cv, abcRotacion };
-}
+//   return { frecuencia, total: totalVentas, prom12, prom6, promAjustado, desviacion, cv, abcRotacion };
+// }
  
-/**
- * ✅ calcularForecast()  — horizontes por proveedor/marca
- *
- * Recibe el L.T. ya resuelto (`lt`), sea de una marca configurada o el default.
- *   courier  = lt_courier
- *   aéreo    = lt_aereo    + meses_pedido
- *   marítimo = lt_maritimo + meses_pedido
- * meses_pedido se suma SOLO a aéreo y marítimo. Courier sin S.S.; aéreo/marítimo con S.S.
- * La cascada de las 3 vías no cambia.
- *
- * Devuelve `ltUsado` (lo realmente aplicado) para persistirlo por SKU.
- */
-function calcularForecast(
-  stats: any,
-  factorSeguridad: number,
-  existenciaData: any,
-  lt: Lt
-) {
-  const stockSeguridad = Math.round(factorSeguridad * stats.promAjustado);
+// /**
+//  * ✅ calcularForecast()  — horizontes por proveedor/marca
+//  *
+//  * Recibe el L.T. ya resuelto (`lt`), sea de una marca configurada o el default.
+//  *   courier  = lt_courier
+//  *   aéreo    = lt_aereo    + meses_pedido
+//  *   marítimo = lt_maritimo + meses_pedido
+//  * meses_pedido se suma SOLO a aéreo y marítimo. Courier sin S.S.; aéreo/marítimo con S.S.
+//  * La cascada de las 3 vías no cambia.
+//  *
+//  * Devuelve `ltUsado` (lo realmente aplicado) para persistirlo por SKU.
+//  */
+// function calcularForecast(
+//   stats: any,
+//   factorSeguridad: number,
+//   existenciaData: any,
+//   lt: Lt
+// ) {
+//   const stockSeguridad = Math.round(factorSeguridad * stats.promAjustado);
 
-  const ltCourier   = lt.lt_courier;
-  const ltAereo     = lt.lt_aereo;
-  const ltMaritimo  = lt.lt_maritimo;
-  const mesesPedido = lt.meses_pedido;
+//   const ltCourier   = lt.lt_courier;
+//   const ltAereo     = lt.lt_aereo;
+//   const ltMaritimo  = lt.lt_maritimo;
+//   const mesesPedido = lt.meses_pedido;
 
-  const refCourier  = Math.round(stats.promAjustado * ltCourier);
-  const refAereo    = Math.round(stats.promAjustado * (ltAereo + mesesPedido) + stockSeguridad);
-  const refMaritimo = Math.round(stats.promAjustado * (ltMaritimo + mesesPedido) + stockSeguridad);
+//   const refCourier  = Math.round(stats.promAjustado * ltCourier);
+//   const refAereo    = Math.round(stats.promAjustado * (ltAereo + mesesPedido) + stockSeguridad);
+//   const refMaritimo = Math.round(stats.promAjustado * (ltMaritimo + mesesPedido) + stockSeguridad);
   
-  const cantCourierCalc = existenciaData.existencia + existenciaData.transito - refCourier;
-  const cantCourier = {
-    cantidad: cantCourierCalc,
-    mensaje: cantCourierCalc < 0 ? 'PEDIR COURIER' : '',
-    cantidadFinal: cantCourierCalc > 0 ? 0 : cantCourierCalc
-  };
+//   const cantCourierCalc = existenciaData.existencia + existenciaData.transito - refCourier;
+//   const cantCourier = {
+//     cantidad: cantCourierCalc,
+//     mensaje: cantCourierCalc < 0 ? 'PEDIR COURIER' : '',
+//     cantidadFinal: cantCourierCalc > 0 ? 0 : cantCourierCalc
+//   };
   
-  const cantAereoCalc = existenciaData.existencia + existenciaData.transito - refAereo - cantCourier.cantidadFinal;
-  const cantAereo = {
-    cantidad: cantAereoCalc,
-    mensaje: cantAereoCalc < 0 ? 'PEDIR AEREO' : '',
-    cantidadFinal: cantAereoCalc > 0 ? 0 : cantAereoCalc
-  };
+//   const cantAereoCalc = existenciaData.existencia + existenciaData.transito - refAereo - cantCourier.cantidadFinal;
+//   const cantAereo = {
+//     cantidad: cantAereoCalc,
+//     mensaje: cantAereoCalc < 0 ? 'PEDIR AEREO' : '',
+//     cantidadFinal: cantAereoCalc > 0 ? 0 : cantAereoCalc
+//   };
  
-  const cantMaritimoCalc = existenciaData.existencia + existenciaData.transito - cantAereo.cantidadFinal - refMaritimo;
-  const cantMaritimo = {
-    cantidad: cantMaritimoCalc,
-    mensaje: cantMaritimoCalc < 0 ? 'PEDIR MARITIMO' : '',
-    cantidadFinal: cantMaritimoCalc > 0 ? 0 : cantMaritimoCalc
-  };
+//   const cantMaritimoCalc = existenciaData.existencia + existenciaData.transito - cantAereo.cantidadFinal - refMaritimo;
+//   const cantMaritimo = {
+//     cantidad: cantMaritimoCalc,
+//     mensaje: cantMaritimoCalc < 0 ? 'PEDIR MARITIMO' : '',
+//     cantidadFinal: cantMaritimoCalc > 0 ? 0 : cantMaritimoCalc
+//   };
 
-  const ltUsado = {
-    courier: ltCourier,
-    aereo: ltAereo,
-    maritimo: ltMaritimo,
-    mesesPedido: mesesPedido
-  };
+//   const ltUsado = {
+//     courier: ltCourier,
+//     aereo: ltAereo,
+//     maritimo: ltMaritimo,
+//     mesesPedido: mesesPedido
+//   };
   
-  return { stockSeguridad, refCourier, refAereo, refMaritimo, cantCourier, cantAereo, cantMaritimo, ltUsado };
-}
+//   return { stockSeguridad, refCourier, refAereo, refMaritimo, cantCourier, cantAereo, cantMaritimo, ltUsado };
+// }

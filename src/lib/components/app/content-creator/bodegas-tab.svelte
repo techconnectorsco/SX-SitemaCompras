@@ -170,7 +170,7 @@
 </script>
 
 <div class="space-y-4">
-	<div class="flex items-center gap-2 text-[#0D1E3D]">
+	<div class="flex items-center gap-2 text-[#253166]">
 		<Warehouse class="h-5 w-5" />
 		<div>
 			<h2 class="text-sm font-bold uppercase tracking-wider">Bodegas · Creador de Contenido</h2>

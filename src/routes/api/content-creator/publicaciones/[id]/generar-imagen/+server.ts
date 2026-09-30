@@ -1,74 +1,122 @@
 import { json } from '@sveltejs/kit';
-import { IAContentService } from '$lib/features/content-creator/services/ia-content-service';
+import {
+	IAContentService,
+	type ImageGenerationProgress
+} from '$lib/features/content-creator/services/ia-content-service';
 import path from 'path';
 import db from '$lib/config/db-config';
 import { AssetService } from '$lib/features/content-creator/services/asset-service';
 import { readUploadFile } from '$lib/server/uploads-storage';
 
+type ProgressSender = (event: ImageGenerationProgress) => void;
+
 export async function POST({ params, request, locals }) {
-    try {
-        const userId = locals?.user?.id || 'admin_user_id';
-        const publicacionId = parseInt(params.id);
+	const wantsProgress = request.headers.get('accept')?.includes('text/event-stream') ?? false;
+	const body = await request.json();
 
-        if (isNaN(publicacionId)) {
-            return json({ success: false, error: 'ID de publicación inválido' }, { status: 400 });
-        }
+	const generate = async (sendProgress?: ProgressSender) => {
+		const userId = locals?.user?.id || 'admin_user_id';
+		const publicacionId = parseInt(params.id);
+		if (isNaN(publicacionId)) throw new Error('ID de publicación inválido');
 
-        const body = await request.json();
-        let { base64Image, imageUrl, brand, title, context, objective, format, index, customPrompt, selectedAssetIds, modo } = body;
+		let {
+			base64Image,
+			imageUrl,
+			brand,
+			title,
+			context,
+			objective,
+			format,
+			index,
+			customPrompt,
+			selectedAssetIds,
+			modo
+		} = body;
+		const isCrear = modo === 'crear';
+		if (!isCrear && !base64Image && imageUrl) {
+			try {
+				const fileBuffer = await readUploadFile(imageUrl);
+				const ext = path.extname(imageUrl).replace('.', '') || 'jpeg';
+				base64Image = `data:image/${ext === 'jpg' ? 'jpeg' : ext};base64,${fileBuffer.toString('base64')}`;
+			} catch (error: any) {
+				if (error?.code === 'ENOENT') throw new Error(`Imagen no encontrada en disco: ${imageUrl}`);
+				throw new Error('Error al leer la imagen del servidor');
+			}
+		}
+		if (!isCrear && !base64Image) throw new Error('Se requiere base64Image, imageUrl o modo=crear');
 
-        // Modo 'crear' = text-to-image puro (sin imagen de referencia)
-        const isCrear = modo === 'crear';
+		let brandAssets: any[] = [];
+		if (Array.isArray(selectedAssetIds) && selectedAssetIds.length > 0) {
+			const assets = selectedAssetIds.map((id) => ({
+				id,
+				asset: db
+					.prepare('SELECT * FROM marca_assets WHERE id = ? AND deleted_at IS NULL')
+					.get(id) as any
+			}));
+			const missing = assets.filter(({ asset }) => !asset).map(({ id }) => id);
+			if (missing.length) throw new Error(`Assets no disponibles: ${missing.join(', ')}`);
+			brandAssets = await Promise.all(
+				assets.map(async ({ id, asset }) => {
+					const base64 = await AssetService.readAsBase64(asset);
+					if (!base64)
+						throw new Error(
+							`El asset seleccionado "${asset.nombre}" (ID ${id}) no está disponible en disco.`
+						);
+					return { nombre: asset.nombre, tipo: asset.tipo, mimeType: asset.mime_type, base64 };
+				})
+			);
+		}
+		return IAContentService.generarImagenEditada(
+			publicacionId,
+			userId,
+			isCrear ? null : base64Image,
+			{ brand, title, context, objective, format },
+			index,
+			customPrompt,
+			brandAssets,
+			isCrear,
+			sendProgress
+		);
+	};
 
-        // Si no hay base64 pero sí hay una URL local (/uploads/...), leer el archivo del disco
-        if (!isCrear && !base64Image && imageUrl) {
-            try {
-                const fileBuffer = await readUploadFile(imageUrl);
-                const ext = path.extname(imageUrl).replace('.', '') || 'jpeg';
-                const mime = ext === 'jpg' ? 'jpeg' : ext;
-                base64Image = `data:image/${mime};base64,${fileBuffer.toString('base64')}`;
-            } catch (e: any) {
-                if (e?.code === 'ENOENT') {
-                    return json({ success: false, error: `Imagen no encontrada en disco: ${imageUrl}` }, { status: 404 });
-                }
-                return json({ success: false, error: 'Error al leer la imagen del servidor' }, { status: 500 });
-            }
-        }
+	if (!wantsProgress) {
+		try {
+			return json({ success: true, imageUrl: await generate() });
+		} catch (error: any) {
+			console.error('[API generar-imagen] Error:', error);
+			return json(
+				{ success: false, error: error.message || 'Error interno al generar imagen' },
+				{ status: 500 }
+			);
+		}
+	}
 
-        if (!isCrear && !base64Image) {
-            return json({ success: false, error: 'Se requiere base64Image, imageUrl o modo=crear' }, { status: 400 });
-        }
-
-        const fallbackData = { brand, title, context, objective, format };
-
-        // Leer assets del disco y convertir a base64
-        let brandAssets: any[] = [];
-        if (selectedAssetIds && Array.isArray(selectedAssetIds) && selectedAssetIds.length > 0) {
-            const assets = selectedAssetIds.map((id) => ({
-                id,
-                asset: db.prepare('SELECT * FROM marca_assets WHERE id = ? AND deleted_at IS NULL').get(id) as any
-            }));
-            const missingRecords = assets.filter(({ asset }) => !asset).map(({ id }) => id);
-            if (missingRecords.length > 0) {
-                return json({ success: false, error: `Assets no disponibles: ${missingRecords.join(', ')}` }, { status: 404 });
-            }
-
-            brandAssets = await Promise.all(
-                assets.map(async ({ id, asset }) => {
-                    const b64 = await AssetService.readAsBase64(asset);
-                    if (!b64) {
-                        throw new Error(`El asset seleccionado "${asset.nombre}" (ID ${id}) no está disponible en disco: ${asset.file_path}`);
-                    }
-                    return { nombre: asset.nombre, tipo: asset.tipo, mimeType: asset.mime_type, base64: b64 };
-                })
-            );
-        }
-
-        const sharepointUrl = await IAContentService.generarImagenEditada(publicacionId, userId, isCrear ? null : base64Image, fallbackData, index, customPrompt, brandAssets, isCrear);
-
-        return json({ success: true, imageUrl: sharepointUrl });
-    } catch (error: any) {
-        console.error('[API generar-imagen] Error:', error);
-        return json({ success: false, error: error.message || 'Error interno al generar imagen' }, { status: 500 });
-    }
+	const encoder = new TextEncoder();
+	const stream = new ReadableStream<Uint8Array>({
+		async start(controller) {
+			const send = (
+				event:
+					| ImageGenerationProgress
+					| { phase: 'success'; imageUrl: string }
+					| { phase: 'error'; error: string }
+			) => controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+			try {
+				send({ phase: 'generating', attempt: 1, maxAttempts: 3 });
+				const imageUrl = await generate(send);
+				send({ phase: 'success', imageUrl });
+			} catch (error: any) {
+				console.error('[API generar-imagen] Error:', error);
+				send({ phase: 'error', error: error.message || 'Error interno al generar imagen' });
+			} finally {
+				controller.close();
+			}
+		}
+	});
+	return new Response(stream, {
+		headers: {
+			'Content-Type': 'text/event-stream',
+			'Cache-Control': 'no-cache',
+			Connection: 'keep-alive'
+		}
+	});
 }

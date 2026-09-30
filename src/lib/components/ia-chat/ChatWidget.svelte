@@ -13,23 +13,12 @@
 		codigoProcesamiento?: string;
 		codigoSku?: string;
 		titulo?: string;
-		saludoPrincipal?: string;
-		saludoHtml?: string;
-		saludoSub?: string;
-		opcionesSugeridas?: { texto: string; enviar: boolean }[];
 	}
 	let {
 		autenticado = true,
 		codigoProcesamiento,
 		codigoSku,
-		titulo = 'SoporteXperto IA',
-		saludoPrincipal = '¡Hola! Soy el asistente virtual de SoporteXperto 👋',
-		saludoHtml = '<p>Puedo ayudarte con soporte y consultas generales, además de información interna autorizada de Compras y Creador de Contenido.</p>',
-		saludoSub = '¿En qué te puedo ayudar?',
-		opcionesSugeridas = [
-			{ texto: 'Explicame este tema de forma sencilla', enviar: false },
-			{ texto: '¿Qué publicaciones están pendientes?', enviar: true }
-		]
+		titulo = 'Betti A.'
 	}: Props = $props();
 
 	const TIMEOUT_MS = 120000; // 120s: una consulta con varias herramientas puede tardar.
@@ -49,14 +38,18 @@
 		ruta: typeof window !== 'undefined' ? window.location.pathname : undefined
 	});
 
-	// Sugerencias combinadas
+	// Sugerencias: 1 contextual (si hay SKU) + 3 fijas que siempre funcionan.
 	const sugerencias = $derived.by(() => {
-		const fijas = opcionesSugeridas;
+		const fijas = [
+			{ texto: '¿Qué compras debo priorizar hoy?', enviar: true },
+			{ texto: '¿Dónde tengo mayor riesgo de quiebre?', enviar: true },
+			{ texto: '¿Dónde estoy inmovilizando dinero?', enviar: true }
+		];
 		if (codigoSku) {
 			// Contextual: rellena el campo (no envía) para que el usuario confirme.
 			return [
 				{ texto: `Analizá el SKU ${codigoSku} y dame tu recomendación`, enviar: false },
-				...fijas
+				...fijas.slice(0, 3)
 			];
 		}
 		return fijas;
@@ -225,15 +218,8 @@
 		<div class="cuerpo" bind:this={contenedor}>
 			{#if chatStore.mensajes.length === 0}
 				<div class="vacio">
-					<p class="saludo">{saludoPrincipal}</p>
-					{#if saludoHtml}
-						<div class="saludo-html text-sm text-left text-muted-foreground my-3 leading-relaxed">
-							{@html saludoHtml}
-						</div>
-					{/if}
-					{#if saludoSub}
-						<p class="sub">{saludoSub}</p>
-					{/if}
+					<p class="saludo">Hola, soy tu asistente de compras.</p>
+					<p class="sub">Elegí una pregunta o escribí la tuya:</p>
 					<div class="sugerencias">
 						{#each sugerencias as s (s.texto)}
 							<button class="chip" onclick={() => usarSugerencia(s)}>{s.texto}</button>

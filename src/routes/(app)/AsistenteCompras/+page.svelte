@@ -5,11 +5,8 @@
     FileText,
     Bell,
     User,
-    FileSearch,
-    Settings,
     Loader2,
-    BarChart2,
-    CreditCard
+    BarChart2
   } from 'lucide-svelte';
   
   // ✅ CAMBIO: Lazy loading - imports dinámicos en lugar de estáticos
@@ -20,7 +17,6 @@
     label: string;
     icon: any;
     componentLoader: () => Promise<any>;
-    adminOnly?: boolean;
   }
 
   let { data = $bindable() } = $props(); // ✅ SVELTE 5: $props() instead of export let
@@ -76,26 +72,9 @@
       icon: User, 
       componentLoader: () => import('$lib/components/app/profile/profile-user.svelte')
     },
-    { 
-      name: 'auditoria', 
-      label: 'Auditoría', 
-      icon: FileSearch, 
-      componentLoader: () => import('$lib/components/app/admin/auditoria.svelte'),
-      adminOnly: true 
-    },
-    { 
-      name: 'administracion', 
-      label: 'Administración', 
-      icon: Settings, 
-      componentLoader: () => import('$lib/components/app/admin/administracion.svelte'),
-      adminOnly: true 
-    }
   ];
 
-  // ✅ SVELTE 5: Usar $derived en lugar de $:
-  const visibleNavItems = $derived(navItems.filter(item => 
-    !item.adminOnly || (item.adminOnly && user.role === 'admin')
-  ));
+  const visibleNavItems = navItems;
 
   // ✅ CAMBIO: Función para cargar componente dinámicamente
   async function loadComponent(tabName: string) {
@@ -170,11 +149,6 @@
         >
           <Icon class="h-4 w-4" />
           <span class="text-sm">{item.label}</span>
-          {#if item.adminOnly}
-            <span class="ml-1 rounded-full bg-[#1A73C2] px-2 py-0.5 text-xs font-bold text-white">
-              ADMIN
-            </span>
-          {/if}
         </button>
       {/each}
     </div>

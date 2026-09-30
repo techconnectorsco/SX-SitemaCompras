@@ -64,6 +64,8 @@ interface SKUData {
   fecha_creacion: string | null;
   ultima_salida: string | null;
   ultimo_movimiento: string | null;
+  sugerido_analista_maritimo?: number; 
+  comentario_analista?: string | null;
 }
 
 // ===== ESTILOS COMUNES =====
@@ -232,7 +234,7 @@ function formatearFecha(fecha: string | null): string {
 
 async function generarAnalisis8020(codigoProcesamiento: string): Promise<ExcelJS.Workbook> {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'VYOWEB - Grupo SX';
+  workbook.creator = 'VYOWEB - Grupo Vedova & Obando';
   workbook.created = new Date();
   
   const sheet = workbook.addWorksheet('Análisis 80-20', {
@@ -340,7 +342,7 @@ async function generarAnalisis8020(codigoProcesamiento: string): Promise<ExcelJS
 
 async function generarControlCompras(codigoProcesamiento: string): Promise<ExcelJS.Workbook> {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'VYOWEB - Grupo SX';
+  workbook.creator = 'VYOWEB - Grupo Vedova & Obando';
   
   const sheet = workbook.addWorksheet('Control de Compras', {
     views: [{ state: 'frozen', ySplit: 4, xSplit: 2 }]
@@ -449,7 +451,7 @@ async function generarControlCompras(codigoProcesamiento: string): Promise<Excel
 
 async function generarABCRotacion(codigoProcesamiento: string): Promise<ExcelJS.Workbook> {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'VYOWEB - Grupo SX';
+  workbook.creator = 'VYOWEB - Grupo Vedova & Obando';
   
   // Hoja 1: Detalle por SKU
   const sheetDetalle = workbook.addWorksheet('Detalle ABC-Rotación', {
@@ -619,7 +621,7 @@ async function generarABCRotacion(codigoProcesamiento: string): Promise<ExcelJS.
 
 async function generarPedidoPrecios(codigoProcesamiento: string): Promise<ExcelJS.Workbook> {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'SXWEB - Grupo SX';
+  workbook.creator = 'VYOWEB - Grupo Vedova & Obando';
   
   const sheet = workbook.addWorksheet('Pedido con Precios', {
     views: [{ state: 'frozen', ySplit: 4, xSplit: 2 }]
@@ -739,7 +741,7 @@ async function generarPedidoPrecios(codigoProcesamiento: string): Promise<ExcelJ
  */
 async function generarAntiguedadSKUs(codigoProcesamiento: string): Promise<ExcelJS.Workbook> {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'SXWEB - Grupo SX';
+  workbook.creator = 'VYOWEB - Grupo Vedova & Obando';
   
   const sheet = workbook.addWorksheet('SKUs Sin Movimiento', {
     views: [{ state: 'frozen', ySplit: 4, xSplit: 2 }]
@@ -905,7 +907,7 @@ async function generarAntiguedadSKUs(codigoProcesamiento: string): Promise<Excel
  */
 async function generarProductosNuevos(codigoProcesamiento: string): Promise<ExcelJS.Workbook> {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'SXWEB - Grupo SX';
+  workbook.creator = 'VYOWEB - Grupo Vedova & Obando';
   
   const sheet = workbook.addWorksheet('Productos Nuevos', {
     views: [{ state: 'frozen', ySplit: 4, xSplit: 2 }]
@@ -1015,7 +1017,7 @@ async function generarProductosNuevos(codigoProcesamiento: string): Promise<Exce
  */
 async function generarProductosReactivados(codigoProcesamiento: string): Promise<ExcelJS.Workbook> {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'SXWEB - Grupo SX';
+  workbook.creator = 'VYOWEB - Grupo Vedova & Obando';
   
   const sheet = workbook.addWorksheet('Productos Reactivados', {
     views: [{ state: 'frozen', ySplit: 4, xSplit: 2 }]
@@ -1145,7 +1147,7 @@ async function generarProductosReactivados(codigoProcesamiento: string): Promise
 
 async function generarSugerenciasAnalista(codigoProcesamiento: string): Promise<ExcelJS.Workbook> {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'SXWEB - Grupo SX';
+  workbook.creator = 'VYOWEB - Grupo Vedova & Obando';
   
   const sheet = workbook.addWorksheet('Sugerencias Analista', {
     views: [{ state: 'frozen', ySplit: 4, xSplit: 2 }]
@@ -1217,7 +1219,8 @@ async function generarSugerenciasAnalista(codigoProcesamiento: string): Promise<
       'Total Sugerido',
       'Costo Unit. ₡',
       'Valor Total ₡',
-      'Modificado Por'
+      'Modificado Por',
+      'Comentario del Analista'
     ];
     
     const headerRow = sheet.addRow(headers);
@@ -1258,7 +1261,9 @@ async function generarSugerenciasAnalista(codigoProcesamiento: string): Promise<
     'Total Sugerido',
     'Costo Unit. ₡',
     'Valor Total ₡',
-    'Modificado Por'
+    'Modificado Por',
+    'Comentario del Analista'
+    
   ];
   
   const headerRow = sheet.addRow(headers);
@@ -1281,7 +1286,8 @@ async function generarSugerenciasAnalista(codigoProcesamiento: string): Promise<
     { width: 14 },  // Total Sugerido
     { width: 14 },  // Costo Unit. ₡
     { width: 16 },  // Valor Total ₡
-    { width: 20 }   // Modificado Por
+    { width: 20 },   // Modificado Por
+    { width: 35 }    // Comentario del Analista
   ];
 
   let totales = {
@@ -1305,6 +1311,10 @@ async function generarSugerenciasAnalista(codigoProcesamiento: string): Promise<
     const esColones = costoLoc > 0;
     
     const valorTotal = totalSugerido * costoUsar;
+
+    const comentario = sku.comentario_analista && sku.comentario_analista.trim() !== '' 
+  ? sku.comentario_analista 
+  : '-';
 
     // Acumular totales
     totales.skus++;
@@ -1334,7 +1344,8 @@ async function generarSugerenciasAnalista(codigoProcesamiento: string): Promise<
       totalSugerido,
       costoUsar > 0 ? costoUsar : '',
       valorTotal > 0 ? valorTotal : '',
-      sku.usuario_modificacion || '-'
+      sku.usuario_modificacion || '-',
+      comentario
     ]);
 
     aplicarEstiloCelda(row, index % 2 === 0);
@@ -1390,9 +1401,14 @@ async function generarSugerenciasAnalista(codigoProcesamiento: string): Promise<
         celdaValor.font = { ...STYLES.cell.font, color: { argb: 'FFC62828' }, bold: true };
       }
     }
+    if (comentario !== '-') {
+    row.getCell(18).font = { ...STYLES.cell.font, italic: true, color: { argb: 'FF1A237E' } };
+  }
   });
 
   console.log('💰 [DEBUG] Totales calculados:', totales);
+
+    
 
   // ===== FILA DE TOTALES =====
   const totalRow = sheet.addRow([
@@ -1412,7 +1428,8 @@ async function generarSugerenciasAnalista(codigoProcesamiento: string): Promise<
     totales.total,
     '',
     '', // Valor lo ponemos en texto aparte
-    `${totales.skus} SKUs editados`
+    `${totales.skus} SKUs editados`,
+    ''
   ]);
 
   totalRow.eachCell((cell) => {
@@ -1459,7 +1476,7 @@ async function generarSugerenciasAnalista(codigoProcesamiento: string): Promise<
   // ===== FILTROS =====
   sheet.autoFilter = {
     from: { row: 4, column: 1 },
-    to: { row: datos.length + 4, column: 17 }
+    to: { row: datos.length + 4, column: 18 }
   };
 
   return workbook;
@@ -1469,9 +1486,12 @@ async function generarSugerenciasAnalista(codigoProcesamiento: string): Promise<
 /**
  * ✅ NUEVO REPORTE: SKUs con Pedido Sugerido por el Sistema
  */
+/**
+ * ✅ REPORTE: SKUs con Pedido Sugerido por el Sistema (21 Columnas exactas)
+ */
 async function generarSKUsConPedido(codigoProcesamiento: string): Promise<ExcelJS.Workbook> {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'SXWEB - Grupo SX';
+  workbook.creator = 'VYOWEB - Grupo Vedova & Obando';
   
   const sheet = workbook.addWorksheet('SKUs con Pedido', {
     views: [{ state: 'frozen', ySplit: 4, xSplit: 2 }]
@@ -1483,60 +1503,47 @@ async function generarSKUsConPedido(codigoProcesamiento: string): Promise<ExcelJ
     orderBy: 'ORDER BY promedio_6m DESC, venta_ultimos_12m DESC'
   });
 
+  // Ajustado a 21 columnas para cubrir la cabecera completa
   agregarTitulo(
     sheet, 
     'SKUs con Pedido Sugerido por el Sistema',
     `Procesamiento: ${codigoProcesamiento} | SKUs con pedido: ${datos.length.toLocaleString()} | Generado: ${new Date().toLocaleString('es-CR')}`,
-    20
+    21
   );
 
   const headers = [
-    'Código SKU', 
-    'Código Proveedor',
-    'Descripción', 
-    'Línea', 
-    'Marca',
-    'Rotación',
-    'Existencia', 
-    'Tránsito',
-    'Promedio 6M',
-    'Stock Seguridad',
-    'Ref. Courier',
-    'Cant. Courier',
-    'Ref. Aéreo',
-    'Cant. Aéreo',
-    'Ref. Marítimo',
-    'Cant. Marítimo',
-    'Total a Pedir',
-    'Costo Unit. ₡',
-    'Costo Unit. $',
-    'Valor Pedido ₡'
+    'Código SKU',               // Col 1
+    'Código Proveedor',         // Col 2
+    'Descripción',              // Col 3
+    'Línea',                    // Col 4
+    'Marca',                    // Col 5
+    'Rotación',                 // Col 6
+    'Existencia',               // Col 7
+    'Tránsito',                 // Col 8
+    'Promedio 6M',              // Col 9
+    'Stock Seguridad',          // Col 10
+    'Ref. Courier',             // Col 11
+    'Cant. Courier',            // Col 12
+    'Ref. Aéreo',               // Col 13
+    'Cant. Aéreo',              // Col 14
+    'Ref. Marítimo',            // Col 15
+    'Cant. Marítimo',           // Col 16
+    'Total a Pedir',            // Col 17
+    'Costo Unit. ₡',            // Col 18
+    'Costo Unit. $',            // Col 19
+    'Valor Pedido ₡',           // Col 20
+    'Comentario del Analista'   // Col 21
   ];
   
   const headerRow = sheet.addRow(headers);
   aplicarEstiloEncabezado(headerRow);
 
   sheet.columns = [
-    { width: 14 },  // Código SKU
-    { width: 16 },  // Código Proveedor
-    { width: 38 },  // Descripción
-    { width: 12 },  // Línea
-    { width: 12 },  // Marca
-    { width: 10 },  // Rotación
-    { width: 11 },  // Existencia
-    { width: 10 },  // Tránsito
-    { width: 12 },  // Promedio 6M
-    { width: 12 },  // Stock Seguridad
-    { width: 12 },  // Ref. Courier
-    { width: 12 },  // Cant. Courier
-    { width: 12 },  // Ref. Aéreo
-    { width: 12 },  // Cant. Aéreo
-    { width: 13 },  // Ref. Marítimo
-    { width: 13 },  // Cant. Marítimo
-    { width: 12 },  // Total a Pedir
-    { width: 13 },  // Costo Unit. ₡
-    { width: 12 },  // Costo Unit. $
-    { width: 15 }   // Valor Pedido ₡
+    { width: 14 }, { width: 16 }, { width: 38 }, { width: 12 }, { width: 12 },
+    { width: 10 }, { width: 11 }, { width: 10 }, { width: 12 }, { width: 12 },
+    { width: 12 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 13 },
+    { width: 13 }, { width: 12 }, { width: 13 }, { width: 12 }, { width: 15 },
+    { width: 35 }
   ];
 
   let totales = {
@@ -1558,13 +1565,16 @@ async function generarSKUsConPedido(codigoProcesamiento: string): Promise<ExcelJ
     const costoDol = sku.costo_ult_dol || 0;
     const valorPedido = totalPedir * costoLoc;
 
-    // Acumular totales
     totales.skus++;
     totales.courier += cantCourier;
     totales.aereo += cantAereo;
     totales.maritimo += cantMaritimo;
     totales.total += totalPedir;
     totales.valorColones += valorPedido;
+
+    const comentario = sku.comentario_analista && sku.comentario_analista.trim() !== '' 
+      ? sku.comentario_analista 
+      : '-';
 
     const row = sheet.addRow([
       sku.codigo_sku,
@@ -1586,22 +1596,22 @@ async function generarSKUsConPedido(codigoProcesamiento: string): Promise<ExcelJ
       totalPedir,
       costoLoc > 0 ? costoLoc : '-',
       costoDol > 0 ? costoDol : '-',
-      valorPedido > 0 ? valorPedido : '-'
+      valorPedido > 0 ? valorPedido : '-',
+      comentario
     ]);
 
     aplicarEstiloCelda(row, index % 2 === 0);
 
     // Formatear números
-    row.getCell(7).numFmt = '#,##0';   // Existencia
-    row.getCell(8).numFmt = '#,##0';   // Tránsito
-    row.getCell(9).numFmt = '#,##0.00'; // Promedio 6M
-    row.getCell(10).numFmt = '#,##0';  // Stock Seguridad
-    row.getCell(11).numFmt = '#,##0';  // Ref. Courier
-    row.getCell(13).numFmt = '#,##0';  // Ref. Aéreo
-    row.getCell(15).numFmt = '#,##0';  // Ref. Marítimo
+    row.getCell(7).numFmt = '#,##0';
+    row.getCell(8).numFmt = '#,##0';
+    row.getCell(9).numFmt = '#,##0.00';
+    row.getCell(10).numFmt = '#,##0';
+    row.getCell(11).numFmt = '#,##0';
+    row.getCell(13).numFmt = '#,##0';
+    row.getCell(15).numFmt = '#,##0';
 
     // Colorear cantidades de pedido
-    // Courier - Naranja
     const celdaCourier = row.getCell(12);
     if (cantCourier > 0) {
       celdaCourier.numFmt = '#,##0';
@@ -1609,7 +1619,6 @@ async function generarSKUsConPedido(codigoProcesamiento: string): Promise<ExcelJ
       celdaCourier.font = { ...STYLES.cell.font, color: { argb: 'FFE65100' }, bold: true };
     }
 
-    // Aéreo - Morado
     const celdaAereo = row.getCell(14);
     if (cantAereo > 0) {
       celdaAereo.numFmt = '#,##0';
@@ -1617,7 +1626,6 @@ async function generarSKUsConPedido(codigoProcesamiento: string): Promise<ExcelJ
       celdaAereo.font = { ...STYLES.cell.font, color: { argb: 'FF6A1B9A' }, bold: true };
     }
 
-    // Marítimo - Azul
     const celdaMaritimo = row.getCell(16);
     if (cantMaritimo > 0) {
       celdaMaritimo.numFmt = '#,##0';
@@ -1636,36 +1644,32 @@ async function generarSKUsConPedido(codigoProcesamiento: string): Promise<ExcelJ
     if (row.getCell(19).value !== '-') row.getCell(19).numFmt = '$#,##0.00';
     if (row.getCell(20).value !== '-') {
       row.getCell(20).numFmt = '₡#,##0.00';
-      // Resaltar valores altos
       if (valorPedido > 500000) {
         row.getCell(20).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFEBEE' } };
         row.getCell(20).font = { ...STYLES.cell.font, color: { argb: 'FFC62828' }, bold: true };
       }
     }
+
+    // Estilo para comentario si existe (consistencia con el primer reporte)
+    if (comentario !== '-') {
+      const celdaComentario = row.getCell(21);
+      celdaComentario.font = { ...STYLES.cell.font, italic: true, color: { argb: 'FF1A237E' } };
+    }
   });
 
   // ===== FILA DE TOTALES =====
   const totalRow = sheet.addRow([
-    '', 
-    '', 
-    '', 
-    '', 
-    'TOTALES:', 
-    `${totales.skus} SKUs`,
+    '', '', '', '', 'TOTALES:', `${totales.skus} SKUs`,
+    '', '', '', '', '',
+    totales.courier,   // Col 12
     '',
+    totales.aereo,     // Col 14
     '',
-    '',
-    '',
-    '',
-    totales.courier,
-    '',
-    totales.aereo,
-    '',
-    totales.maritimo,
-    totales.total,
-    '',
-    '',
-    totales.valorColones
+    totales.maritimo,  // Col 16
+    totales.total,    // Col 17
+    '', '',
+    totales.valorColones, // Col 20
+    ''                 // Col 21 (Comentario vacío)
   ]);
 
   totalRow.eachCell((cell) => {
@@ -1674,7 +1678,6 @@ async function generarSKUsConPedido(codigoProcesamiento: string): Promise<ExcelJ
     cell.border = STYLES.header.border;
   });
 
-  // Formatear celdas de totales
   totalRow.getCell(12).numFmt = '#,##0';
   totalRow.getCell(12).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFE0B2' } };
   totalRow.getCell(12).font = { bold: true, color: { argb: 'FFE65100' } };
@@ -1726,7 +1729,203 @@ async function generarSKUsConPedido(codigoProcesamiento: string): Promise<ExcelJ
   // ===== FILTROS =====
   sheet.autoFilter = {
     from: { row: 4, column: 1 },
-    to: { row: datos.length + 4, column: 20 }
+    to: { row: datos.length + 4, column: 21 }
+  };
+
+  return workbook;
+}
+
+/**
+ * REPORTE UNIFICADO: Pedido Sugerido y Analista (22 Columnas exactas)
+ */
+async function generarPedidoSugeridoYAnalista(codigoProcesamiento: string): Promise<ExcelJS.Workbook> {
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'VYOWEB - Grupo Vedova & Obando';
+  
+  const sheet = workbook.addWorksheet('Pedido Sugerido y Analista', {
+    views: [{ state: 'frozen', ySplit: 4, xSplit: 2 }]
+  });
+
+  // Consulta adaptada al esquema de SQLite
+  const datos = obtenerDatos(codigoProcesamiento, {
+    where: `(
+      cantidad_final_courier < 0 
+      OR cantidad_final_aereo < 0 
+      OR cantidad_final_maritimo < 0 
+      OR sugerido_analista_urgente > 0 
+      OR sugerido_analista_aereo > 0
+      OR sugerido_analista_maritimo > 0
+      OR COALESCE(mensaje_courier, '') != ''
+      OR COALESCE(comentario_analista, '') != ''
+    )`,
+    orderBy: 'ORDER BY promedio_6m DESC'
+  });
+
+  agregarTitulo(
+    sheet, 
+    'Reporte Consolidado de Pedidos Sugeridos y Analista',
+    `Procesamiento: ${codigoProcesamiento} | Total SKUs: ${datos.length.toLocaleString()} | Generado: ${new Date().toLocaleString('es-CR')}`,
+    22
+  );
+
+  const headers = [
+    'Código SKU',                // Col 1
+    'Código Proveedor',          // Col 2
+    'Descripción',               // Col 3
+    'Línea',                     // Col 4
+    'Marca',                     // Col 5
+    'ABC / Rot.',                // Col 6
+    'Existencia',                // Col 7
+    'Tránsito',                  // Col 8
+    'Promedio 6M',               // Col 9
+    'Cant. Courier (Sis)',       // Col 10
+    'Cant. Aéreo (Sis)',         // Col 11
+    'Cant. Marítimo (Sis)',      // Col 12
+    'Sug. Courier (Analista)',   // Col 13
+    'Sug. Aéreo (Analista)',     // Col 14
+    'Sug. Marítimo (Analista)',  // Col 15
+    'Total Unidades',            // Col 16
+    'Costo Unit. ₡',             // Col 17
+    'Costo Unit. $',             // Col 18
+    'Total Pedido ₡',            // Col 19
+    'Total Pedido $',            // Col 20
+    'Modificado Por',            // Col 21
+    'Comentario del Analista'    // Col 22
+  ];
+  
+  const headerRow = sheet.addRow(headers);
+  aplicarEstiloEncabezado(headerRow);
+
+  sheet.columns = [
+    { width: 14 }, { width: 16 }, { width: 38 }, { width: 14 }, { width: 14 },
+    { width: 10 }, { width: 12 }, { width: 10 }, { width: 12 }, { width: 15 },
+    { width: 14 }, { width: 15 }, { width: 18 }, { width: 16 }, { width: 18 },
+    { width: 14 }, { width: 14 }, { width: 12 }, { width: 16 }, { width: 14 },
+    { width: 18 }, { width: 35 }
+  ];
+
+  let totalGeneral = { unidades: 0, colones: 0, dolares: 0 };
+
+  datos.forEach((sku: SKUData, index: number) => {
+    // 1. Cantidades calculadas por el sistema
+    const cantCourierSis = Math.abs(sku.cantidad_final_courier || 0);
+    const cantAereoSis = Math.abs(sku.cantidad_final_aereo || 0);
+    const cantMaritimoSis = Math.abs(sku.cantidad_final_maritimo || 0);
+    
+    // 2. Sugerencias/Ajustes editados por el analista
+    const sugCourierAnalista = sku.sugerido_analista_urgente || 0;
+    const sugAereoAnalista = sku.sugerido_analista_aereo || 0;
+    const sugMaritimoAnalista = sku.sugerido_analista_maritimo || 0;
+    
+    // 3. Regla de prioridad: Si el analista ingresó un valor (> 0), reemplaza el cálculo del sistema
+    const unidadesCourier = sugCourierAnalista > 0 ? sugCourierAnalista : cantCourierSis;
+    const unidadesAereo = sugAereoAnalista > 0 ? sugAereoAnalista : cantAereoSis;
+    const unidadesMaritimo = sugMaritimoAnalista > 0 ? sugMaritimoAnalista : cantMaritimoSis;
+    
+    const totalUnidades = unidadesCourier + unidadesAereo + unidadesMaritimo;
+    
+    const costoLoc = sku.costo_ult_loc || 0;
+    const costoDol = sku.costo_ult_dol || 0;
+    const totalColones = totalUnidades * costoLoc;
+    const totalDolares = totalUnidades * costoDol;
+
+    totalGeneral.unidades += totalUnidades;
+    totalGeneral.colones += totalColones;
+    totalGeneral.dolares += totalDolares;
+
+    const comentario = sku.comentario_analista && sku.comentario_analista.trim() !== '' 
+      ? sku.comentario_analista 
+      : '-';
+
+    const row = sheet.addRow([
+      sku.codigo_sku,
+      sku.codigo_proveedor || '-',
+      sku.descripcion,
+      sku.linea || '-',
+      sku.marca || '-',
+      `${sku.abc || '-'}/${sku.abc_rotacion_frecuencia || '-'}`,
+      sku.existencia || 0,
+      sku.transito || 0,
+      sku.promedio_6m || 0,
+      cantCourierSis > 0 ? cantCourierSis : '',
+      cantAereoSis > 0 ? cantAereoSis : '',
+      cantMaritimoSis > 0 ? cantMaritimoSis : '',
+      sugCourierAnalista > 0 ? sugCourierAnalista : '',
+      sugAereoAnalista > 0 ? sugAereoAnalista : '',
+      sugMaritimoAnalista > 0 ? sugMaritimoAnalista : '',
+      totalUnidades,
+      costoLoc > 0 ? costoLoc : '',
+      costoDol > 0 ? costoDol : '',
+      totalColones > 0 ? totalColones : '',
+      totalDolares > 0 ? totalDolares : '',
+      sku.usuario_modificacion || '-',
+      comentario
+    ]);
+
+    aplicarEstiloCelda(row, index % 2 === 0);
+
+    // Formatear enteros
+    [7, 8, 10, 11, 12, 13, 14, 15, 16].forEach(col => {
+      if (row.getCell(col).value) row.getCell(col).numFmt = '#,##0';
+    });
+    
+    row.getCell(9).numFmt = '#,##0.00'; // Promedio 6M
+    
+    // Formatear monedas
+    if (row.getCell(17).value) row.getCell(17).numFmt = '₡#,##0.00';
+    if (row.getCell(18).value) row.getCell(18).numFmt = '$#,##0.00';
+    if (row.getCell(19).value) row.getCell(19).numFmt = '₡#,##0.00';
+    if (row.getCell(20).value) row.getCell(20).numFmt = '$#,##0.00';
+
+    // Highlights de colores pastel para celdas editadas por el analista
+    if (sugCourierAnalista > 0) {
+      const celda = row.getCell(13);
+      celda.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFE0B2' } };
+      celda.font = { ...STYLES.cell.font, color: { argb: 'FFE65100' }, bold: true };
+    }
+    if (sugAereoAnalista > 0) {
+      const celda = row.getCell(14);
+      celda.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE1BEE7' } };
+      celda.font = { ...STYLES.cell.font, color: { argb: 'FF6A1B9A' }, bold: true };
+    }
+    if (sugMaritimoAnalista > 0) {
+      const celda = row.getCell(15);
+      celda.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFBBDEFB' } };
+      celda.font = { ...STYLES.cell.font, color: { argb: 'FF0D47A1' }, bold: true };
+    }
+    
+    if (comentario !== '-') {
+      const celdaComentario = row.getCell(22);
+      celdaComentario.font = { ...STYLES.cell.font, italic: true, color: { argb: 'FF1A237E' } };
+    }
+  });
+
+  // Fila Resumen de Totales
+  const totalRow = sheet.addRow([
+    '', '', '', '', '', 'TOTALES:',
+    '', '', '',
+    '', '', '', '', '', '',
+    totalGeneral.unidades, // Columna 16
+    '', '',
+    totalGeneral.colones,  // Columna 19
+    totalGeneral.dolares,  // Columna 20
+    '', ''
+  ]);
+
+  totalRow.eachCell((cell) => {
+    cell.font = { bold: true, size: 11 };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFECEFF1' } };
+    cell.border = STYLES.header.border;
+  });
+
+  totalRow.getCell(16).numFmt = '#,##0';
+  totalRow.getCell(19).numFmt = '₡#,##0.00';
+  totalRow.getCell(20).numFmt = '$#,##0.00';
+  totalRow.height = 25;
+
+  sheet.autoFilter = {
+    from: { row: 4, column: 1 },
+    to: { row: datos.length + 4, column: 22 }
   };
 
   return workbook;
@@ -1742,7 +1941,9 @@ const NOMBRES_REPORTES: Record<string, string> = {
   'productos-nuevos': 'Productos Nuevos',
   'productos-reactivados': 'Productos Reactivados',
   'sugerencias-analista': 'Sugerencias del Analista',
-  'skus-con-pedido': 'SKUs con Pedido Sugerido'
+  'skus-con-pedido': 'SKUs con Pedido Sugerido',
+  'pedido-sugerido-analista': 'Pedido Sugerido y Analista'
+
 };
 
 // ===== HANDLER PRINCIPAL =====
@@ -1796,14 +1997,14 @@ export const GET: RequestHandler = async ({ url, locals, request }) => {
         break;
         
       case 'productos-nuevos':  
-    workbook = await generarProductosNuevos(procesamiento);
-    filename = `Productos_Nuevos_${procesamiento}.xlsx`;
-    break;
+      workbook = await generarProductosNuevos(procesamiento);
+      filename = `Productos_Nuevos_${procesamiento}.xlsx`;
+      break;
   
-  case 'productos-reactivados': 
-    workbook = await generarProductosReactivados(procesamiento);
-    filename = `Productos_Reactivados_${procesamiento}.xlsx`;
-    break;
+      case 'productos-reactivados': 
+      workbook = await generarProductosReactivados(procesamiento);
+      filename = `Productos_Reactivados_${procesamiento}.xlsx`;
+      break;
 
       //NUEVO CASE PARA SUGERENCIAS ANALISTA
       case 'sugerencias-analista':
@@ -1814,6 +2015,11 @@ export const GET: RequestHandler = async ({ url, locals, request }) => {
       case 'skus-con-pedido':
         workbook = await generarSKUsConPedido(procesamiento);
         filename = `SKUs_Con_Pedido_${procesamiento}.xlsx`;
+        break;
+      // ===== REPORTES UNIFICADOS (SUGERENCIAS Y SKUS CON PEDIDO) =====
+      case 'pedido-sugerido-analista':
+        workbook = await generarPedidoSugeridoYAnalista(procesamiento);
+        filename = `Pedido_Sugerido_Analista_${procesamiento}.xlsx`;
         break;
         
       default:
