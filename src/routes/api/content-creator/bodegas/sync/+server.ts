@@ -40,7 +40,7 @@ export const POST: RequestHandler = async ({ locals }) => {
 		}));
 
 		if (bodegasExactus.length === 0) {
-			return json({ success: false, error: 'No se encontraron bodegas en Exactus (¿VPN activa?)' }, { status: 502 });
+			return json({ success: false, error: 'No se encontraron bodegas disponibles. Intenta nuevamente más tarde.' }, { status: 502 });
 		}
 
 		const insertStmt = db.prepare(`
@@ -97,8 +97,8 @@ export const POST: RequestHandler = async ({ locals }) => {
 	} catch (error: any) {
 		console.error('[API CC bodegas sync]', error);
 		const mensaje = error?.code === 'ECONNREFUSED' || /ECONNREFUSED/.test(String(error?.message || ''))
-			? 'No se pudo conectar a Exactus. Verifica que estés conectado al VPN.'
-			: String(error?.message || error);
+			? 'No se pudo conectar al sistema de inventario. Intenta nuevamente más tarde.'
+			: String(error?.message || error).replace(/exactus/gi, 'el sistema de inventario');
 		return json({ success: false, error: mensaje }, { status: 502 });
 	}
 };

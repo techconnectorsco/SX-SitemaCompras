@@ -182,7 +182,7 @@
 						id="idea-textarea"
 						bind:value={ideaInput}
 						rows="4" 
-						placeholder="Escribe la idea central (ej: Invitación a feria industrial el viernes, descuento de 15% en soldadoras ecológicas...)"
+						placeholder="Escribe la idea central"
 						class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none focus:border-[#0D1E3D] dark:border-slate-800 dark:bg-slate-950 dark:focus:border-blue-500"
 					></textarea>
 				</div>

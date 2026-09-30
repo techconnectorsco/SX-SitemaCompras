@@ -205,7 +205,7 @@
 						Cargar Bodegas
 					{:else}
 						<RefreshCw class="h-4 w-4" />
-						Sincronizar de Exactus
+						Sincronizar bodegas
 					{/if}
 				</Button>
 			</div>
@@ -289,7 +289,7 @@
 				</div>
 			{:else if bodegas.length === 0}
 				<p class="text-center text-muted-foreground py-8">
-					No hay bodegas cargadas. Presiona <strong>"Cargar Bodegas"</strong> para sincronizar desde Exactus (requiere VPN).
+					No hay bodegas cargadas. Presiona <strong>"Cargar Bodegas"</strong> para cargar las bodegas disponibles.
 				</p>
 			{:else}
 				<div class="space-y-3">

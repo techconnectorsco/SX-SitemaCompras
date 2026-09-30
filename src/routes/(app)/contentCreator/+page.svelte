@@ -18,7 +18,6 @@
 		Facebook,
 		Image,
 		Tag,
-		Warehouse,
 		FileText
 	} from 'lucide-svelte';
 	import type { PageData } from './$types';
@@ -272,20 +271,6 @@
 					<span>Brand Assets</span>
 				</button>
 
-				<!-- Botón Bodegas (inventario Exactus) -->
-				<button
-					type="button"
-					onclick={() => switchTab('bodegas')}
-					class={`flex w-full items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-left text-xs font-medium transition-all duration-200
-						${
-							activeTab === 'bodegas'
-								? 'bg-[#0D1E3D] text-white shadow-sm dark:bg-blue-600'
-								: 'text-muted-foreground hover:bg-muted/80 hover:text-foreground'
-						}`}
-				>
-					<Warehouse class="h-4 w-4" />
-					<span>Bodegas</span>
-				</button>
 
 				<!-- Botón Fichas Técnicas -->
 				<button
