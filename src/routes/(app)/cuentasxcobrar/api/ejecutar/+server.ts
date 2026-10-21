@@ -10,7 +10,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	
 	return json({ 
 		ok: true, 
-		mensaje: 'Orden de envío procesada correctamente. Los estados de cuenta serán enviados en los próximos minutos (Simulación).',
+		mensaje: 'Orden de envío procesada correctamente. Los estados de cuenta serán enviados en los próximos minutos.',
 		job_id: crypto.randomUUID()
 	});
 };
