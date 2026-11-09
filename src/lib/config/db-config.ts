@@ -790,7 +790,7 @@ try {
       provider, is_anonymous, role, account_status,
       created_at, updated_at
     ) VALUES (
-      'SISTEMA_AUTOMATICO', 'sistema@vyoweb.local', 1, 'Sistema Automático',
+      'SISTEMA_AUTOMATICO', 'sistema@SXweb.local', 1, 'Sistema Automático',
       'system', 0, 'ADMIN', 'ACTIVE',
       strftime('%s','now'), strftime('%s','now')
     )

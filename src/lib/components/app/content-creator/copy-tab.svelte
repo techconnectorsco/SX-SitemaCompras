@@ -79,7 +79,7 @@
 					{
 						id: 2,
 						type: 'Promocional Directo',
-						text: `¡Precios de locura a tu alcance! 💸 Renovamos catálogo y todo el stock anterior debe salir ya. \n\n¡Descuentos acumulados del 20%, 40% y hasta 60%! Te esperamos hoy. #PromoOutlet #Ahorro`
+						text: `¡Precios de locura a tu alcance! 💸 Renovamos catálogo y todo el stock anterior debe salir ya. \n\n¡Descuentos acumulados del 20%, 40% y hasta 60%! Te esperamos hoy. #PromoSX #Ahorro`
 					},
 					{
 						id: 3,
@@ -92,7 +92,7 @@
 					{
 						id: 1,
 						type: 'Inspiracional / Conexión',
-						text: `Cada espacio cuenta una historia. Construye el tuyo con la solidez de los expertos. 🏡✨ \n\nDescubre el catálogo de soluciones que tenemos para tu hogar en esta temporada. #GrupoVYO #EstiloDeVida #Hogar`
+						text: `Cada espacio cuenta una historia. Construye el tuyo con la solidez de los expertos. 🏡✨ \n\nDescubre el catálogo de soluciones que tenemos para tu hogar en esta temporada. #SX #EstiloDeVida #Hogar`
 					},
 					{
 						id: 2,
