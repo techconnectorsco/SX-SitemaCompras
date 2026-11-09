@@ -4,9 +4,11 @@ import { authGuard } from '$lib/features/auth/hooks/auth-guard.server';
 import { createInitialModeExpression } from 'mode-watcher';
 import type { Handle } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
+import mssql from 'mssql';
 
 // Initialize database on server start
-import '$lib/config/db-config';
+import { db } from '$lib/config/db-config';
+import { createSvelteKitMonitoring } from '$lib/server/monitoring-kit/adapters/sveltekit';
 
 // Initialize schedulers (Publishing & Cleanup)
 import { PublishScheduler } from '$lib/features/content-creator/services/publish-scheduler';
@@ -193,7 +195,61 @@ const restoreApiUser: Handle = async ({ event, resolve }) => {
   return resolve(event);
 };
 
-export const handle = sequence(apiKeyAuth, sqlite, restoreApiUser, authGuard, async ({ event, resolve }) => {
+// =====================================================================
+// 🛡️ CENTRO CONSOLIDADO DE MONITOREO, SALUD Y AUDITORÍA (Monitoring Kit)
+// =====================================================================
+let exactusHealthPool: mssql.ConnectionPool | null = null;
+
+const { handle: monitoringHandle } = createSvelteKitMonitoring({
+  appName: 'SX Sistema de Compras y Forecast — Centro de Operaciones',
+  appBadge: 'COMP',
+  dbCacheTtlMs: 2500,
+  probes: [
+    {
+      key: 'sqlite',
+      label: 'BD Operativa Local (app.db)',
+      badge: 'SQLite WAL',
+      icon: 'SQ',
+      timeoutMs: 2000,
+      check: () => {
+        db.prepare('SELECT 1 AS health').get();
+      }
+    },
+    {
+      key: 'exactus',
+      label: 'ERP Exactus (SQL Server)',
+      badge: 'mssql Pool',
+      icon: 'EX',
+      timeoutMs: 3000,
+      check: async () => {
+        const user = env.EXACTUS_USER || '';
+        const password = env.EXACTUS_PASSWORD || '';
+        if (!user || !password) {
+          throw new Error('Credenciales EXACTUS_USER / EXACTUS_PASSWORD pendientes en .env');
+        }
+        if (!exactusHealthPool || !exactusHealthPool.connected) {
+          exactusHealthPool = new mssql.ConnectionPool({
+            server: env.EXACTUS_SERVER || '192.168.0.6',
+            port: parseInt(env.EXACTUS_PORT || '1433', 10),
+            database: env.EXACTUS_DATABASE || 'EXACTUS',
+            user,
+            password,
+            connectionTimeout: 3000,
+            requestTimeout: 3000,
+            options: {
+              encrypt: false,
+              trustServerCertificate: true
+            }
+          });
+          await exactusHealthPool.connect();
+        }
+        await exactusHealthPool.request().query('SELECT 1 AS health');
+      }
+    }
+  ]
+});
+
+export const handle = sequence(monitoringHandle, apiKeyAuth, sqlite, restoreApiUser, authGuard, async ({ event, resolve }) => {
   const modeWatcherScript = createInitialModeExpression();
   event.locals.modeWatcherScript = modeWatcherScript;
 

@@ -3,6 +3,7 @@
  * @description Configuración de base de datos SQLite (encriptado solo en producción)
  */
 import Database from 'better-sqlite3';
+import bcrypt from 'bcryptjs';
 import { dev } from '$app/environment';
 import path from 'path';
 import { existsSync, mkdirSync } from 'fs';
@@ -143,6 +144,48 @@ export function initializeDatabase() {
       updated_at INTEGER NOT NULL,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
+  `);
+
+  // PERMISOS Y AUDITORÍA DE IA INTERNA
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS ia_permisos_usuario (
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      modulo TEXT NOT NULL,
+      otorgado_por TEXT REFERENCES users(id) ON DELETE SET NULL,
+      fecha INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+      PRIMARY KEY (user_id, modulo)
+    );
+    CREATE INDEX IF NOT EXISTS idx_ia_permisos_modulo ON ia_permisos_usuario(modulo);
+
+    CREATE TABLE IF NOT EXISTS ia_configuracion_usuarios (
+      user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      estado_ia TEXT NOT NULL DEFAULT 'ACTIVO',
+      limite_tokens_mensual INTEGER,
+      updated_at INTEGER DEFAULT (strftime('%s','now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS ia_uso_tokens (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      usuario_nombre TEXT,
+      conversacion_id TEXT,
+      fecha INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+      proveedor TEXT,
+      modelo TEXT,
+      modulos TEXT,
+      mensaje_resumen TEXT,
+      respuesta_texto TEXT,
+      herramientas_usadas TEXT,
+      iteraciones INTEGER DEFAULT 1,
+      tokens_entrada INTEGER DEFAULT 0,
+      tokens_salida INTEGER DEFAULT 0,
+      tokens_total INTEGER DEFAULT 0,
+      costo_base REAL DEFAULT 0,
+      factor_cobro REAL DEFAULT 1,
+      precio_final REAL DEFAULT 0,
+      moneda TEXT DEFAULT 'USD'
+    );
+    CREATE INDEX IF NOT EXISTS idx_ia_uso_user_fecha ON ia_uso_tokens(user_id, fecha);
   `);
 
   // AUDITORÍA
@@ -461,6 +504,240 @@ try {
     console.error('[db] ⚠️ Migración columnas forecast_procesamiento:', e);
   }
 
+  // ===== SNAPSHOTS DE FORECAST (EXISTENCIA BODEGA, PEDIDOS, PROVEEDOR, CORRIDAS) =====
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS forecast_existencia_bodega (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      codigo_procesamiento TEXT NOT NULL,
+      codigo_sku TEXT NOT NULL,
+      bodega_codigo TEXT NOT NULL,
+      existencia REAL DEFAULT 0,
+      transito REAL DEFAULT 0
+    );
+    CREATE INDEX IF NOT EXISTS idx_feb_proc_sku ON forecast_existencia_bodega(codigo_procesamiento, codigo_sku);
+
+    CREATE TABLE IF NOT EXISTS forecast_pedidos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      codigo_procesamiento TEXT NOT NULL,
+      pedido TEXT,
+      pedido_linea INTEGER,
+      codigo_sku TEXT,
+      descripcion TEXT,
+      proveedor TEXT,
+      bodega_codigo TEXT,
+      estado TEXT,
+      fecha_prometida TEXT,
+      fecha_entrega TEXT,
+      cantidad_pedida REAL DEFAULT 0,
+      cantidad_facturada REAL DEFAULT 0,
+      cantidad_pendiente REAL DEFAULT 0,
+      cantidad_cancelada REAL DEFAULT 0,
+      precio_unitario REAL DEFAULT 0,
+      dias_diferencia INTEGER
+    );
+    CREATE INDEX IF NOT EXISTS idx_fp_proc_sku ON forecast_pedidos(codigo_procesamiento, codigo_sku);
+
+    CREATE TABLE IF NOT EXISTS forecast_proveedor_desempeno (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      codigo_procesamiento TEXT NOT NULL,
+      proveedor TEXT NOT NULL,
+      lineas_totales INTEGER DEFAULT 0,
+      cantidad_pedida REAL DEFAULT 0,
+      cantidad_facturada REAL DEFAULT 0,
+      cantidad_cancelada REAL DEFAULT 0,
+      fill_rate REAL DEFAULT 0,
+      lead_time_promedio REAL DEFAULT 0,
+      entregas_a_tiempo INTEGER DEFAULT 0,
+      entregas_retrasadas INTEGER DEFAULT 0,
+      porcentaje_a_tiempo REAL DEFAULT 0
+    );
+    CREATE INDEX IF NOT EXISTS idx_fpd_proc_prov ON forecast_proveedor_desempeno(codigo_procesamiento, proveedor);
+
+    CREATE TABLE IF NOT EXISTS forecast_corridas (
+      codigo_procesamiento TEXT PRIMARY KEY,
+      fecha_procesamiento TEXT,
+      usuario_procesamiento TEXT,
+      total_skus INTEGER DEFAULT 0,
+      duracion_forecast_seg REAL DEFAULT 0,
+      duracion_snapshot_seg REAL DEFAULT 0,
+      duracion_total_seg REAL DEFAULT 0,
+      snapshot_estado TEXT,
+      snapshot_detalle TEXT,
+      filas_bodega INTEGER DEFAULT 0,
+      filas_pedidos INTEGER DEFAULT 0,
+      filas_proveedor INTEGER DEFAULT 0
+    );
+  `);
+
+  // ===== CONTENT CREATOR: CATÁLOGOS Y PUBLICACIONES =====
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS marcas (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nombre TEXT UNIQUE NOT NULL,
+      prompt_sistema TEXT,
+      created_at INTEGER DEFAULT (strftime('%s','now')),
+      updated_at INTEGER,
+      deleted_at INTEGER
+    );
+
+    CREATE TABLE IF NOT EXISTS formatos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nombre TEXT UNIQUE NOT NULL,
+      aspect_ratio TEXT,
+      max_size_mb REAL,
+      max_duracion_sec INTEGER,
+      created_at INTEGER DEFAULT (strftime('%s','now')),
+      updated_at INTEGER,
+      deleted_at INTEGER
+    );
+
+    CREATE TABLE IF NOT EXISTS audiencias (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nombre TEXT UNIQUE NOT NULL,
+      created_at INTEGER DEFAULT (strftime('%s','now')),
+      updated_at INTEGER,
+      deleted_at INTEGER
+    );
+
+    CREATE TABLE IF NOT EXISTS redes_sociales (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nombre TEXT UNIQUE NOT NULL,
+      created_at INTEGER DEFAULT (strftime('%s','now')),
+      updated_at INTEGER,
+      deleted_at INTEGER
+    );
+
+    CREATE TABLE IF NOT EXISTS cuentas (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nombre TEXT UNIQUE NOT NULL,
+      meta_facebook_page_id TEXT,
+      meta_instagram_id TEXT,
+      meta_access_token TEXT,
+      meta_refresh_token TEXT,
+      token_expires_at INTEGER,
+      meta_business_id TEXT,
+      meta_ad_account_id TEXT,
+      pais TEXT,
+      timezone TEXT DEFAULT 'America/Costa_Rica',
+      created_at INTEGER DEFAULT (strftime('%s','now')),
+      updated_at INTEGER,
+      deleted_at INTEGER
+    );
+
+    CREATE TABLE IF NOT EXISTS cuenta_redes (
+      cuenta_id INTEGER NOT NULL REFERENCES cuentas(id) ON DELETE CASCADE,
+      red_social_id INTEGER NOT NULL REFERENCES redes_sociales(id) ON DELETE CASCADE,
+      PRIMARY KEY (cuenta_id, red_social_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS publicaciones (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT NOT NULL,
+      cuenta_id INTEGER NOT NULL,
+      marca_id INTEGER NOT NULL,
+      formato_id INTEGER,
+      audiencia_id INTEGER,
+      titulo TEXT NOT NULL,
+      contexto TEXT,
+      objetivo TEXT,
+      cta TEXT,
+      presupuesto_usd REAL,
+      copy_ia_original TEXT,
+      copy_final TEXT,
+      estado TEXT DEFAULT 'Borrador' CHECK(estado IN ('Borrador', 'En revisión', 'Guardado', 'Aprobado', 'Publicado', 'Error API')),
+      api_error_log TEXT,
+      retry_count INTEGER DEFAULT 0,
+      notas_revision TEXT,
+      aprobado_por TEXT,
+      aprobado_at INTEGER,
+      campana TEXT,
+      designed INTEGER DEFAULT 0,
+      published INTEGER DEFAULT 0,
+      published_at INTEGER,
+      meta_post_id TEXT,
+      fecha_programada INTEGER,
+      sharepoint_item_id TEXT,
+      sharepoint_thumbnail_id TEXT,
+      image_name TEXT,
+      created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+      updated_at INTEGER,
+      deleted_at INTEGER,
+      modificado_por TEXT REFERENCES users(id),
+      meta_pauta_inicio INTEGER,
+      meta_pauta_fin INTEGER,
+      sharepoint_drive_id TEXT,
+      ultimo_reintento_at INTEGER,
+      promoted INTEGER DEFAULT 0,
+      carousel_images TEXT,
+      prompt_personalizado TEXT,
+      prompt_copy TEXT,
+      es_carrusel INTEGER DEFAULT 0,
+      FOREIGN KEY(user_id) REFERENCES users(id),
+      FOREIGN KEY(cuenta_id) REFERENCES cuentas(id),
+      FOREIGN KEY(marca_id) REFERENCES marcas(id),
+      FOREIGN KEY(formato_id) REFERENCES formatos(id),
+      FOREIGN KEY(audiencia_id) REFERENCES audiencias(id),
+      FOREIGN KEY(aprobado_por) REFERENCES users(id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_pub_user_id ON publicaciones(user_id);
+    CREATE INDEX IF NOT EXISTS idx_pub_cuenta_id ON publicaciones(cuenta_id);
+    CREATE INDEX IF NOT EXISTS idx_pub_marca_id ON publicaciones(marca_id);
+    CREATE INDEX IF NOT EXISTS idx_pub_estado ON publicaciones(estado);
+    CREATE INDEX IF NOT EXISTS idx_pub_fecha ON publicaciones(fecha_programada);
+    CREATE INDEX IF NOT EXISTS idx_pub_deleted ON publicaciones(deleted_at);
+    CREATE INDEX IF NOT EXISTS idx_pub_campana ON publicaciones(campana);
+
+    CREATE TABLE IF NOT EXISTS publicacion_redes (
+      publicacion_id INTEGER NOT NULL REFERENCES publicaciones(id) ON DELETE CASCADE,
+      red_social_id INTEGER NOT NULL REFERENCES redes_sociales(id) ON DELETE CASCADE,
+      PRIMARY KEY (publicacion_id, red_social_id)
+    );
+  `);
+
+  // Seeding idempotente de catálogos base de Content Creator
+  try {
+    const seedMarca = db.prepare('INSERT OR IGNORE INTO marcas (nombre, prompt_sistema) VALUES (?, ?)');
+    for (const [nombre, prompt] of [
+      ['Husqvarna', 'Actúa como experto en la marca Husqvarna. Tono técnico, premium, enfocado en el profesional forestal y de jardinería.'],
+      ['Toyama', 'Actúa como redactor para Toyama. Tono robusto, directo y enfocado en relación calidad-precio.'],
+      ['Oregon', 'Actúa como especialista en Oregon. Tono centrado en tecnología de pulverización, repuestos y precisión de corte.'],
+      ['Penagos', 'Actúa como experto de la marca Penagos. Tono enfocado en soluciones agroindustriales.'],
+      ['GTM', 'Actúa como redactor para trituradoras GTM. Tono enfocado en ecología y potencia forestal.'],
+      ['Imacasa', 'Actúa como promotor de herramientas manuales Imacasa.'],
+      ['Norwood', 'Actúa como experto forestal de aserraderos portátiles Norwood.'],
+      ['CIFARELLI', 'Actúa como experto en equipos CIFARELLI.']
+    ]) {
+      seedMarca.run(nombre, prompt);
+    }
+
+    const seedFormato = db.prepare('INSERT OR IGNORE INTO formatos (nombre, aspect_ratio, max_size_mb, max_duracion_sec) VALUES (?, ?, ?, ?)');
+    for (const [nombre, ratio, size, dur] of [
+      ['Vertical (4:5)', '4:5', 30, null],
+      ['Cuadrado (1:1)', '1:1', 30, null],
+      ['Historia / Reel (9:16)', '9:16', 250, 90],
+      ['Horizontal (16:9)', '16:9', 30, null]
+    ] as const) {
+      seedFormato.run(nombre, ratio, size, dur);
+    }
+
+    const seedAudiencia = db.prepare('INSERT OR IGNORE INTO audiencias (nombre) VALUES (?)');
+    for (const nombre of ['Amplio', 'Agrónomos y Fincas', 'Jardineros y Hogar', 'Construcción y Contratistas', 'Profesionales de Madera']) {
+      seedAudiencia.run(nombre);
+    }
+
+    const seedRed = db.prepare('INSERT OR IGNORE INTO redes_sociales (id, nombre) VALUES (?, ?)');
+    for (const [id, nombre] of [[1, 'Facebook'], [2, 'Instagram'], [3, 'Sitio Web (Blog)'], [4, 'SharePoint']] as const) {
+      seedRed.run(id, nombre);
+    }
+
+    const seedCuenta = db.prepare('INSERT OR IGNORE INTO cuentas (nombre) VALUES (?)');
+    for (const nombre of ['SX', 'Outlet', 'Retail Pro']) {
+      seedCuenta.run(nombre);
+    }
+  } catch (e) {
+    console.error('[db] ⚠️ Error seeding catálogos iniciales:', e);
+  }
+
   // ASSETS POR MARCA (logos, isotipos, sellos, fondos)
   db.exec(`
     CREATE TABLE IF NOT EXISTS marca_assets (
@@ -777,13 +1054,9 @@ try {
     WHERE modelo_ia = 'gemini-2.5-flash'
   `).run(IA_BILLING_MULTIPLIER);
 
-  console.log('[db] ✅ Database schema initialized');
-  ensureFirstUserLogic();
-}
-
- // ===== USUARIO DE SISTEMA (para auditoría de tareas automáticas / RPA) =====
+  // ===== USUARIO DE SISTEMA (para auditoría de tareas automáticas / RPA) =====
   // Existe para satisfacer la FK de audit_logs cuando el proceso lo dispara el
-  // cron (no un humano). Idempotente: se crea una sola vez.
+  // cron (no un humano). Idempotente: se crea una sola vez dentro de initializeDatabase().
   db.prepare(`
     INSERT INTO users (
       id, email, email_verified, display_name,
@@ -798,14 +1071,42 @@ try {
   `).run();
   console.log('[db] ✅ Usuario SISTEMA_AUTOMATICO verificado/creado');
 
+  // Usuario Administrador inicial por defecto (idempotente)
+  try {
+    const existingAdmin = db.prepare("SELECT id FROM users WHERE id = 'ADMIN_SEED' OR email = 'admin@soportexperto.com'").get();
+    if (!existingAdmin) {
+      const adminHash = bcrypt.hashSync('Admin1234!', 10);
+      const nowMs = Date.now();
+      db.prepare(`
+        INSERT INTO users (
+          id, email, email_verified, password_hash, display_name,
+          provider, is_anonymous, role, account_status,
+          created_at, updated_at
+        ) VALUES (
+          'ADMIN_SEED', 'admin@soportexperto.com', 1, ?, 'Administrador SX',
+          'email', 0, 'ADMIN', 'ACTIVE',
+          ?, ?
+        )
+        ON CONFLICT(id) DO NOTHING
+      `).run(adminHash, nowMs, nowMs);
+      console.log('[db] ✅ Usuario administrador inicial (admin@soportexperto.com) creado');
+    }
+  } catch (e) {
+    console.error('[db] ⚠️ Error verificando admin inicial:', e);
+  }
+
+  console.log('[db] ✅ Database schema initialized');
+  ensureFirstUserLogic();
+}
+
 function ensureFirstUserLogic() {
   try {
-    const stmt = db.prepare('SELECT count(*) as count FROM users');
+    const stmt = db.prepare("SELECT count(*) as count FROM users WHERE id != 'SISTEMA_AUTOMATICO'");
     const result = stmt.get() as { count: number };
     if (result && result.count === 0) {
-      console.log('[db] ℹ️  No users. Next user will be ADMIN');
+      console.log('[db] ℹ️  No human users yet. Next registered user will be ADMIN');
     } else {
-      console.log(`[db] ℹ️  Database has ${result.count} user(s)`);
+      console.log(`[db] ℹ️  Database has ${result.count} human user(s)`);
     }
   } catch (err) {
     console.error('[db] Error:', err);

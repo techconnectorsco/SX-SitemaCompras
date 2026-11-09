@@ -16,7 +16,8 @@
 		Share2,
 		Tag,
 		FileText,
-		Receipt
+		Receipt,
+		Activity
 	} from 'lucide-svelte';
 </script>
 
@@ -149,6 +150,15 @@
 							>
 								<Sparkles class="mr-2 h-5 w-5" />
 								Community Manager
+							</Button>
+							<Button
+								href="/dashboard"
+								size="lg"
+								variant="outline"
+								class="text-base px-8 py-6 border-[#0D1E3D] text-[#0D1E3D] hover:bg-[#0D1E3D]/5"
+							>
+								<Activity class="mr-2 h-5 w-5" />
+								Kit de Monitoreo
 							</Button>
 							<Button
 								href={AUTH_PATHS.REGISTER}

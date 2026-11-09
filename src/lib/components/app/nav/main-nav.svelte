@@ -9,7 +9,7 @@
 	import LightSwitch from './light-switch.svelte';
 	import { siteConfig } from '$lib/config/site';
 	import { page } from '$app/state';
-	import { Settings } from 'lucide-svelte';
+	import { Settings, Activity } from 'lucide-svelte';
 
 	const isAdmin = $derived(page.data.session?.user?.role === 'ADMIN');
 </script>
@@ -31,6 +31,14 @@
 		</div>
 
 		<div class="flex items-center justify-end gap-x-2 xl:col-span-2">
+			<a
+				href="/dashboard"
+				aria-label="Monitoreo"
+				class="inline-flex items-center gap-2 rounded-md px-2 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:px-3"
+			>
+				<Activity class="h-4 w-4" />
+				<span class="hidden sm:inline">Monitoreo</span>
+			</a>
 			{#if isAdmin}
 				<a
 					href="/admin"

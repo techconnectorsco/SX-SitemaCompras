@@ -33,10 +33,12 @@ export interface CreateUserParams {
 
 export class UserService {
   /**
-   * Check if this is the first user in the system
+   * Check if this is the first user in the system (ignoring SISTEMA_AUTOMATICO and ADMIN_SEED)
    */
   private static isFirstUser(): boolean {
-    const stmt = db.prepare('SELECT COUNT(*) as count FROM users');
+    const stmt = db.prepare(
+      "SELECT COUNT(*) as count FROM users WHERE id NOT IN ('SISTEMA_AUTOMATICO', 'ADMIN_SEED')"
+    );
     const result = stmt.get() as { count: number };
     return result.count === 0;
   }

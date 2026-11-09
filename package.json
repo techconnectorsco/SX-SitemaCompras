@@ -73,5 +73,11 @@
 		"lucide-svelte": "^0.546.0",
 		"mssql": "^12.2.0",
 		"valibot": "^1.4.2"
+	},
+	"allowScripts": {
+		"better-sqlite3@12.10.0": true,
+		"esbuild@0.25.12": true,
+		"protobufjs@7.6.2": true,
+		"@google/genai@2.7.0": true
 	}
 }
