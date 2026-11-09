@@ -99,7 +99,7 @@ export const mainNav: NavItem[] = [
 		icon: FileSpreadsheet,
 		items: [
 			{ title: "Plantilla Exactus", href: "/reports/exactus" },
-			{ title: "Plantilla Husqvarna", href: "/reports/husqvarna" },
+			{ title: "Plantilla HP", href: "/reports/hp" },
 			{ title: "Reporte Control Compras", href: "/reports/purchase-control" },
 			{ title: "Exportar Excel", href: "/reports/export" },
 		],
@@ -227,7 +227,7 @@ export const abcCategories = {
  * Lead Times por proveedor (en días)
  */
 export const leadTimes = {
-	husqvarna: 3,
+	hp: 3,
 	// Agregar más proveedores según se necesiten
 } as const;
 

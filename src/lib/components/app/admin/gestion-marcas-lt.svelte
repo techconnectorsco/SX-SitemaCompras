@@ -275,8 +275,7 @@
 					<strong>meses de pedido</strong> a las vías aérea y marítima (no al courier).
 				</p>
 				<p>
-					<strong>Husqvarna</strong> se divide en dos tarifas: <em>A</em> para productos de línea RP
-					y
+					<strong>HP</strong> se divide en dos tarifas: <em>A</em> para productos de línea RP y
 					<em>B</em> para el resto. <strong>Deyu</strong> agrupa sus variantes; al editar una, podés
 					usar "igualar grupo" para copiar a las demás. <strong>Otras marcas</strong> es la tarifa por
 					defecto para todo lo no listado (no se puede borrar, pero sí editar).

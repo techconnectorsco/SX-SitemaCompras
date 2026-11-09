@@ -102,12 +102,12 @@ export const GET: RequestHandler = async ({ locals }) => {
         const factorSeg = FACTORES_SEGURIDAD[stats.abcRotacion] || 0;
 
         // Resolver la CLAVE de L.T. (mismo criterio que el motor real):
-        //  - HUSQVARNA → A si la línea empieza con RP, si no B.
+        //  - HP → A si la línea empieza con RP, si no B.
         //  - resto → marca directa ; si no está en la tabla → default.
         const marca = (articulo.marca || '').toUpperCase().trim();
         const linea = (articulo.linea || '').toUpperCase().trim();
-        const clave = marca === 'HUSQVARNA'
-          ? (linea.startsWith('RP') ? 'HUSQVARNA-A' : 'HUSQVARNA-B')
+        const clave = marca === 'HP'
+          ? (linea.startsWith('RP') ? 'HP-A' : 'HP-B')
           : marca;
         const ltAplicado = marcasLtMap.get(clave) || defaultLt;
 

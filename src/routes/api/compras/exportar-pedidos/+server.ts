@@ -1,10 +1,10 @@
 /**
- * Exportar pedidos a Excel para Husqvarna y otras líneas
+ * Exportar pedidos a Excel para HP y otras líneas
  * GET /api/compras/exportar-pedidos
  * 
  * Query params:
  * - procesamiento: código del procesamiento
- * - tipo: 'husqvarna' | 'otros'
+ * - tipo: 'hp' | 'otros'
  * 
  * Genera un ZIP con 3 archivos Excel:
  * - pedido_courier.xlsx
@@ -114,14 +114,14 @@ export const GET: RequestHandler = async ({ url, locals, request }) => {
 
   try {
     const codigoProcesamiento = url.searchParams.get('procesamiento');
-    const tipo = url.searchParams.get('tipo'); // 'husqvarna' | 'otros'
+    const tipo = url.searchParams.get('tipo'); // 'hp' | 'otros'
 
     if (!codigoProcesamiento) {
       return json({ error: 'Falta código de procesamiento' }, { status: 400 });
     }
 
-    if (!tipo || !['husqvarna', 'otros'].includes(tipo)) {
-      return json({ error: 'Tipo debe ser "husqvarna" o "otros"' }, { status: 400 });
+    if (!tipo || !['hp', 'otros'].includes(tipo)) {
+      return json({ error: 'Tipo debe ser "hp" o "otros"' }, { status: 400 });
     }
 
     // Calcular fecha de entrega (+3 días hábiles desde hoy)
@@ -130,9 +130,9 @@ export const GET: RequestHandler = async ({ url, locals, request }) => {
     const fechaEntregaStr = formatearFecha(fechaEntrega);
 
     // Construir condición de línea
-    const condicionLinea = tipo === 'husqvarna'
-      ? `AND (UPPER(linea) LIKE '%HUSQVARNA%' OR UPPER(marca) LIKE '%HUSQVARNA%')`
-      : `AND (UPPER(linea) NOT LIKE '%HUSQVARNA%' OR linea IS NULL) AND (UPPER(marca) NOT LIKE '%HUSQVARNA%' OR marca IS NULL)`;
+    const condicionLinea = tipo === 'hp'
+      ? `AND (UPPER(linea) LIKE '%HP%' OR UPPER(marca) LIKE '%HP%')`
+      : `AND (UPPER(linea) NOT LIKE '%HP%' OR linea IS NULL) AND (UPPER(marca) NOT LIKE '%HP%' OR marca IS NULL)`;
 
     // Query para Courier (sugerido_analista_urgente > 0)
     const datosCourier = db.prepare(`
@@ -177,13 +177,13 @@ export const GET: RequestHandler = async ({ url, locals, request }) => {
     if (datosCourier.length === 0 && datosAereo.length === 0 && datosMaritimo.length === 0) {
       return json({ 
         error: 'No hay pedidos para exportar',
-        mensaje: `No se encontraron SKUs con pedido para ${tipo === 'husqvarna' ? 'Husqvarna' : 'otras líneas'}`
+        mensaje: `No se encontraron SKUs con pedido para ${tipo === 'hp' ? 'HP' : 'otras líneas'}`
       }, { status: 404 });
     }
 
     // Crear ZIP con los archivos
     const zip = new JSZip();
-    const prefijo = tipo === 'husqvarna' ? 'husqvarna' : 'otros';
+    const prefijo = tipo === 'hp' ? 'hp' : 'otros';
     const fechaArchivo = hoy.toISOString().split('T')[0].replace(/-/g, '');
 
     // Agregar archivos al ZIP solo si tienen datos
@@ -206,7 +206,7 @@ export const GET: RequestHandler = async ({ url, locals, request }) => {
     const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
 
     // ===== LOG DE AUDITORÍA - EXPORTACIÓN EXITOSA =====
-    const tipoAccion = tipo === 'husqvarna' ? 'COMPRAS_EXPORT_HUSQVARNA' : 'COMPRAS_EXPORT_OTROS';
+    const tipoAccion = tipo === 'hp' ? 'COMPRAS_EXPORT_HP' : 'COMPRAS_EXPORT_OTROS';
     const resumen = [
       datosCourier.length > 0 ? `Courier: ${datosCourier.length}` : null,
       datosAereo.length > 0 ? `Aéreo: ${datosAereo.length}` : null,
@@ -218,7 +218,7 @@ export const GET: RequestHandler = async ({ url, locals, request }) => {
       tipoAccion,
       ip,
       userAgent,
-      `Exportación ${tipo === 'husqvarna' ? 'Husqvarna' : 'Otras líneas'} completada. Procesamiento: ${codigoProcesamiento}. SKUs: ${resumen}. Fecha entrega: ${fechaEntregaStr}`
+      `Exportación ${tipo === 'hp' ? 'HP' : 'Otras líneas'} completada. Procesamiento: ${codigoProcesamiento}. SKUs: ${resumen}. Fecha entrega: ${fechaEntregaStr}`
     );
 
     // Devolver como descarga

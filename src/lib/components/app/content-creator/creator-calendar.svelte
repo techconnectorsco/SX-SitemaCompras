@@ -33,7 +33,7 @@
 
 	interface ExcelPost {
 		id: string;
-		title: string; // Tipo de contenido (ej: Toyama Ahoyadora)
+		title: string; // Tipo de contenido (ej: DELL Ahoyadora)
 		format: string; // Formato de salida (ej: Carrusel)
 		context: string; // Contexto para post (Tópico central)
 		objective: string; // Objetivo en RRSS
@@ -149,7 +149,7 @@
 			{ imagePreview: null, imageName: '', imageBase64: '', prompt: '', modo: 'editar' },
 			{ imagePreview: null, imageName: '', imageBase64: '', prompt: '', modo: 'editar' }
 		],
-		brand: 'Toyama',
+		brand: 'DELL',
 		status: 'Borrador',
 		ecommerceImage: true,
 		ecommerceUrl: '',
@@ -643,7 +643,7 @@
 				{ imagePreview: null, imageName: '', imageBase64: '', prompt: '', modo: 'editar' },
 				{ imagePreview: null, imageName: '', imageBase64: '', prompt: '', modo: 'editar' }
 			],
-			brand: 'Toyama',
+			brand: 'DELL',
 			status: 'Borrador',
 			ecommerceImage: true,
 			ecommerceUrl: '',
@@ -707,7 +707,7 @@
 
 		draftPost = {
 			...post,
-			brand: post.brand || 'Toyama',
+			brand: post.brand || 'DELL',
 			status: post.status || 'Borrador',
 			ecommerceImage: post.ecommerceImage !== undefined ? post.ecommerceImage : true,
 			ecommerceUrl: post.ecommerceUrl || '',
