@@ -46,3 +46,9 @@ ecosystem.config.cjs
 backups/
 
 .tgrep
+
+
+# Respaldos de base de datos (no los tapa *.db)
+*.bak-*
+*.bak
+data/
