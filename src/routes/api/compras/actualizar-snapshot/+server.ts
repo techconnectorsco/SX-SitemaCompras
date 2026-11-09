@@ -81,7 +81,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const ahora = new Date().toISOString();
 	const usuarioActual = user.email || user.name || 'Analista';
 
-	AuditService.log(user.id, 'FORECAST_SNAPSHOT_UPDATE_START', 'unknown', 'VYOWEB-App',
+	AuditService.log(user.id, 'FORECAST_SNAPSHOT_UPDATE_START' as any, 'unknown', 'SXWEB-App',
 		`Actualización de snapshot iniciada para ${codigoProcesamiento} por ${usuarioActual}`);
 
 	// ===== STREAM DE PROGRESO (SSE), igual que el orchestrator =====
@@ -307,7 +307,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 				try { await dataSource.close(); } catch { /* noop */ }
 
-				AuditService.log(user.id, 'FORECAST_SNAPSHOT_UPDATE', 'unknown', 'VYOWEB-App',
+				AuditService.log(user.id, 'FORECAST_SNAPSHOT_UPDATE', 'unknown', 'SXWEB-App',
 					`Snapshot actualizado ${codigoProcesamiento}: ${actualizados} actualizados, ${insertados} nuevos`);
 
 				const tiempoTotal = ((Date.now() - tiempoInicio) / 1000).toFixed(1);
@@ -327,7 +327,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			} catch (error) {
 				try { await dataSource.close(); } catch { /* noop */ }
 				console.error('[actualizar-snapshot] ❌', error);
-				AuditService.log(user.id, 'FORECAST_SNAPSHOT_UPDATE_ERROR', 'unknown', 'VYOWEB-App',
+				AuditService.log(user.id, 'FORECAST_SNAPSHOT_UPDATE_ERROR', 'unknown', 'SXWEB-App',
 					`Error actualizando ${codigoProcesamiento}: ${error instanceof Error ? error.message : 'desconocido'}`);
 				sendEvent({ type: 'error', error: error instanceof Error ? error.message : 'Error desconocido', codigoProcesamiento });
 				controller.close();

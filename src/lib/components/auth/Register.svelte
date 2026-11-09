@@ -1,7 +1,7 @@
 <script lang="ts">
 	/**
 	 * @module RegisterPage
-	 * @description Componente de registro de usuarios para el sistema VYO.
+	 * @description Componente de registro de usuarios para el sistema SX.
 	 * Utiliza SuperForms + AuthForm para validación y envío del formulario.
 	 */
 
@@ -55,33 +55,28 @@
 	<MainNav />
 
 	<!-- Contenedor principal - permite scroll si es necesario -->
-	<div class="flex-1 flex items-center justify-center bg-linear-to-br from-white to-slate-50 dark:from-gray-950 dark:to-gray-900 overflow-auto">
+	<div
+		class="flex-1 flex items-center justify-center bg-linear-to-br from-white to-slate-50 dark:from-gray-950 dark:to-gray-900 overflow-auto"
+	>
 		<!-- Formulario de Register -->
 		<div class="w-full max-w-lg px-6 py-6">
 			<!-- Logo y Header -->
 			<div class="space-y-3">
-				<!-- Logo VYO -->
 				<div class="flex items-center gap-3">
-					<img 
-						src="/logo-soportexperto.png" 
-						alt="SoporteXperto Logo" 
-						class="h-12 w-auto"
-					/>
+					<img src="/logo-soportexperto.png" alt="SoporteXperto Logo" class="h-12 w-auto" />
 				</div>
 
 				<!-- Título y Badge en línea -->
 				<div class="flex items-center justify-between">
 					<div>
-						<h1 class="text-3xl font-bold text-[#0D1E3D] dark:text-white">
-							Crear Cuenta
-						</h1>
-						<p class="text-sm text-muted-foreground mt-1">
-							Solicita acceso al sistema
-						</p>
+						<h1 class="text-3xl font-bold text-[#0D1E3D] dark:text-white">Crear Cuenta</h1>
+						<p class="text-sm text-muted-foreground mt-1">Solicita acceso al sistema</p>
 					</div>
-					
+
 					<!-- Badge de seguridad -->
-					<div class="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 text-green-700 dark:text-green-400 text-xs font-medium">
+					<div
+						class="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 text-green-700 dark:text-green-400 text-xs font-medium"
+					>
 						<ShieldCheck class="h-3.5 w-3.5" />
 						<span>SSL</span>
 					</div>
@@ -121,24 +116,16 @@
 			<div class="mt-3 space-y-2 text-xs text-muted-foreground">
 				<div class="text-center pt-2 border-t">
 					Al registrarte aceptas{' '}
-					<a 
-						href="/terms" 
-						class="text-[#0D1E3D] hover:underline transition-colors"
-					>
-						Términos
-					</a>
+					<a href="/terms" class="text-[#0D1E3D] hover:underline transition-colors"> Términos </a>
 					{' '}y{' '}
-					<a 
-						href="/privacy" 
-						class="text-[#0D1E3D] hover:underline transition-colors"
-					>
+					<a href="/privacy" class="text-[#0D1E3D] hover:underline transition-colors">
 						Privacidad
 					</a>
 				</div>
 				<div class="text-center">
 					Contacto:{' '}
-					<a 
-						href="mailto:{siteConfig.contact.email}" 
+					<a
+						href="mailto:{siteConfig.contact.email}"
 						class="text-[#0D1E3D] hover:underline transition-colors"
 					>
 						{siteConfig.contact.email}

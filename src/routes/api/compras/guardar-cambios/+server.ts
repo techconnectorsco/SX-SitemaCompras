@@ -19,7 +19,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
   // ✅ MEJORA 1: Capturar IP y User-Agent reales desde la petición del navegador
   const ip = request.headers.get('x-forwarded-for') || request.headers.get('remote-addr') || 'unknown';
-  const userAgent = request.headers.get('user-agent') || 'VYOWEB-App';
+  const userAgent = request.headers.get('user-agent') || 'SXWEB-App';
 
   try {
     const { cambios, codigoProcesamiento } = await request.json();

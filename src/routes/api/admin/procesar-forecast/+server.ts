@@ -89,7 +89,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
   const codigoProcesamiento = generarCodigoProcesamiento();
 
   const ip = 'unknown';
-  const userAgent = 'VYOWEB-App';
+  const userAgent = 'SXWEB-App';
   
   // ===== LOG DE AUDITORÍA - INICIO FORECAST =====
   AuditService.log(

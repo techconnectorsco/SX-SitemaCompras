@@ -13,7 +13,7 @@ import History from "@lucide/svelte/icons/history";
 import Database from "@lucide/svelte/icons/database";
 
 /**
- * Configuración del sistema VYO - Asistente de Compras y Forecast
+ * Configuración del sistema SX - Asistente de Compras y Forecast
  * @constant
  * @type {object}
  * @property {string} title - Título principal del sistema
@@ -37,14 +37,14 @@ export const siteConfig = {
 	logoDark: '/logo-soportexperto1.png',
 	favicon: '/favicon.png',
 	contact: {
-		email: 'asist-digit-interno@vyo.cr',
+		email: 'asist-digit-interno@sx.com',
 		phone: '+506 2222-2222'
 	},
 	company: {
-		name: 'VYO S.A.'
+		name: 'SX'
 	},
 	footer: {
-		rights: '© 2025 VYO S.A. Todos los derechos reservados.'
+		rights: '© 2025 SX. Todos los derechos reservados.'
 	}
 };
 

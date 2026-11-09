@@ -1,4 +1,4 @@
-//D:\Users\Usuario\Desktop\VedovaWEB\VYOWEB\src\lib\data\forecast-calculator.ts
+//D:\Users\Usuario\Desktop\VedovaWEB\SXWEB\src\lib\data\forecast-calculator.ts
 /**
  * @module ForecastCalculator
  * @description Cálculos estadísticos para forecast de compras

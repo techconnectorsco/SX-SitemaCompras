@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * MOTOR DE IA VYOWEB — CONFIGURACIÓN Y PROMPT DE SISTEMA
+ * MOTOR DE IA SX — CONFIGURACIÓN Y PROMPT DE SISTEMA
  * ============================================================================
  * Constantes de negocio (umbrales) y el armado del prompt de sistema que
  * codifica las reglas del cliente SoporteXperto.
