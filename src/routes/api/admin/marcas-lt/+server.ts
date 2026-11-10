@@ -5,7 +5,7 @@
  * CRUD de la tabla marcas_lt_config (lead time por proveedor/marca y por vía).
  * Llave = `clave`:
  *   - Marca normal → clave = marca de Exactus (CLASIFICACION_4)
- *   - HUSQVARNA    → claves especiales HUSQVARNA-A / HUSQVARNA-B (sembradas)
+ *   - HP    → claves especiales HP-A / HP-B (sembradas)
  *   - Default      → clave '__DEFAULT__' (editable, no se puede eliminar)
  * ═══════════════════════════════════════════════════════════════════════════
  */

@@ -144,7 +144,7 @@
 						<p class="text-xs text-muted-foreground">De 1,000,000 cuota</p>
 					</div>
 					<div class="flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-950/50">
-						<Coins class="h-6 w-6 text-orange-600 dark:text-orange-400" />
+						<Coins class="h-6 w-6 text-[#1A73C2] dark:text-[#1A73C2]" />
 					</div>
 				</div>
 			</div>
@@ -199,8 +199,8 @@
 						</svg>
 
 						<div class="absolute right-[20%] top-[30%] flex h-3.5 w-3.5 items-center justify-center">
-							<div class="absolute h-full w-full animate-ping rounded-full bg-orange-400 opacity-75"></div>
-							<div class="relative h-2 w-2 rounded-full bg-orange-500"></div>
+							<div class="absolute h-full w-full animate-ping rounded-full bg-[#1A73C2] opacity-75"></div>
+							<div class="relative h-2 w-2 rounded-full bg-[#1A73C2]"></div>
 						</div>
 					</div>
 					<div class="mt-2.5 flex justify-between text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">

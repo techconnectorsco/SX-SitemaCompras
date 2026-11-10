@@ -1,4 +1,5 @@
 import db from '$lib/config/db-config';
+import { recordPublicationEvent } from './publication-audit-service';
 import { FacebookService } from './facebook-service';
 import { InstagramService } from './meta/instagram-service';
 import { ensureFreshToken } from './meta/meta-account-repo';
@@ -88,6 +89,7 @@ export class PublishScheduler {
                                 updated_at = ?
                             WHERE id = ?
                         `).run(errorMsg, now, post.id);
+                        recordPublicationEvent(post.id, 'PUBLISH_ERROR', null, errorMsg);
                         console.error(`[PublishScheduler] ❌ Post ID #${post.id} sin copy final — no se enviará a Meta.`);
                         results.push({ id: post.id, titulo: post.titulo, success: false, error: errorMsg });
                         continue;
@@ -106,6 +108,7 @@ export class PublishScheduler {
                                 updated_at = ?
                             WHERE id = ?
                         `).run(errorMsg, now, now, post.id);
+                        recordPublicationEvent(post.id, 'PUBLISH_ERROR', null, errorMsg);
                         console.error(`[PublishScheduler] ❌ Post ID #${post.id} sin cuenta_id — marcado Error API.`);
                         results.push({ id: post.id, titulo: post.titulo, success: false, error: errorMsg });
                         continue;
@@ -124,6 +127,7 @@ export class PublishScheduler {
                                 updated_at = ?
                             WHERE id = ?
                         `).run(errorMsg, now, now, post.id);
+                        recordPublicationEvent(post.id, 'PUBLISH_ERROR', null, errorMsg);
                         console.error(`[PublishScheduler] ❌ Post ID #${post.id}: ${errorMsg}`);
                         results.push({ id: post.id, titulo: post.titulo, success: false, error: errorMsg });
                         continue;
@@ -155,6 +159,7 @@ export class PublishScheduler {
                                 updated_at = ?
                             WHERE id = ?
                         `).run(errorMsg, now, now, post.id);
+                        recordPublicationEvent(post.id, 'PUBLISH_ERROR', null, errorMsg);
                         console.error(`[PublishScheduler] ❌ Post ID #${post.id}: ${errorMsg}`);
                         results.push({ id: post.id, titulo: post.titulo, success: false, error: errorMsg });
                         continue;
@@ -181,6 +186,7 @@ export class PublishScheduler {
                                 updated_at = ?
                             WHERE id = ?
                         `).run(errorMsg, now, now, post.id);
+                        recordPublicationEvent(post.id, 'PUBLISH_ERROR', null, errorMsg);
                         console.error(`[PublishScheduler] ❌ Post ID #${post.id} sin redes destino — marcado Error API.`);
                         results.push({ id: post.id, titulo: post.titulo, success: false, error: errorMsg });
                         continue;
@@ -258,6 +264,7 @@ export class PublishScheduler {
                                 updated_at = ?
                             WHERE id = ?
                         `).run(now, lastPostId || null, now, post.id);
+                        recordPublicationEvent(post.id, 'PUBLISHED', null);
 
                         results.push({
                             id: post.id,
@@ -278,6 +285,7 @@ export class PublishScheduler {
                                 updated_at = ?
                             WHERE id = ?
                         `).run(errorMsg, newRetryCount, now, now, post.id);
+                        recordPublicationEvent(post.id, 'PUBLISH_ERROR', null, errorMsg);
 
                         console.error(`[PublishScheduler] ❌ Post ID #${post.id} falló en todas las redes. Intento ${newRetryCount}/3.`);
                         results.push({

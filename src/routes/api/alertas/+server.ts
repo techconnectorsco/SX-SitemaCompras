@@ -1,20 +1,21 @@
 /**
  * Obtener alertas detalladas del sistema
  * GET /api/alertas
- * * ✅ CORREGIDO: 
- * 1. Sin límites artificiales (LIMIT) para mostrar TODO lo que detecte el dashboard.
- * 2. Usa codigo_procesamiento para sincronizar exacto con los stats.
+ * ✅ OPTIMIZADO: 1 sola consulta SQL. Filtrado y ordenamiento en memoria (RAM).
+ * ✅ NUEVO: Retorna los campos de sugerido y el código de procesamiento para edición rápida.
  */
 
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { db } from '$lib/config/db-config';
+import { env } from '$env/dynamic/private';
+const CRON_SECRET = env.CRON_SECRET || '';
 
 interface Alerta {
   alerta_id: string;
   id: number;
   tipo: 'critico' | 'advertencia' | 'info';
-  categoria: 'sin_stock' | 'stock_bajo' | 'pedir_courier' | 'pedir_aereo' | 'demanda' | 'sobrestock' | 'sin_rotacion';
+  categoria: string;
   codigo_sku: string;
   descripcion: string;
   linea: string;
@@ -34,30 +35,24 @@ interface Alerta {
   mensaje: string;
   detalle: string;
   accion_sugerida: string;
+  // Campos editables
+  sugerido_analista_urgente: number;
+  sugerido_analista_aereo: number;
+  sugerido_analista_maritimo: number;
+  comentario_analista: string;
 }
 
-interface ResumenAlertas {
-  critico: number;
-  advertencia: number;
-  info: number;
-  total: number;
-  pedirCourier: number;
-  pedirAereo: number;
-}
-
-export const GET: RequestHandler = async ({ url, locals, setHeaders }) => {
-  // 1. Evitar caché agresivamente
+export const GET: RequestHandler = async ({ url, locals, setHeaders, request }) => {
   setHeaders({
     'Cache-Control': 'no-cache, no-store, must-revalidate',
     'Pragma': 'no-cache',
     'Expires': '0'
   });
 
+  // Puerta para automatización (RPA lee alertas con el token) + sesión normal para humanos.
+  const isCron = !!CRON_SECRET && request.headers.get('x-cron-secret') === CRON_SECRET;
   const user = locals.user || locals.session?.user;
-  
-  if (!user) {
-    return json({ error: 'No autenticado' }, { status: 401 });
-  }
+  if (!user && !isCron) return json({ error: 'No autenticado' }, { status: 401 });
 
   try {
     const tipoFiltro = url.searchParams.get('tipo') || '';
@@ -65,19 +60,14 @@ export const GET: RequestHandler = async ({ url, locals, setHeaders }) => {
     const abcFiltro = url.searchParams.get('abc') || '';
     const searchFiltro = url.searchParams.get('search') || '';
 
-    // ==============================================================================
-    // 🔍 PASO 1: ENCONTRAR EL ÚLTIMO CÓDIGO DE PROCESAMIENTO
-    // (Igual que en el dashboard para que los datos coincidan)
-    // ==============================================================================
+    // 1. Obtener último código
     const lastProc = db.prepare(`
       SELECT codigo_procesamiento, fecha_procesamiento, usuario_procesamiento 
       FROM forecast_procesamiento 
       WHERE codigo_procesamiento IS NOT NULL AND codigo_procesamiento != ''
-      ORDER BY fecha_procesamiento DESC 
-      LIMIT 1
+      ORDER BY fecha_procesamiento DESC LIMIT 1
     `).get() as { codigo_procesamiento: string; fecha_procesamiento: string; usuario_procesamiento: string } | undefined;
 
-    // Si no hay ningún registro
     if (!lastProc) {
       return json({
         alertas: [],
@@ -87,316 +77,111 @@ export const GET: RequestHandler = async ({ url, locals, setHeaders }) => {
     }
 
     const codigoCorte = lastProc.codigo_procesamiento;
-    const qParams = { codigo: codigoCorte };
+
+    // 2. CONSULTA ÚNICA (Extrae todo de una vez para máxima velocidad)
+    const rows = db.prepare(`
+      SELECT 
+        id, codigo_sku, descripcion, linea, marca, abc, abc_rotacion_frecuencia, 
+        existencia, transito, stock_seguridad, promedio_ajustado, 
+        coeficiente_variacion, frecuencia_ventas_12m, 
+        referencia_pedido_courier, referencia_pedido_aereo, 
+        cantidad_final_courier, cantidad_final_aereo, 
+        mensaje_courier, mensaje_aereo, desviacion_estandar, venta_ultimos_12m,
+        sugerido_analista_urgente, sugerido_analista_aereo, sugerido_analista_maritimo, comentario_analista
+      FROM forecast_procesamiento 
+      WHERE codigo_procesamiento = ? AND activo = 1
+    `).all(codigoCorte) as any[];
 
     const alertas: Alerta[] = [];
     let alertaIndex = 0;
 
-    // Helper para crear alerta
-    const crearAlerta = (
-      row: any, 
-      tipo: 'critico' | 'advertencia' | 'info',
-      categoria: Alerta['categoria'],
-      mensaje: string,
-      detalle: string,
-      accion: string
-    ): Alerta => {
+    const crearAlerta = (row: any, tipo: 'critico'|'advertencia'|'info', categoria: string, mensaje: string, detalle: string, accion: string): Alerta => {
       alertaIndex++;
       return {
         alerta_id: `${tipo}-${categoria}-${alertaIndex}`,
         id: row.id,
-        tipo,
-        categoria,
-        codigo_sku: row.codigo_sku,
-        descripcion: row.descripcion || 'Sin descripción',
-        linea: row.linea || '',
-        marca: row.marca || '',
-        abc: row.abc || 'N/D',
-        rotacion: row.abc_rotacion_frecuencia || '',
-        existencia: row.existencia || 0,
-        transito: row.transito || 0,
-        stock_seguridad: row.stock_seguridad || 0,
-        promedio_ajustado: row.promedio_ajustado || 0,
-        coeficiente_variacion: row.coeficiente_variacion || 0,
-        frecuencia_ventas_12m: row.frecuencia_ventas_12m || 0,
-        ref_courier: row.referencia_pedido_courier || 0,
-        ref_aereo: row.referencia_pedido_aereo || 0,
-        cantidad_pedir_courier: Math.abs(row.cantidad_final_courier || 0),
-        cantidad_pedir_aereo: Math.abs(row.cantidad_final_aereo || 0),
-        mensaje,
-        detalle,
-        accion_sugerida: accion
+        tipo, categoria, codigo_sku: row.codigo_sku, descripcion: row.descripcion || 'Sin descripción',
+        linea: row.linea || '', marca: row.marca || '', abc: row.abc || 'N/D', rotacion: row.abc_rotacion_frecuencia || '',
+        existencia: row.existencia || 0, transito: row.transito || 0, stock_seguridad: row.stock_seguridad || 0,
+        promedio_ajustado: row.promedio_ajustado || 0, coeficiente_variacion: row.coeficiente_variacion || 0,
+        frecuencia_ventas_12m: row.frecuencia_ventas_12m || 0, ref_courier: row.referencia_pedido_courier || 0,
+        ref_aereo: row.referencia_pedido_aereo || 0, cantidad_pedir_courier: Math.abs(row.cantidad_final_courier || 0),
+        cantidad_pedir_aereo: Math.abs(row.cantidad_final_aereo || 0), mensaje, detalle, accion_sugerida: accion,
+        // Campos editables
+        sugerido_analista_urgente: row.sugerido_analista_urgente || 0,
+        sugerido_analista_aereo: row.sugerido_analista_aereo || 0,
+        sugerido_analista_maritimo: row.sugerido_analista_maritimo || 0,
+        comentario_analista: row.comentario_analista || ''
       };
     };
 
-    // ========================================
-    // NOTA IMPORTANTE:
-    // Se han eliminado los "LIMIT" para que coincida con el Dashboard.
-    // Esto traerá TODOS los registros que cumplan la condición.
-    // ========================================
+    // Buckets en RAM para clasificar
+    const sinStockA = [], sinStockB = [], sinStockBaja = [], stockMuyBajo = [];
+    const pedirCourier = [], pedirAereo = [], stockBajo = [], demandaIrreg = [], sobreStock = [], sinRot = [];
 
-    // ========================================
-    // 🔴 CRÍTICAS: SIN STOCK - CATEGORÍA A (Frecuentes)
-    // ========================================
-    const sinStockACritico = db.prepare(`
-      SELECT * FROM forecast_procesamiento 
-      WHERE codigo_procesamiento = @codigo
-        AND existencia = 0 
-        AND abc = 'A' 
-        AND frecuencia_ventas_12m >= 3
-        AND activo = 1
-      ORDER BY venta_ultimos_12m DESC
-    `).all(qParams) as any[];
+    // 3. CLASIFICACIÓN EN MEMORIA (O(N) - Ultra rápido)
+    for (const row of rows) {
+      if (row.existencia === 0 && row.abc === 'A' && row.frecuencia_ventas_12m >= 3) sinStockA.push(row);
+      if (row.existencia === 0 && row.abc === 'B' && row.frecuencia_ventas_12m >= 3) sinStockB.push(row);
+      if (row.existencia === 0 && ['A', 'B'].includes(row.abc) && row.frecuencia_ventas_12m > 0 && row.frecuencia_ventas_12m < 3) sinStockBaja.push(row);
+      if (row.existencia > 0 && row.stock_seguridad > 0 && row.existencia < (row.stock_seguridad * 0.5) && ['A', 'B'].includes(row.abc) && row.frecuencia_ventas_12m >= 3) stockMuyBajo.push(row);
+      if (row.mensaje_courier === 'PEDIR COURIER' && row.existencia > 0 && row.frecuencia_ventas_12m >= 2) pedirCourier.push(row);
+      if (row.mensaje_aereo === 'PEDIR AEREO' && row.mensaje_courier === '' && row.frecuencia_ventas_12m >= 2) pedirAereo.push(row);
+      if (row.existencia > 0 && row.stock_seguridad > 0 && row.existencia >= (row.stock_seguridad * 0.5) && row.existencia < row.stock_seguridad && ['A', 'B', 'C'].includes(row.abc) && row.frecuencia_ventas_12m >= 2) stockBajo.push(row);
+      if (row.coeficiente_variacion > 1.2 && ['A', 'B'].includes(row.abc) && row.frecuencia_ventas_12m >= 3) demandaIrreg.push(row);
+      if (row.promedio_ajustado > 0 && row.existencia > (row.promedio_ajustado * 12)) sobreStock.push(row);
+      if (row.frecuencia_ventas_12m === 0 && row.existencia > 0) sinRot.push(row);
+    }
 
-    sinStockACritico.forEach(row => {
-      const diasSinStock = row.promedio_ajustado > 0 
-        ? Math.round((row.transito / row.promedio_ajustado) * 30) 
-        : 0;
-      
-      alertas.push(crearAlerta(
-        row, 'critico', 'sin_stock',
-        'SIN STOCK - ABC A',
-        `Producto categoría A de alta rotación sin existencias. Promedio mensual: ${row.promedio_ajustado?.toFixed(1)} uds. ` +
-        `Frecuencia ventas: ${row.frecuencia_ventas_12m}/12 meses. ` +
-        (row.transito > 0 ? `En tránsito: ${row.transito} uds (≈${diasSinStock} días).` : 'Sin unidades en tránsito.'),
-        row.transito > 0 ? 'Verificar llegada de tránsito' : 'Solicitar pedido URGENTE vía Courier'
-      ));
+    // 4. ORDENAMIENTO Y GENERACIÓN DE ALERTAS
+    sinStockA.sort((a, b) => b.venta_ultimos_12m - a.venta_ultimos_12m).forEach(row => {
+      const dias = row.promedio_ajustado > 0 ? Math.round((row.transito / row.promedio_ajustado) * 30) : 0;
+      alertas.push(crearAlerta(row, 'critico', 'sin_stock', 'SIN STOCK - ABC A', `Promedio: ${row.promedio_ajustado?.toFixed(1)} uds. Freq: ${row.frecuencia_ventas_12m}/12. ` + (row.transito > 0 ? `En tránsito: ${row.transito} uds (≈${dias} días).` : 'Sin tránsito.'), row.transito > 0 ? 'Verificar llegada de tránsito' : 'Solicitar pedido URGENTE'));
     });
 
-    // ========================================
-    // 🔴 CRÍTICAS: SIN STOCK - CATEGORÍA B (Frecuentes)
-    // ========================================
-    const sinStockBCritico = db.prepare(`
-      SELECT * FROM forecast_procesamiento 
-      WHERE codigo_procesamiento = @codigo
-        AND existencia = 0 
-        AND abc = 'B' 
-        AND frecuencia_ventas_12m >= 3
-        AND activo = 1
-      ORDER BY venta_ultimos_12m DESC
-    `).all(qParams) as any[];
-
-    sinStockBCritico.forEach(row => {
-      alertas.push(crearAlerta(
-        row, 'critico', 'sin_stock',
-        'SIN STOCK - ABC B',
-        `Producto categoría B con rotación frecuente sin existencias. Promedio mensual: ${row.promedio_ajustado?.toFixed(1)} uds. ` +
-        `Frecuencia: ${row.frecuencia_ventas_12m}/12 meses. ` +
-        (row.transito > 0 ? `En tránsito: ${row.transito} uds.` : 'Sin unidades en tránsito.'),
-        'Evaluar pedido urgente Courier o Aéreo'
-      ));
+    sinStockB.sort((a, b) => b.venta_ultimos_12m - a.venta_ultimos_12m).forEach(row => {
+      alertas.push(crearAlerta(row, 'critico', 'sin_stock', 'SIN STOCK - ABC B', `Promedio: ${row.promedio_ajustado?.toFixed(1)} uds. Freq: ${row.frecuencia_ventas_12m}/12. ` + (row.transito > 0 ? `En tránsito: ${row.transito} uds.` : 'Sin tránsito.'), 'Evaluar pedido urgente'));
     });
 
-    // ========================================
-    // 🟡 ADVERTENCIA: SIN STOCK - ABC A/B (Baja Rotación)
-    // ========================================
-    const sinStockBajaRotacion = db.prepare(`
-      SELECT * FROM forecast_procesamiento 
-      WHERE codigo_procesamiento = @codigo
-        AND existencia = 0 
-        AND abc IN ('A', 'B')
-        AND frecuencia_ventas_12m < 3
-        AND frecuencia_ventas_12m > 0
-        AND activo = 1
-      ORDER BY abc, venta_ultimos_12m DESC
-    `).all(qParams) as any[];
-
-    sinStockBajaRotacion.forEach(row => {
-      alertas.push(crearAlerta(
-        row, 'advertencia', 'sin_stock',
-        `SIN STOCK - ABC ${row.abc} (Baja rotación)`,
-        `Producto categoría ${row.abc} pero con baja frecuencia de ventas (${row.frecuencia_ventas_12m}/12 meses). ` +
-        `Promedio: ${row.promedio_ajustado?.toFixed(1)} uds/mes.`,
-        'Evaluar si realmente requiere reposición'
-      ));
+    sinStockBaja.sort((a, b) => a.abc.localeCompare(b.abc) || b.venta_ultimos_12m - a.venta_ultimos_12m).forEach(row => {
+      alertas.push(crearAlerta(row, 'advertencia', 'sin_stock', `SIN STOCK - ABC ${row.abc}`, `Frecuencia baja (${row.frecuencia_ventas_12m}/12). Promedio: ${row.promedio_ajustado?.toFixed(1)} uds/mes.`, 'Evaluar reposición'));
     });
 
-    // ========================================
-    // 🔴 CRÍTICAS: STOCK MUY BAJO (< 50% del mínimo)
-    // ========================================
-    const stockMuyBajo = db.prepare(`
-      SELECT * FROM forecast_procesamiento 
-      WHERE codigo_procesamiento = @codigo
-        AND existencia > 0 
-        AND stock_seguridad > 0
-        AND existencia < (stock_seguridad * 0.5)
-        AND abc IN ('A', 'B')
-        AND frecuencia_ventas_12m >= 3
-        AND activo = 1
-      ORDER BY abc, (stock_seguridad - existencia) DESC
-    `).all(qParams) as any[];
-
-    stockMuyBajo.forEach(row => {
-      const porcentaje = ((row.existencia / row.stock_seguridad) * 100).toFixed(0);
-      const diasCobertura = row.promedio_ajustado > 0 
-        ? Math.round((row.existencia / row.promedio_ajustado) * 30) 
-        : 0;
-      
-      alertas.push(crearAlerta(
-        row, 'critico', 'stock_bajo',
-        'STOCK CRÍTICO',
-        `Solo ${row.existencia} uds (${porcentaje}% del mínimo de ${row.stock_seguridad}). ` +
-        `Cobertura estimada: ${diasCobertura} días. ` +
-        (row.transito > 0 ? `Tránsito: ${row.transito} uds.` : ''),
-        'Priorizar en próximo pedido Courier'
-      ));
+    stockMuyBajo.sort((a, b) => a.abc.localeCompare(b.abc) || (b.stock_seguridad - b.existencia) - (a.stock_seguridad - a.existencia)).forEach(row => {
+      const pct = ((row.existencia / row.stock_seguridad) * 100).toFixed(0);
+      const dias = row.promedio_ajustado > 0 ? Math.round((row.existencia / row.promedio_ajustado) * 30) : 0;
+      alertas.push(crearAlerta(row, 'critico', 'stock_bajo', 'STOCK CRÍTICO', `Solo ${row.existencia} uds (${pct}% del mínimo). Cobertura: ${dias} días. ` + (row.transito > 0 ? `Tránsito: ${row.transito} uds.` : ''), 'Priorizar en pedido Courier'));
     });
 
-    // ========================================
-    // 🟡 ADVERTENCIA: PEDIR COURIER
-    // ========================================
-    const pedirCourier = db.prepare(`
-      SELECT * FROM forecast_procesamiento 
-      WHERE codigo_procesamiento = @codigo
-        AND mensaje_courier = 'PEDIR COURIER' 
-        AND activo = 1
-        AND existencia > 0
-        AND frecuencia_ventas_12m >= 2
-      ORDER BY abc, ABS(cantidad_final_courier) DESC
-    `).all(qParams) as any[];
-
-    pedirCourier.forEach(row => {
-      const disponible = row.existencia + row.transito;
-      const deficit = Math.abs(row.cantidad_final_courier || 0);
-      
-      alertas.push(crearAlerta(
-        row, 'advertencia', 'pedir_courier',
-        'PEDIR COURIER',
-        `Disponible: ${disponible} uds (Exist: ${row.existencia} + Tráns: ${row.transito}). ` +
-        `Referencia 2 meses: ${row.referencia_pedido_courier} uds. ` +
-        `Déficit: ${deficit.toFixed(0)} unidades.`,
-        `Agregar ${deficit.toFixed(0)} uds al pedido Courier`
-      ));
+    pedirCourier.sort((a, b) => a.abc.localeCompare(b.abc) || Math.abs(b.cantidad_final_courier) - Math.abs(a.cantidad_final_courier)).forEach(row => {
+      const def = Math.abs(row.cantidad_final_courier || 0);
+      alertas.push(crearAlerta(row, 'advertencia', 'pedir_courier', 'PEDIR COURIER', `Disponible: ${row.existencia + row.transito} uds. Ref: ${row.referencia_pedido_courier}. Déficit: ${def.toFixed(0)} uds.`, `Agregar ${def.toFixed(0)} uds al Courier`));
     });
 
-    // ========================================
-    // 🟡 ADVERTENCIA: PEDIR AÉREO
-    // ========================================
-    const pedirAereo = db.prepare(`
-      SELECT * FROM forecast_procesamiento 
-      WHERE codigo_procesamiento = @codigo
-        AND mensaje_aereo = 'PEDIR AEREO' 
-        AND mensaje_courier = ''
-        AND activo = 1
-        AND frecuencia_ventas_12m >= 2
-      ORDER BY abc, ABS(cantidad_final_aereo) DESC
-    `).all(qParams) as any[];
-
-    pedirAereo.forEach(row => {
-      const deficit = Math.abs(row.cantidad_final_aereo || 0);
-      
-      alertas.push(crearAlerta(
-        row, 'advertencia', 'pedir_aereo',
-        'PEDIR AÉREO',
-        `Referencia aérea (3 meses + seguridad): ${row.referencia_pedido_aereo} uds. ` +
-        `Stock seguridad: ${row.stock_seguridad} uds. ` +
-        `Déficit: ${deficit.toFixed(0)} unidades.`,
-        `Agregar ${deficit.toFixed(0)} uds al pedido Aéreo`
-      ));
+    pedirAereo.sort((a, b) => a.abc.localeCompare(b.abc) || Math.abs(b.cantidad_final_aereo) - Math.abs(a.cantidad_final_aereo)).forEach(row => {
+      const def = Math.abs(row.cantidad_final_aereo || 0);
+      alertas.push(crearAlerta(row, 'advertencia', 'pedir_aereo', 'PEDIR AÉREO', `Ref aérea: ${row.referencia_pedido_aereo} uds. Déficit: ${def.toFixed(0)} uds.`, `Agregar ${def.toFixed(0)} uds al Aéreo`));
     });
 
-    // ========================================
-    // 🟡 ADVERTENCIA: STOCK BAJO (50-100% del mínimo)
-    // ========================================
-    const stockBajo = db.prepare(`
-      SELECT * FROM forecast_procesamiento 
-      WHERE codigo_procesamiento = @codigo
-        AND existencia > 0 
-        AND stock_seguridad > 0
-        AND existencia >= (stock_seguridad * 0.5)
-        AND existencia < stock_seguridad
-        AND abc IN ('A', 'B', 'C')
-        AND frecuencia_ventas_12m >= 2
-        AND activo = 1
-      ORDER BY abc, (stock_seguridad - existencia) DESC
-    `).all(qParams) as any[];
-
-    stockBajo.forEach(row => {
-      const porcentaje = ((row.existencia / row.stock_seguridad) * 100).toFixed(0);
-      
-      alertas.push(crearAlerta(
-        row, 'advertencia', 'stock_bajo',
-        'STOCK BAJO',
-        `${row.existencia} uds disponibles (${porcentaje}% del mínimo de ${row.stock_seguridad}). ` +
-        `Categoría ${row.abc} - Factor de seguridad aplicado.`,
-        'Incluir en próximo pedido regular'
-      ));
+    stockBajo.sort((a, b) => a.abc.localeCompare(b.abc) || (b.stock_seguridad - b.existencia) - (a.stock_seguridad - a.existencia)).forEach(row => {
+      const pct = ((row.existencia / row.stock_seguridad) * 100).toFixed(0);
+      alertas.push(crearAlerta(row, 'advertencia', 'stock_bajo', 'STOCK BAJO', `${row.existencia} uds (${pct}% del mínimo). Factor de seguridad activado.`, 'Incluir en próximo pedido'));
     });
 
-    // ========================================
-    // 🟡 ADVERTENCIA: DEMANDA MUY IRREGULAR
-    // ========================================
-    const demandaIrregular = db.prepare(`
-      SELECT * FROM forecast_procesamiento 
-      WHERE codigo_procesamiento = @codigo
-        AND coeficiente_variacion > 1.2 
-        AND abc IN ('A', 'B')
-        AND frecuencia_ventas_12m >= 3
-        AND activo = 1
-      ORDER BY coeficiente_variacion DESC
-    `).all(qParams) as any[];
-
-    demandaIrregular.forEach(row => {
-      alertas.push(crearAlerta(
-        row, 'advertencia', 'demanda',
-        'DEMANDA IRREGULAR',
-        `Coeficiente de variación: ${row.coeficiente_variacion?.toFixed(2)} (muy alto). ` +
-        `Desviación estándar: ${row.desviacion_estandar?.toFixed(1)} uds. ` +
-        `Promedio: ${row.promedio_ajustado?.toFixed(1)} uds/mes.`,
-        'Revisar histórico y considerar ajuste manual'
-      ));
+    demandaIrreg.sort((a, b) => b.coeficiente_variacion - a.coeficiente_variacion).forEach(row => {
+      alertas.push(crearAlerta(row, 'advertencia', 'demanda', 'DEMANDA IRREGULAR', `C.V.: ${row.coeficiente_variacion?.toFixed(2)}. Desv Std: ${row.desviacion_estandar?.toFixed(1)}. Prom: ${row.promedio_ajustado?.toFixed(1)}.`, 'Considerar ajuste manual'));
     });
 
-    // ========================================
-    // 🔵 INFO: SOBRE-STOCK
-    // ========================================
-    const sobreStock = db.prepare(`
-      SELECT * FROM forecast_procesamiento 
-      WHERE codigo_procesamiento = @codigo
-        AND promedio_ajustado > 0
-        AND existencia > (promedio_ajustado * 12)
-        AND activo = 1
-      ORDER BY (existencia / promedio_ajustado) DESC
-    `).all(qParams) as any[];
-
-    sobreStock.forEach(row => {
-      const mesesStock = (row.existencia / row.promedio_ajustado).toFixed(0);
-      
-      alertas.push(crearAlerta(
-        row, 'info', 'sobrestock',
-        'SOBRE-STOCK',
-        `Inventario para ${mesesStock} meses (${row.existencia} uds). ` +
-        `Promedio mensual: ${row.promedio_ajustado?.toFixed(1)} uds.`,
-        'Evaluar promociones o redistribución'
-      ));
+    sobreStock.sort((a, b) => (b.existencia / (b.promedio_ajustado||1)) - (a.existencia / (a.promedio_ajustado||1))).forEach(row => {
+      alertas.push(crearAlerta(row, 'info', 'sobrestock', 'SOBRE-STOCK', `Inventario para ${(row.existencia/row.promedio_ajustado).toFixed(0)} meses (${row.existencia} uds). Prom: ${row.promedio_ajustado?.toFixed(1)}.`, 'Evaluar promoción'));
     });
 
-    // ========================================
-    // 🔵 INFO: SIN ROTACIÓN
-    // ========================================
-    const sinRotacion = db.prepare(`
-      SELECT * FROM forecast_procesamiento 
-      WHERE codigo_procesamiento = @codigo
-        AND frecuencia_ventas_12m = 0
-        AND existencia > 0
-        AND activo = 1
-      ORDER BY existencia DESC
-    `).all(qParams) as any[];
-
-    sinRotacion.forEach(row => {
-      alertas.push(crearAlerta(
-        row, 'info', 'sin_rotacion',
-        'SIN ROTACIÓN 12 MESES',
-        `${row.existencia} unidades sin movimiento en los últimos 12 meses. ` +
-        `ABC: ${row.abc}.`,
-        'Evaluar obsolescencia, liquidación o baja'
-      ));
+    sinRot.sort((a, b) => b.existencia - a.existencia).forEach(row => {
+      alertas.push(crearAlerta(row, 'info', 'sin_rotacion', 'SIN ROTACIÓN 12M', `${row.existencia} uds sin movimiento. ABC: ${row.abc}.`, 'Evaluar liquidación'));
     });
 
-    // ========================================
-    // RESUMEN Y FILTRADO FINAL
-    // ========================================
-    const resumen: ResumenAlertas = {
+    // 5. RESUMEN Y FILTRADO FINAL
+    const resumen = {
       critico: alertas.filter(a => a.tipo === 'critico').length,
       advertencia: alertas.filter(a => a.tipo === 'advertencia').length,
       info: alertas.filter(a => a.tipo === 'info').length,
@@ -406,32 +191,19 @@ export const GET: RequestHandler = async ({ url, locals, setHeaders }) => {
     };
 
     let alertasFiltradas = [...alertas];
-
-    if (tipoFiltro) {
-      alertasFiltradas = alertasFiltradas.filter(a => a.tipo === tipoFiltro);
-    }
-    if (categoriaFiltro) {
-      alertasFiltradas = alertasFiltradas.filter(a => a.categoria === categoriaFiltro);
-    }
-    if (abcFiltro) {
-      alertasFiltradas = alertasFiltradas.filter(a => a.abc === abcFiltro);
-    }
+    if (tipoFiltro) alertasFiltradas = alertasFiltradas.filter(a => a.tipo === tipoFiltro);
+    if (categoriaFiltro) alertasFiltradas = alertasFiltradas.filter(a => a.categoria === categoriaFiltro);
+    if (abcFiltro) alertasFiltradas = alertasFiltradas.filter(a => a.abc === abcFiltro);
     if (searchFiltro) {
       const term = searchFiltro.toLowerCase();
-      alertasFiltradas = alertasFiltradas.filter(a => 
-        a.codigo_sku.toLowerCase().includes(term) ||
-        a.descripcion.toLowerCase().includes(term)
-      );
+      alertasFiltradas = alertasFiltradas.filter(a => a.codigo_sku.toLowerCase().includes(term) || a.descripcion.toLowerCase().includes(term));
     }
 
     return json({
       alertas: alertasFiltradas,
       totalFiltrado: alertasFiltradas.length,
       resumen,
-      metadata: {
-        fecha: lastProc.fecha_procesamiento,
-        usuario: lastProc.usuario_procesamiento
-      }
+      metadata: { fecha: lastProc.fecha_procesamiento, usuario: lastProc.usuario_procesamiento, codigo: codigoCorte } // NUEVO: enviamos codigo
     });
 
   } catch (error) {

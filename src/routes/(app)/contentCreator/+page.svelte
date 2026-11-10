@@ -135,7 +135,7 @@
 </script>
 
 <svelte:head>
-	<title>Vedoba - Creador de Contenido</title>
+	<title>SoporteXperto - Creador de Contenido</title>
 </svelte:head>
 
 <!-- Estructura de layout unificada de la aplicación -->
@@ -156,7 +156,9 @@
 					<h2 class="text-xs font-bold tracking-tight text-foreground uppercase">
 						Creador Contenido
 					</h2>
-					<p class="text-[9px] font-semibold text-[#1A73C2] uppercase tracking-widest">SX IA</p>
+					<p class="text-[9px] font-semibold text-[#1A73C2] uppercase tracking-widest">
+						SoporteXperto AI
+					</p>
 				</div>
 			</div>
 
@@ -270,7 +272,6 @@
 					<Tag class="h-4 w-4" />
 					<span>Brand Assets</span>
 				</button>
-
 
 				<!-- Botón Fichas Técnicas -->
 				<button

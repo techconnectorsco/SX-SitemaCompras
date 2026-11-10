@@ -8,6 +8,10 @@
 	import Account from './account.svelte';
 	import LightSwitch from './light-switch.svelte';
 	import { siteConfig } from '$lib/config/site';
+	import { page } from '$app/state';
+	import { Settings } from 'lucide-svelte';
+
+	const isAdmin = $derived(page.data.session?.user?.role === 'ADMIN');
 </script>
 
 <header
@@ -27,6 +31,16 @@
 		</div>
 
 		<div class="flex items-center justify-end gap-x-2 xl:col-span-2">
+			{#if isAdmin}
+				<a
+					href="/admin"
+					aria-label="Administración"
+					class="inline-flex items-center gap-2 rounded-md px-2 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:px-3"
+				>
+					<Settings class="h-4 w-4" />
+					<span class="hidden sm:inline">Administración</span>
+				</a>
+			{/if}
 			<LightSwitch />
 			<Account />
 		</div>

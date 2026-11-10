@@ -163,7 +163,7 @@
 			type="button"
 			onclick={connectAccount}
 			title="Conectar cuenta Meta (OAuth)"
-			class="flex items-center gap-1 rounded-md bg-[#0D1E3D] px-2 py-1 text-[10px] font-semibold text-white hover:bg-[#1c2750] transition-colors"
+			class="flex items-center gap-1 rounded-md bg-[#0D1E3D] px-2 py-1 text-[10px] font-semibold text-white hover:bg-[#0A1730] transition-colors"
 		>
 			<Plus class="h-3 w-3" />
 			<span>Conectar</span>

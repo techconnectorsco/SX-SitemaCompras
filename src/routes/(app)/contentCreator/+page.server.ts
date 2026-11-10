@@ -3,6 +3,7 @@ import type { PageServerLoad } from './$types';
 import { CatalogoService } from '$lib/features/content-creator/services/catalogo-service';
 import { PublicacionService } from '$lib/features/content-creator/services/publicacion-service';
 import db from '$lib/config/db-config';
+//comentario
 
 export const load: PageServerLoad = async ({ locals }) => {
     if (!locals.user) {

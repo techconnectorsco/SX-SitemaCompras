@@ -22,13 +22,14 @@ export interface FichaTecnica {
 	updated_at: number;
 	deleted_at: number | null;
 	marca_nombre?: string;
+	can_manage?: boolean;
 }
 
 export class FichasTecnicasService {
 	/**
-	 * Obtiene todas las fichas técnicas activas de un usuario (opcionalmente filtradas por marca)
+	 * Obtiene todas las fichas técnicas activas compartidas (opcionalmente filtradas por marca)
 	 */
-	static getFichas(userId: string, marcaId?: number): FichaTecnica[] {
+	static getFichas(marcaId?: number): FichaTecnica[] {
 		if (marcaId) {
 			return db
 				.prepare(
@@ -36,11 +37,11 @@ export class FichasTecnicasService {
 				SELECT f.*, m.nombre as marca_nombre
 				FROM fichas_tecnicas f
 				JOIN marcas m ON f.marca_id = m.id
-				WHERE f.user_id = ? AND f.marca_id = ? AND f.deleted_at IS NULL
+						WHERE f.marca_id = ? AND f.deleted_at IS NULL
 				ORDER BY f.created_at DESC
 			`
 				)
-				.all(userId, marcaId) as FichaTecnica[];
+				.all(marcaId) as FichaTecnica[];
 		}
 
 		return db
@@ -49,11 +50,11 @@ export class FichasTecnicasService {
 			SELECT f.*, m.nombre as marca_nombre
 			FROM fichas_tecnicas f
 			JOIN marcas m ON f.marca_id = m.id
-			WHERE f.user_id = ? AND f.deleted_at IS NULL
+				WHERE f.deleted_at IS NULL
 			ORDER BY f.created_at DESC
 		`
 			)
-			.all(userId) as FichaTecnica[];
+			.all() as FichaTecnica[];
 	}
 
 	/**

@@ -1,8 +1,17 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { FichasTecnicasService } from '$lib/features/content-creator/services/fichas-tecnicas-service';
+import type { FichaTecnica } from '$lib/features/content-creator/services/fichas-tecnicas-service';
 import path from 'path';
 import { writeUploadFile } from '$lib/server/uploads-storage';
+
+function withManagementPermission(
+	ficha: FichaTecnica,
+	userId: string
+): Omit<FichaTecnica, 'user_id'> & { can_manage: boolean } {
+	const { user_id, ...sharedFicha } = ficha;
+	return { ...sharedFicha, can_manage: user_id === userId };
+}
 
 export const GET: RequestHandler = async ({ url, locals }) => {
 	try {
@@ -11,7 +20,9 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		const marcaIdParam = url.searchParams.get('marcaId');
 		const marcaId = marcaIdParam ? parseInt(marcaIdParam, 10) : undefined;
 
-		const fichas = FichasTecnicasService.getFichas(locals.user.id, marcaId);
+		const fichas = FichasTecnicasService.getFichas(marcaId).map((ficha) =>
+			withManagementPermission(ficha, locals.user!.id)
+		);
 		return json({ success: true, fichas });
 	} catch (err: any) {
 		console.error('[API GET fichas-tecnicas] Error:', err);
@@ -79,7 +90,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			sizeBytes: file.size
 		});
 
-		return json({ success: true, ficha: nuevaFicha });
+		return json({ success: true, ficha: withManagementPermission(nuevaFicha, locals.user.id) });
 	} catch (err: any) {
 		console.error('[API POST fichas-tecnicas] Error:', err);
 		return json(

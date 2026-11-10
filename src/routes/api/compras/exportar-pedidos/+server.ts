@@ -1,17 +1,17 @@
 /**
- * Exportar pedidos a Excel para Husqvarna y otras líneas
+ * Exportar pedidos a Excel para HP y otras líneas
  * GET /api/compras/exportar-pedidos
  * 
  * Query params:
  * - procesamiento: código del procesamiento
- * - tipo: 'husqvarna' | 'otros'
+ * - tipo: 'hp' | 'otros'
  * 
  * Genera un ZIP con 3 archivos Excel:
  * - pedido_courier.xlsx
  * - pedido_aereo.xlsx
  * - pedido_maritimo.xlsx
  * 
- * Campos: codigo, cantidad, fecha_entrega (+3 días hábiles)
+ * Campos: codigo, cantidad, fecha_entrega (+3 días hábiles), comentario
  */
 
 import { json } from '@sveltejs/kit';
@@ -20,6 +20,15 @@ import { db } from '$lib/config/db-config';
 import ExcelJS from 'exceljs';
 import JSZip from 'jszip';
 import { AuditService } from '$lib/features/security/services/audit-service';
+
+/**
+ * Interface para el mapeo de SKUs con comentario
+ */
+interface ItemPedido {
+  codigo: string;
+  cantidad: number;
+  comentario: string | null;
+}
 
 /**
  * Calcula la fecha de entrega sumando 3 días hábiles (lunes a viernes)
@@ -51,21 +60,22 @@ function formatearFecha(fecha: Date): string {
 }
 
 /**
- * Crea un archivo Excel con los datos de pedido
+ * Crea un archivo Excel con los datos de pedido incluyendo el comentario
  */
 async function crearExcelPedido(
-  datos: Array<{ codigo: string; cantidad: number }>,
+  datos: Array<ItemPedido>,
   fechaEntrega: string,
   nombreTipo: string
 ): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet('Pedido');
 
-  // Encabezados
+  // Encabezados (se agrega la columna Comentario)
   sheet.columns = [
     { header: 'Referencia', key: 'codigo', width: 20 },
     { header: 'Cantidad', key: 'cantidad', width: 15 },
-    { header: 'Fecha Entrega', key: 'fecha_entrega', width: 15 }
+    { header: 'Fecha Entrega', key: 'fecha_entrega', width: 15 },
+    { header: 'Comentario del Analista', key: 'comentario', width: 35 }
   ];
 
   // Estilo de encabezados
@@ -75,10 +85,15 @@ async function crearExcelPedido(
 
   // Agregar datos
   for (const item of datos) {
+    const textoComentario = item.comentario && item.comentario.trim() !== '' 
+      ? item.comentario 
+      : '-';
+
     sheet.addRow({
       codigo: item.codigo,
       cantidad: item.cantidad,
-      fecha_entrega: fechaEntrega
+      fecha_entrega: fechaEntrega,
+      comentario: textoComentario
     });
   }
 
@@ -95,18 +110,18 @@ export const GET: RequestHandler = async ({ url, locals, request }) => {
   }
 
   const ip = request.headers.get('x-forwarded-for') || 'unknown';
-  const userAgent = request.headers.get('user-agent') || 'VYOWEB-App';
+  const userAgent = request.headers.get('user-agent') || 'SXWEB-App';
 
   try {
     const codigoProcesamiento = url.searchParams.get('procesamiento');
-    const tipo = url.searchParams.get('tipo'); // 'husqvarna' | 'otros'
+    const tipo = url.searchParams.get('tipo'); // 'hp' | 'otros'
 
     if (!codigoProcesamiento) {
       return json({ error: 'Falta código de procesamiento' }, { status: 400 });
     }
 
-    if (!tipo || !['husqvarna', 'otros'].includes(tipo)) {
-      return json({ error: 'Tipo debe ser "husqvarna" o "otros"' }, { status: 400 });
+    if (!tipo || !['hp', 'otros'].includes(tipo)) {
+      return json({ error: 'Tipo debe ser "hp" o "otros"' }, { status: 400 });
     }
 
     // Calcular fecha de entrega (+3 días hábiles desde hoy)
@@ -115,53 +130,60 @@ export const GET: RequestHandler = async ({ url, locals, request }) => {
     const fechaEntregaStr = formatearFecha(fechaEntrega);
 
     // Construir condición de línea
-    // Husqvarna: línea contiene 'HUSQVARNA' (case insensitive)
-    // Otros: línea NO contiene 'HUSQVARNA' o es NULL
-    const condicionLinea = tipo === 'husqvarna'
-      ? `AND (UPPER(linea) LIKE '%HUSQVARNA%' OR UPPER(marca) LIKE '%HUSQVARNA%')`
-      : `AND (UPPER(linea) NOT LIKE '%HUSQVARNA%' OR linea IS NULL) AND (UPPER(marca) NOT LIKE '%HUSQVARNA%' OR marca IS NULL)`;
+    const condicionLinea = tipo === 'hp'
+      ? `AND (UPPER(linea) LIKE '%HP%' OR UPPER(marca) LIKE '%HP%')`
+      : `AND (UPPER(linea) NOT LIKE '%HP%' OR linea IS NULL) AND (UPPER(marca) NOT LIKE '%HP%' OR marca IS NULL)`;
 
     // Query para Courier (sugerido_analista_urgente > 0)
     const datosCourier = db.prepare(`
-      SELECT codigo_sku as codigo, sugerido_analista_urgente as cantidad
+      SELECT 
+        codigo_sku as codigo, 
+        sugerido_analista_urgente as cantidad,
+        comentario_analista as comentario
       FROM forecast_procesamiento
       WHERE codigo_procesamiento = ?
         AND sugerido_analista_urgente > 0
         ${condicionLinea}
       ORDER BY codigo_sku
-    `).all(codigoProcesamiento) as Array<{ codigo: string; cantidad: number }>;
+    `).all(codigoProcesamiento) as Array<ItemPedido>;
 
     // Query para Aéreo (sugerido_analista_aereo > 0)
     const datosAereo = db.prepare(`
-      SELECT codigo_sku as codigo, sugerido_analista_aereo as cantidad
+      SELECT 
+        codigo_sku as codigo, 
+        sugerido_analista_aereo as cantidad,
+        comentario_analista as comentario
       FROM forecast_procesamiento
       WHERE codigo_procesamiento = ?
         AND sugerido_analista_aereo > 0
         ${condicionLinea}
       ORDER BY codigo_sku
-    `).all(codigoProcesamiento) as Array<{ codigo: string; cantidad: number }>;
+    `).all(codigoProcesamiento) as Array<ItemPedido>;
 
     // Query para Marítimo (sugerido_analista_maritimo > 0)
     const datosMaritimo = db.prepare(`
-      SELECT codigo_sku as codigo, sugerido_analista_maritimo as cantidad
+      SELECT 
+        codigo_sku as codigo, 
+        sugerido_analista_maritimo as cantidad,
+        comentario_analista as comentario
       FROM forecast_procesamiento
       WHERE codigo_procesamiento = ?
         AND sugerido_analista_maritimo > 0
         ${condicionLinea}
       ORDER BY codigo_sku
-    `).all(codigoProcesamiento) as Array<{ codigo: string; cantidad: number }>;
+    `).all(codigoProcesamiento) as Array<ItemPedido>;
 
     // Verificar si hay datos
     if (datosCourier.length === 0 && datosAereo.length === 0 && datosMaritimo.length === 0) {
       return json({ 
         error: 'No hay pedidos para exportar',
-        mensaje: `No se encontraron SKUs con pedido para ${tipo === 'husqvarna' ? 'Husqvarna' : 'otras líneas'}`
+        mensaje: `No se encontraron SKUs con pedido para ${tipo === 'hp' ? 'HP' : 'otras líneas'}`
       }, { status: 404 });
     }
 
     // Crear ZIP con los archivos
     const zip = new JSZip();
-    const prefijo = tipo === 'husqvarna' ? 'husqvarna' : 'otros';
+    const prefijo = tipo === 'hp' ? 'hp' : 'otros';
     const fechaArchivo = hoy.toISOString().split('T')[0].replace(/-/g, '');
 
     // Agregar archivos al ZIP solo si tienen datos
@@ -184,7 +206,7 @@ export const GET: RequestHandler = async ({ url, locals, request }) => {
     const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
 
     // ===== LOG DE AUDITORÍA - EXPORTACIÓN EXITOSA =====
-    const tipoAccion = tipo === 'husqvarna' ? 'COMPRAS_EXPORT_HUSQVARNA' : 'COMPRAS_EXPORT_OTROS';
+    const tipoAccion = tipo === 'hp' ? 'COMPRAS_EXPORT_HP' : 'COMPRAS_EXPORT_OTROS';
     const resumen = [
       datosCourier.length > 0 ? `Courier: ${datosCourier.length}` : null,
       datosAereo.length > 0 ? `Aéreo: ${datosAereo.length}` : null,
@@ -196,7 +218,7 @@ export const GET: RequestHandler = async ({ url, locals, request }) => {
       tipoAccion,
       ip,
       userAgent,
-      `Exportación ${tipo === 'husqvarna' ? 'Husqvarna' : 'Otras líneas'} completada. Procesamiento: ${codigoProcesamiento}. SKUs: ${resumen}. Fecha entrega: ${fechaEntregaStr}`
+      `Exportación ${tipo === 'hp' ? 'HP' : 'Otras líneas'} completada. Procesamiento: ${codigoProcesamiento}. SKUs: ${resumen}. Fecha entrega: ${fechaEntregaStr}`
     );
 
     // Devolver como descarga

@@ -13,7 +13,7 @@ import History from "@lucide/svelte/icons/history";
 import Database from "@lucide/svelte/icons/database";
 
 /**
- * Configuración del sistema SoporteXperto - Asistente de Compras y Forecast
+ * Configuración del sistema SX - Asistente de Compras y Forecast
  * @constant
  * @type {object}
  * @property {string} title - Título principal del sistema
@@ -30,21 +30,21 @@ import Database from "@lucide/svelte/icons/database";
  * @property {string} footer.rights - Aviso de derechos reservados
  */
 export const siteConfig = {
-	title: 'SoporteXperto',
+	title: 'Soportexperto',
 	description: 'Sistema de Gestión de Compras y Forecast Automatizado',
-	name: 'SoporteXperto',
+	name: 'SX',
 	logo: '/logo-soportexperto.png',
 	logoDark: '/logo-soportexperto1.png',
-	favicon: '/logo-soportexperto.png',
+	favicon: '/favicon.png',
 	contact: {
-		email: 'omar.hernandez@soportexperto.com',
+		email: 'asist-digit-interno@sx.com',
 		phone: '+506 2222-2222'
 	},
 	company: {
-		name: 'SoporteXperto'
+		name: 'SX'
 	},
 	footer: {
-		rights: '© 2025 SoporteXperto. Todos los derechos reservados.'
+		rights: '© 2025 SX. Todos los derechos reservados.'
 	}
 };
 
@@ -99,7 +99,7 @@ export const mainNav: NavItem[] = [
 		icon: FileSpreadsheet,
 		items: [
 			{ title: "Plantilla Exactus", href: "/reports/exactus" },
-			{ title: "Plantilla Husqvarna", href: "/reports/husqvarna" },
+			{ title: "Plantilla HP", href: "/reports/hp" },
 			{ title: "Reporte Control Compras", href: "/reports/purchase-control" },
 			{ title: "Exportar Excel", href: "/reports/export" },
 		],
@@ -227,7 +227,7 @@ export const abcCategories = {
  * Lead Times por proveedor (en días)
  */
 export const leadTimes = {
-	husqvarna: 3,
+	hp: 3,
 	// Agregar más proveedores según se necesiten
 } as const;
 

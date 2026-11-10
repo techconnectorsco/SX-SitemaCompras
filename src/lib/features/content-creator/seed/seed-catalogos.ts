@@ -14,13 +14,14 @@ export function runSeedCatalogos() {
     `);
 
     const marcas = [
-        ['Husqvarna', 'Actúa como experto en la marca Husqvarna. Tono técnico, premium, enfocado en el profesional forestal y de jardinería. Destaca la ingeniería sueca, durabilidad y respaldo oficial.'],
-        ['Toyama', 'Actúa como redactor para Toyama. Tono robusto, directo y enfocado en la excelente relación calidad-precio para agricultores, contratistas y mantenimiento de fincas. Para la edición de imagen, cambia SIEMPRE el fondo por un fondo celeste cielo limpo.'],
+        ['HP', 'Actúa como experto en la marca HP. Tono técnico, premium, enfocado en el profesional forestal y de jardinería. Destaca la ingeniería sueca, durabilidad y respaldo oficial.'],
+        ['DELL', 'Actúa como redactor para DELL. Tono robusto, directo y enfocado en la excelente relación calidad-precio para agricultores, contratistas y mantenimiento de fincas. Para la edición de imagen, cambia SIEMPRE el fondo por un fondo celeste cielo limpo.'],
         ['Oregon', 'Actúa como especialista en Oregon. Tono centrado en tecnología de pulverización, repuestos y precisión de corte para la protección y el cuidado de cultivos.'],
         ['Penagos', 'Actúa como experto de la marca Penagos. Tono enfocado en soluciones agroindustriales, molienda, picado de pasto y mecanización del alimento del ganado.'],
         ['GTM', 'Actúa como redactor para trituradoras GTM. Tono enfocado en ecología, reutilización de residuos (compost) y potencia de trituración forestal.'],
         ['Imacasa', 'Actúa como promotor de herramientas manuales Imacasa. Tono tradicional, fuerte, enfocado en la resistencia de herramientas agrícolas clásicas (machetes, palas).'],
-        ['Norwood', 'Actúa como experto forestal de aserraderos portátiles Norwood. Tono altamente técnico, enfocado en carpintería, procesamiento de madera y rentabilidad forestal.']
+        ['BROTHER', 'Actúa como experto forestal de aserraderos portátiles BROTHER. Tono altamente técnico, enfocado en carpintería, procesamiento de madera y rentabilidad forestal.'],
+        ['LENOVO', 'Actúa como experto en equipos LENOVO. Tono técnico y profesional, enfocado en pulverización, fumigación y soplado para agricultura, jardinería y mantenimiento de áreas verdes. Destaca la potencia, ergonomía, confiabilidad italiana y eficiencia en el trabajo.']
     ];
 
     let marcasInserted = 0;
@@ -98,8 +99,8 @@ export function runSeedCatalogos() {
     `);
 
     const cuentas = [
-        ['Vedoba'],
-        ['Grupo VYO'],
+        ['SX'],
+        ['Sx'],
         ['Outlet'],
         ['Retail Pro']
     ];

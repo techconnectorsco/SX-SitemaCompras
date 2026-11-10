@@ -193,7 +193,7 @@
 		{footerText}{' '}
 		<a 
 			href={footerLinkHref} 
-			class="font-medium text-[#0D1E3D] hover:text-[#1A73C2] dark:text-[#1A73C2] dark:hover:text-[#1A73C2]/80 transition-colors"
+			class="font-medium text-[#0D1E3D] hover:text-[#1A73C2] dark:text-[#1A73C2] dark:hover:text-orange-300 transition-colors"
 		>
 			{footerLinkText}
 		</a>

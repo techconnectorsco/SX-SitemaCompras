@@ -4,6 +4,7 @@ import { FacebookService } from '$lib/features/content-creator/services/facebook
 import { InstagramService } from '$lib/features/content-creator/services/meta/instagram-service';
 import { PublicacionService } from '$lib/features/content-creator/services/publicacion-service';
 import db from '$lib/config/db-config';
+import { recordPublicationEvent } from '$lib/features/content-creator/services/publication-audit-service';
 
 /**
  * POST /api/content-creator/meta/publish
@@ -109,6 +110,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 					message
 				);
 				if (!carouselResult.success) {
+					if (publicacionId) recordPublicationEvent(Number(publicacionId), 'PUBLISH_ERROR', locals.user.id, carouselResult.error || 'Error de Meta');
 					return json(
 						{ success: false, error: carouselResult.error },
 						{ status: 502 }
@@ -127,6 +129,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				caption: message
 			});
 			if (!result.success) {
+				if (publicacionId) recordPublicationEvent(Number(publicacionId), 'PUBLISH_ERROR', locals.user.id, result.error || 'Error de Meta');
 				return json(
 					{ success: false, error: result.error },
 					{ status: 502 }
@@ -150,6 +153,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			);
 		}
 		if (!result.success) {
+			if (publicacionId) recordPublicationEvent(Number(publicacionId), 'PUBLISH_ERROR', locals.user.id, result.error || 'Error de Meta');
 			return json(
 				{ success: false, error: result.error },
 				{ status: 502 }
@@ -160,12 +164,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 		// Actualizar publicación + enlazar red_social_id
 		if (publicacionId) {
-			PublicacionService.update(Number(publicacionId), locals.user.id, {
-				estado: 'Publicado'
-			});
 			db.prepare(`
 				UPDATE publicaciones
-				SET published = 1,
+				SET estado = 'Publicado',
+					published = 1,
 					published_at = COALESCE(published_at, ?),
 					meta_post_id = ?,
 					updated_at = ?
@@ -177,6 +179,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				Number(publicacionId),
 				locals.user.id
 			);
+			recordPublicationEvent(Number(publicacionId), 'PUBLISHED', locals.user.id);
 
 			const redSocialId = redNorm === 'ig' ? 2 : 1; // 1=Facebook, 2=Instagram
 			try {

@@ -41,6 +41,26 @@ export async function ejecutarSnapshot(
 	try {
 		if (typeof dataSource.getExistenciasPorBodega === 'function') {
 			const existencias = await dataSource.getExistenciasPorBodega();
+
+			// Bodegas válidas (satisfacen la FK). Comparación normalizada (sin espacios).
+			const bodegasValidas = new Set(
+				(db.prepare('SELECT bodega_codigo FROM bodegas').all() as any[])
+					.map((b) => String(b.bodega_codigo).trim())
+			);
+
+			// Separar filas válidas de las huérfanas (bodega no registrada)
+			const filasValidas: any[] = [];
+			const huerfanas = new Map<string, number>(); // bodega -> nº de filas omitidas
+			for (const f of existencias) {
+				const bod = String(f.bodega ?? '').trim();
+				if (bod !== '' && bodegasValidas.has(bod)) {
+					filasValidas.push(f);
+				} else {
+					const clave = bod || '(vacío)';
+					huerfanas.set(clave, (huerfanas.get(clave) || 0) + 1);
+				}
+			}
+
 			const insert = db.prepare(`
 				INSERT INTO forecast_existencia_bodega
 					(codigo_procesamiento, codigo_sku, bodega_codigo, existencia, transito)
@@ -48,12 +68,18 @@ export async function ejecutarSnapshot(
 			`);
 			const insertMany = db.transaction((filas: any[]) => {
 				for (const f of filas) {
-					insert.run(codigoProcesamiento, f.articulo, f.bodega, f.disponible, f.transito);
+					insert.run(codigoProcesamiento, f.articulo, String(f.bodega).trim(), f.disponible, f.transito);
 				}
 			});
-			insertMany(existencias);
-			filasBodega = existencias.length;
+			insertMany(filasValidas);
+			filasBodega = filasValidas.length;
 			console.log(`[Snapshot] ✅ Existencias por bodega: ${filasBodega} filas`);
+
+			if (huerfanas.size > 0) {
+				const detalle = [...huerfanas.entries()].map(([b, n]) => `${b} (${n} filas)`).join(', ');
+				console.warn(`[Snapshot] ⚠️ Bodegas NO registradas (filas omitidas): ${detalle}`);
+				errores.push(`Bodegas no registradas: ${detalle}`);
+			}
 		} else {
 			errores.push('getExistenciasPorBodega no disponible en el DataSource');
 		}

@@ -10,7 +10,8 @@
 		Users,
 		ShieldCheck,
 		FileJson,
-		Bot
+		Bot,
+		UserCheck
 	} from 'lucide-svelte';
 	import { Card } from '$lib/components/ui/card';
 	import { Progress } from '$lib/components/ui/progress';
@@ -28,6 +29,7 @@
 	import SimularForecast from '$lib/components/app/admin/simular-forecast.svelte';
 	import GestionIA from '$lib/components/ia-chat/GestionIA.svelte';
 	import GestionMarcasLt from '$lib/components/app/admin/gestion-marcas-lt.svelte';
+	import AsignacionMarcasUsuario from '$lib/components/app/admin/asignacion-marcas-usuario.svelte';
 
 	let { data = $bindable(), user = $bindable() } = $props();
 
@@ -265,6 +267,23 @@
 		</div>
 
 		<GestionMarcasLt />
+	</section>
+
+	<div class="border-t"></div>
+
+	<!-- ===== ASIGNACIÓN DE MARCAS POR USUARIO ===== -->
+	<section class="space-y-5">
+		<div class="flex items-center gap-2">
+			<div class="p-1.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-md">
+				<UserCheck class="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+			</div>
+			<h2 class="text-xl font-semibold">Asignación de Marcas por Usuario</h2>
+		</div>
+		<p class="-mt-2 text-sm text-muted-foreground">
+			Definir qué marcas (por lead time) puede analizar cada usuario en el gestor de compras. Sin
+			marcas asignadas ve todo; con marcas asignadas, solo esas.
+		</p>
+		<AsignacionMarcasUsuario />
 	</section>
 
 	<div class="border-t"></div>
