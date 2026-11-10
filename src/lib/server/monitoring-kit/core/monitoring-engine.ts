@@ -10,6 +10,7 @@ import { SecurityAuditService } from './services/security-audit.service';
 import { TrafficMonitoringService } from './services/traffic-monitoring.service';
 import { renderConsolidatedDashboardHtml } from './views/dashboard.view';
 import { renderRealtimeStatusHtml } from './views/status.view';
+import { resolveHasSwagger } from './utils/swagger.utils';
 
 /**
  * Motor central agnóstico de observabilidad, salud de bases de datos, telemetría y auditoría 401/403.
@@ -22,6 +23,8 @@ export class MonitoringEngine {
 	public readonly trafficService: TrafficMonitoringService;
 	public readonly auditService: SecurityAuditService;
 	public readonly telemetryService: HardwareTelemetryService;
+	public readonly hasSwagger: boolean;
+	public readonly swaggerDocsPath: string;
 
 	private lastDbCheckTime = 0;
 	private cachedDbResult: Record<string, ProbeStatusEntry> | null = null;
@@ -37,6 +40,8 @@ export class MonitoringEngine {
 		}
 	) {
 		this.options = options;
+		this.hasSwagger = resolveHasSwagger(options);
+		this.swaggerDocsPath = options.swaggerDocsPath ?? '/api/docs';
 		this.statusMonitorPath = options.statusMonitorPath ?? '/status';
 		this.ignorePrefixes = options.ignoreTrafficPrefixes ?? [
 			this.statusMonitorPath,
@@ -90,7 +95,10 @@ export class MonitoringEngine {
 	 */
 	async getReady(): Promise<{ statusCode: number; payload: any }> {
 		const results = await this.checkProbes(true);
-		const details: Record<string, { status: 'up' | 'down'; responseTimeMs: number; message?: string }> = {};
+		const details: Record<
+			string,
+			{ status: 'up' | 'down'; responseTimeMs: number; message?: string }
+		> = {};
 		const info: Record<string, { status: 'up' }> = {};
 		const error: Record<string, { status: 'down'; message?: string }> = {};
 
@@ -183,11 +191,7 @@ export class MonitoringEngine {
 		const userId = user?.id ?? user?.sub ?? null;
 		const userEmail =
 			user?.email || user?.username || user?.name || (userId !== null ? `ID:${userId}` : null);
-		const roles = Array.isArray(user?.roles)
-			? user.roles
-			: user?.role
-				? [user.role]
-				: [];
+		const roles = Array.isArray(user?.roles) ? user.roles : user?.role ? [user.role] : [];
 
 		if (!isIgnored) {
 			this.telemetryService.recordRequest(input.statusCode, input.responseTimeMs);
@@ -209,10 +213,7 @@ export class MonitoringEngine {
 			}
 		}
 
-		if (
-			(input.statusCode === 401 || input.statusCode === 403) &&
-			!input.skipSecurityAudit
-		) {
+		if ((input.statusCode === 401 || input.statusCode === 403) && !input.skipSecurityAudit) {
 			const defaultReason =
 				input.statusCode === 401
 					? 'Acceso no autenticado (HTTP 401)'
@@ -248,7 +249,29 @@ export class MonitoringEngine {
 		pathname: string,
 		searchParams?: URLSearchParams
 	): Promise<MonitoringHttpResponse> {
-		const cleanPath = pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
+		const cleanPath =
+			pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
+
+		// Si Swagger no está presente ni habilitado, bloquear cualquier intento de llamarlo
+		if (
+			!this.hasSwagger &&
+			(cleanPath === this.swaggerDocsPath || cleanPath.startsWith(`${this.swaggerDocsPath}/`))
+		) {
+			return {
+				matched: true,
+				status: 404,
+				headers: {
+					'Content-Type': 'application/json; charset=utf-8',
+					'Cache-Control': 'no-store'
+				},
+				body: JSON.stringify({
+					statusCode: 404,
+					error: 'Not Found',
+					message:
+						'La documentación Swagger/OpenAPI está deshabilitada o no está disponible en este proyecto.'
+				})
+			};
+		}
 
 		if (this.options.enableDashboardRedirect !== false && cleanPath === '/dashboard') {
 			return {

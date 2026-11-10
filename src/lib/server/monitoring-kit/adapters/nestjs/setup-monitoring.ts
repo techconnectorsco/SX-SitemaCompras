@@ -8,6 +8,7 @@ import {
 import { HardwareTelemetryService } from '../../core/services/hardware-telemetry.service';
 import { TrafficMonitoringService } from '../../core/services/traffic-monitoring.service';
 import { renderRealtimeStatusHtml } from '../../core/views/status.view';
+import { resolveHasSwagger } from '../../core/utils/swagger.utils';
 
 /**
  * Inicializa en 1 sola línea todos los middlewares de monitoreo en `main.ts` de NestJS:
@@ -147,5 +148,19 @@ export function setupMonitoring(
 	// 3. Redirección amigable /dashboard -> /health/dashboard
 	if (enableDashboardRedirect) {
 		app.use('/dashboard', (_req: any, res: any) => res.redirect('/health/dashboard'));
+	}
+
+	// 4. Bloqueo de Swagger si el proyecto no lo tiene habilitado
+	const hasSwagger = resolveHasSwagger(moduleOptions);
+	const swaggerDocsPath = moduleOptions.swaggerDocsPath ?? '/api/docs';
+	if (!hasSwagger) {
+		app.use(swaggerDocsPath, (_req: any, res: any) => {
+			res.status(404).json({
+				statusCode: 404,
+				error: 'Not Found',
+				message:
+					'La documentación Swagger/OpenAPI está deshabilitada o no está disponible en este proyecto.'
+			});
+		});
 	}
 }

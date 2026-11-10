@@ -52,6 +52,15 @@ export interface MonitoringKitOptions {
 	maxSecurityEvents?: number;
 	/** Ruta donde estará montado el monitor en tiempo real de CPU/RAM/RPS (default: '/status') */
 	statusMonitorPath?: string;
+	/**
+	 * Habilitar o deshabilitar la presencia del botón y el acceso a Swagger/OpenAPI.
+	 * - `true`: Muestra el botón de Swagger Docs en el Dashboard y permite el acceso a la documentación.
+	 * - `false`: Oculta el botón del Dashboard y bloquea cualquier llamada a la ruta de documentación (retornando 404).
+	 * - `undefined`: Auto-detecta si el proyecto incluye paquetes de Swagger (@nestjs/swagger, etc.) en `package.json`.
+	 */
+	hasSwagger?: boolean;
+	/** Alias de `hasSwagger` para compatibilidad */
+	enableSwagger?: boolean;
 	/** Ruta de la documentación Swagger/OpenAPI para el botón de acceso rápido (default: '/api/docs') */
 	swaggerDocsPath?: string;
 	/** Habilitar logs HTTP estructurados en consola (default: true) */

@@ -1,4 +1,5 @@
 import { MonitoringKitOptions } from '../interfaces/monitoring-options.interface';
+import { resolveHasSwagger } from '../utils/swagger.utils';
 
 /**
  * Generador de vista HTML para el Centro Consolidado de Operaciones y Monitoreo.
@@ -14,6 +15,7 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
 		'Monitoreo unificado en tiempo real de bases de datos, recursos de servidor, tráfico y auditoría de accesos.';
 	const statusMonitorPath = options?.statusMonitorPath ?? '/status';
 	const swaggerDocsPath = options?.swaggerDocsPath ?? '/api/docs';
+	const hasSwagger = resolveHasSwagger(options);
 	const currentYear = new Date().getFullYear();
 
 	return `<!DOCTYPE html>
@@ -919,10 +921,14 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
         <nav class="nav-links" aria-label="Accesos técnicos">
           <a class="nav-link" href="${escapeServerHtml(statusMonitorPath)}" target="_blank" rel="noopener">
             Status Monitor <span class="arrow" aria-hidden="true">→</span>
-          </a>
+          </a>${
+						hasSwagger
+							? `
           <a class="nav-link" href="${escapeServerHtml(swaggerDocsPath)}" target="_blank" rel="noopener">
             Swagger Docs <span class="arrow" aria-hidden="true">→</span>
-          </a>
+          </a>`
+							: ''
+					}
         </nav>
         <div class="topbar-actions">
           <button type="button" class="btn btn-secondary" id="btn-toggle-timer" onclick="toggleAutoRefresh()">
@@ -1125,8 +1131,12 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
         <div>
           <span class="footer-col-title">Herramientas</span>
           <ul class="footer-list">
-            <li><a href="${escapeServerHtml(statusMonitorPath)}" target="_blank" rel="noopener">Monitor en tiempo real →</a></li>
-            <li><a href="${escapeServerHtml(swaggerDocsPath)}" target="_blank" rel="noopener">Documentación OpenAPI →</a></li>
+            <li><a href="${escapeServerHtml(statusMonitorPath)}" target="_blank" rel="noopener">Monitor en tiempo real →</a></li>${
+							hasSwagger
+								? `
+            <li><a href="${escapeServerHtml(swaggerDocsPath)}" target="_blank" rel="noopener">Documentación OpenAPI →</a></li>`
+								: ''
+						}
           </ul>
         </div>
 

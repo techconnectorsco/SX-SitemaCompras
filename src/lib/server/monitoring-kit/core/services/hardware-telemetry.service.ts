@@ -166,7 +166,10 @@ export class HardwareTelemetryService {
 		let cpuPercent = 0;
 		if (elapsedUs > 0) {
 			const totalCpuUs = cpuDiff.user + cpuDiff.system;
-			cpuPercent = Math.min(100, Math.round(((totalCpuUs / elapsedUs / this.cpuCores) * 100) * 10) / 10);
+			cpuPercent = Math.min(
+				100,
+				Math.round((totalCpuUs / elapsedUs / this.cpuCores) * 100 * 10) / 10
+			);
 		}
 
 		const mem = process.memoryUsage();
@@ -177,7 +180,7 @@ export class HardwareTelemetryService {
 		if (this.eventLoopHistogram) {
 			const meanNs = this.eventLoopHistogram.mean;
 			if (Number.isFinite(meanNs) && meanNs > 0) {
-				eventLoopLagMs = Math.max(0, Math.round(((meanNs / 1e6) - 20) * 100) / 100);
+				eventLoopLagMs = Math.max(0, Math.round((meanNs / 1e6 - 20) * 100) / 100);
 			}
 			this.eventLoopHistogram.reset();
 		}
@@ -203,7 +206,11 @@ export class HardwareTelemetryService {
 		};
 	}
 
-	private buildSpanPoint(basePoint: TelemetryPoint, acc: BucketAccumulator, intervalSec: number): TelemetryPoint {
+	private buildSpanPoint(
+		basePoint: TelemetryPoint,
+		acc: BucketAccumulator,
+		intervalSec: number
+	): TelemetryPoint {
 		return {
 			...basePoint,
 			rps: Math.round((acc.requests / intervalSec) * 10) / 10,

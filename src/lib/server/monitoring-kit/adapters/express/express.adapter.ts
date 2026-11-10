@@ -21,10 +21,15 @@ export function createExpressMonitoring(options: MonitoringKitOptions = {}) {
 		const rawUrl: string = req.originalUrl || req.url || '/';
 		const [pathname, queryString] = rawUrl.split('?');
 
+		const isSwaggerBlocked =
+			!engine.hasSwagger &&
+			(pathname === engine.swaggerDocsPath || pathname.startsWith(`${engine.swaggerDocsPath}/`));
+
 		if (
 			pathname === '/dashboard' ||
 			pathname === statusPath ||
-			pathname.startsWith('/health/')
+			pathname.startsWith('/health/') ||
+			isSwaggerBlocked
 		) {
 			const searchParams = new URLSearchParams(queryString || '');
 			const matched = await engine.handleRoute(pathname, searchParams);

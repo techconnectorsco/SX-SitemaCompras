@@ -28,7 +28,9 @@ export function createSvelteKitMonitoring(options: SvelteKitMonitoringOptions = 
 	const engine = new MonitoringEngine(options);
 	const auditAuthRedirects = options.auditAuthRedirects ?? true;
 
-	const extractUser = (locals: Record<string, any> | undefined): GenericAuthenticatedUser | null => {
+	const extractUser = (
+		locals: Record<string, any> | undefined
+	): GenericAuthenticatedUser | null => {
 		const rawUser = locals?.user || locals?.session?.user || null;
 		if (!rawUser) return null;
 		return {
@@ -58,11 +60,16 @@ export function createSvelteKitMonitoring(options: SvelteKitMonitoringOptions = 
 	}): Promise<Response> => {
 		const { pathname, searchParams } = event.url;
 
-		// 1. Interceptar rutas del Centro de Monitoreo (/dashboard, /status, /health/*)
+		// 1. Interceptar rutas del Centro de Monitoreo (/dashboard, /status, /health/*, o Swagger si está deshabilitado)
+		const isSwaggerBlocked =
+			!engine.hasSwagger &&
+			(pathname === engine.swaggerDocsPath || pathname.startsWith(`${engine.swaggerDocsPath}/`));
+
 		if (
 			pathname === '/dashboard' ||
 			pathname === (options.statusMonitorPath ?? '/status') ||
-			pathname.startsWith('/health/')
+			pathname.startsWith('/health/') ||
+			isSwaggerBlocked
 		) {
 			const matched = await engine.handleRoute(pathname, searchParams);
 			if (matched.matched) {
@@ -87,7 +94,12 @@ export function createSvelteKitMonitoring(options: SvelteKitMonitoringOptions = 
 			const rawUser = event.locals?.user || event.locals?.session?.user || null;
 
 			// Caso A: SvelteKit `throw redirect(303, location)` lanzado por un hook (ej. authGuard)
-			if (err && typeof err === 'object' && typeof err.status === 'number' && typeof err.location === 'string') {
+			if (
+				err &&
+				typeof err === 'object' &&
+				typeof err.status === 'number' &&
+				typeof err.location === 'string'
+			) {
 				const loc = err.location;
 				if (auditAuthRedirects && loc.startsWith('/auth/pending')) {
 					engine.auditService.record({
@@ -101,7 +113,10 @@ export function createSvelteKitMonitoring(options: SvelteKitMonitoringOptions = 
 						roles: user?.roles || [],
 						userAgent
 					});
-				} else if (auditAuthRedirects && (loc.startsWith('/auth?mode=login') || loc.startsWith('/auth/login'))) {
+				} else if (
+					auditAuthRedirects &&
+					(loc.startsWith('/auth?mode=login') || loc.startsWith('/auth/login'))
+				) {
 					engine.auditService.record({
 						ip,
 						method: event.request.method,
@@ -220,10 +235,7 @@ export function createSvelteKitMonitoring(options: SvelteKitMonitoringOptions = 
 	};
 }
 
-function extractSvelteKitIp(event: {
-	request: Request;
-	getClientAddress?: () => string;
-}): string {
+function extractSvelteKitIp(event: { request: Request; getClientAddress?: () => string }): string {
 	const forwarded = event.request.headers.get('x-forwarded-for');
 	if (forwarded) {
 		return forwarded.split(',')[0].trim();

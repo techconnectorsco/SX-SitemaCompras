@@ -49,13 +49,8 @@ export class SecurityAuditFilter implements ExceptionFilter {
 		const clientIp = this.extractClientIp(request);
 		const user = request.user;
 		const userId = user?.id ?? user?.sub ?? null;
-		const userEmail =
-			user?.email || user?.username || (userId !== null ? `ID:${userId}` : null);
-		const roles = Array.isArray(user?.roles)
-			? user.roles
-			: user?.role
-				? [user.role]
-				: [];
+		const userEmail = user?.email || user?.username || (userId !== null ? `ID:${userId}` : null);
+		const roles = Array.isArray(user?.roles) ? user.roles : user?.role ? [user.role] : [];
 		const userStr = userEmail
 			? `${userEmail} [Roles: ${roles.join(', ') || 'sin roles'}]`
 			: 'Anónimo / Sin Token';
