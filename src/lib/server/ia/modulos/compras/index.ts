@@ -43,8 +43,66 @@ es una corrida identificada por su código y contiene una fila por SKU con: exis
 demanda (promedios 6m/12m/ajustado), stock de seguridad, lead time, clasificación ABC, costos y
 las cantidades sugeridas de compra por método (courier, aéreo, marítimo).
 El veredicto, el riesgo y la confianza ya vienen calculados por las herramientas: presentalos, no los recalcules.
-Por defecto trabajá sobre el procesamiento más reciente salvo que el usuario indique otro.`,
+Por defecto trabajá sobre el procesamiento más reciente salvo que el usuario indique otro.
+Las herramientas de proyección (proyectar_demanda, proyectar_quiebres, simular_compra) dan ESTIMACIONES estadísticas, no certezas: presentalas junto con su método y confianza.`,
 	herramientas: [
+		{
+			nombre: 'proyectar_demanda',
+			descripcion: 'Proyecta cuántas unidades se venderán de un SKU en los próximos meses (demanda base × estacionalidad). Usar para "¿cuánto voy a vender de X?", "¿cómo va a estar la demanda?".',
+			parametros: {
+				type: 'object',
+				properties: {
+					codigoSku: { type: 'string', description: 'Código del SKU.' },
+					meses: { type: 'integer', description: 'Meses a proyectar (1-12, por defecto 3).' },
+					codigoProcesamiento: PROP_PROC
+				},
+				required: ['codigoSku']
+			},
+			ejecutar: async (args, ctx) => {
+				const proc = resolverProc(args, ctx);
+				if (!proc) return { error: 'No hay procesamientos disponibles.' };
+				const sku = (args.codigoSku as string) || ctx.pantalla?.codigoSku || '';
+				if (!sku) return { error: 'Falta indicar el SKU.' };
+				return calc.proyectarDemanda(ctx.db, proc, sku, (args.meses as number) || 3);
+			}
+		},
+		{
+			nombre: 'proyectar_quiebres',
+			descripcion: 'Lista los SKUs que se agotarían en los próximos días si la demanda sigue igual, con fecha estimada y si el reabastecimiento llega a tiempo. Usar para "¿qué se me va a agotar el próximo mes?".',
+			parametros: {
+				type: 'object',
+				properties: {
+					dias: { type: 'integer', description: 'Horizonte en días (por defecto 60).' },
+					codigoProcesamiento: PROP_PROC,
+					limite: PROP_LIMITE
+				}
+			},
+			ejecutar: async (args, ctx) => {
+				const proc = resolverProc(args, ctx);
+				if (!proc) return { error: 'No hay procesamientos disponibles.' };
+				return calc.proyectarQuiebres(ctx.db, proc, (args.dias as number) || 60, (args.limite as number) || 10);
+			}
+		},
+		{
+			nombre: 'simular_compra',
+			descripcion: 'Simula comprar X unidades de un SKU: nueva cobertura, fecha de quiebre, riesgo de sobrestock y costo. Usar para "¿qué pasa si compro 500 de X?".',
+			parametros: {
+				type: 'object',
+				properties: {
+					codigoSku: { type: 'string', description: 'Código del SKU.' },
+					cantidad: { type: 'integer', description: 'Unidades a comprar.' },
+					codigoProcesamiento: PROP_PROC
+				},
+				required: ['codigoSku', 'cantidad']
+			},
+			ejecutar: async (args, ctx) => {
+				const proc = resolverProc(args, ctx);
+				if (!proc) return { error: 'No hay procesamientos disponibles.' };
+				const sku = (args.codigoSku as string) || ctx.pantalla?.codigoSku || '';
+				if (!sku) return { error: 'Falta indicar el SKU.' };
+				return calc.simularCompra(ctx.db, proc, sku, Number(args.cantidad));
+			}
+		},
 		{
 			nombre: 'listar_procesamientos',
 			descripcion: 'Lista los procesamientos de forecast disponibles, del más reciente al más antiguo, con su fecha y cantidad de SKUs. Útil cuando el usuario quiere elegir o comparar corridas.',

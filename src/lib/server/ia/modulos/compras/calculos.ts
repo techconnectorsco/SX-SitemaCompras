@@ -442,6 +442,110 @@ export function buscarSku(db: DB, proc: string, texto: string, limite = 10) {
 		.all(proc, patron, patron, limite);
 }
 
+// ----------------------------------------------------------------------------
+// Proyecciones (estadística simple y explicable; sin ML)
+// ----------------------------------------------------------------------------
+
+function sumarDias(dias: number): string {
+	return new Date(Date.now() + dias * 86400000).toISOString().slice(0, 10);
+}
+
+/** Proyecta la demanda de un SKU: demanda base × estacionalidad del mismo mes del año anterior. */
+export function proyectarDemanda(db: DB, proc: string, sku: string, meses = 3) {
+	const fila = traerSku(db, proc, sku);
+	if (!fila) return { error: `No encontré el SKU ${sku} en el procesamiento ${proc}.` };
+	const base = demandaMensual(fila);
+	if (base === 0) return { error: `El SKU ${sku} no tiene demanda para proyectar.` };
+
+	const hist = db
+		.prepare(
+			`SELECT strftime('%Y-%m', fecha) AS mes, SUM(cantidad) AS cant
+			 FROM ventas_mensuales WHERE sku_codigo = ?
+			 GROUP BY mes ORDER BY mes DESC LIMIT 24`
+		)
+		.all(sku) as Array<{ mes: string; cant: number }>;
+	const porMes = new Map(hist.map((h) => [h.mes, num(h.cant)]));
+	const ultimos12 = hist.slice(0, 12);
+	const prom12 = ultimos12.length ? ultimos12.reduce((s, h) => s + num(h.cant), 0) / ultimos12.length : 0;
+	const hayEstacionalidad = hist.length >= 13 && prom12 > 0;
+
+	const hoy = new Date();
+	const proyeccion = [];
+	for (let i = 1; i <= Math.min(Math.max(meses, 1), 12); i++) {
+		const d = new Date(hoy.getFullYear(), hoy.getMonth() + i, 1);
+		const mesAnt = `${d.getFullYear() - 1}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+		const previo = porMes.get(mesAnt);
+		// Factor acotado para que un mes atípico no dispare la proyección.
+		const factor =
+			hayEstacionalidad && previo !== undefined ? Math.min(2, Math.max(0.3, previo / prom12)) : 1;
+		proyeccion.push({
+			mes: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+			unidades: Math.round(base * factor),
+			factorEstacional: Number(factor.toFixed(2))
+		});
+	}
+
+	const datosFaltantes = hayEstacionalidad ? [] : ['historial de 13+ meses (no se aplicó estacionalidad)'];
+	let confianza = 100 - (num(fila.coeficiente_variacion) > 1 ? 30 : num(fila.coeficiente_variacion) > 0.5 ? 15 : 0);
+	if (!hayEstacionalidad) confianza -= 15;
+	return {
+		sku,
+		descripcion: fila.descripcion,
+		demandaBaseMensual: Math.round(base),
+		metodo: 'demanda base (promedio ajustado) × estacionalidad del mismo mes del año anterior',
+		proyeccion,
+		confianza: Math.max(5, confianza),
+		datosFaltantes
+	};
+}
+
+/** SKUs que se agotarían en los próximos `dias` si la demanda sigue igual. */
+export function proyectarQuiebres(db: DB, proc: string, dias = 60, limite = 10) {
+	return traerProc(db, proc)
+		.filter((f) => f.activo !== 0 && demandaMensual(f) > 0)
+		.map((f) => {
+			const diaria = demandaMensual(f) / NEGOCIO.DIAS_POR_MES;
+			const diasCobertura = (num(f.existencia) + num(f.transito)) / diaria;
+			const leadDias = NEGOCIO.LEAD_TIME_EN_DIAS ? num(f.lead_time) : num(f.lead_time) * NEGOCIO.DIAS_POR_MES;
+			return {
+				sku: f.codigo_sku,
+				descripcion: f.descripcion,
+				diasCobertura: Math.round(diasCobertura),
+				fechaEstimadaQuiebre: sumarDias(diasCobertura),
+				leadTimeDias: Math.round(leadDias),
+				llegaATiempo: diasCobertura > leadDias
+			};
+		})
+		.filter((x) => x.diasCobertura <= dias)
+		.sort((a, b) => a.diasCobertura - b.diasCobertura)
+		.slice(0, limite);
+}
+
+/** "¿Qué pasa si compro X?": cobertura resultante, riesgo de sobrestock y costo. */
+export function simularCompra(db: DB, proc: string, sku: string, cantidad: number) {
+	const fila = traerSku(db, proc, sku);
+	if (!fila) return { error: `No encontré el SKU ${sku} en el procesamiento ${proc}.` };
+	if (!(cantidad > 0)) return { error: 'La cantidad debe ser mayor que 0.' };
+	const demanda = demandaMensual(fila);
+	const disponible = num(fila.existencia) + num(fila.transito);
+	const nuevo = disponible + cantidad;
+	const cobertura = (u: number) => (demanda > 0 ? Number((u / demanda).toFixed(1)) : null);
+	const nuevaCobertura = cobertura(nuevo);
+	const costo = num(fila.costo_ult_dol) || num(fila.costo_prom_dol);
+	return {
+		sku,
+		descripcion: fila.descripcion,
+		disponibleActual: Math.round(disponible),
+		coberturaActualMeses: cobertura(disponible),
+		disponibleDespues: Math.round(nuevo),
+		coberturaDespuesMeses: nuevaCobertura,
+		fechaEstimadaQuiebre: demanda > 0 ? sumarDias((nuevo / demanda) * NEGOCIO.DIAS_POR_MES) : null,
+		sobrestock: nuevaCobertura !== null && nuevaCobertura > NEGOCIO.COBERTURA_SOBRESTOCK_MESES,
+		costoEstimadoUsd: Math.round(cantidad * costo),
+		sugeridoPorForecast: sugeridaDelForecast(fila)
+	};
+}
+
 function sevValor(s: Severidad): number {
 	return s === 'alto' ? 3 : s === 'medio' ? 2 : 1;
 }
