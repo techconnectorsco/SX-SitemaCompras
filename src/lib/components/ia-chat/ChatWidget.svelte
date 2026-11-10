@@ -18,7 +18,7 @@
 		autenticado = true,
 		codigoProcesamiento,
 		codigoSku,
-		titulo = 'SoporteXperto IA'
+		titulo = 'BettiIA'
 	}: Props = $props();
 
 	const TIMEOUT_MS = 120000; // 120s: una consulta con varias herramientas puede tardar.
@@ -218,8 +218,8 @@
 		<div class="cuerpo" bind:this={contenedor}>
 			{#if chatStore.mensajes.length === 0}
 				<div class="vacio">
-					<p class="saludo">Hola, soy tu asistente de compras.</p>
-					<p class="sub">Elegí una pregunta o escribí la tuya:</p>
+					<p class="saludo">Hola, soy BettiIA su agente de inteligencia artificial.</p>
+					<p class="sub">Seleccione una pregunta o escriba la suya:</p>
 					<div class="sugerencias">
 						{#each sugerencias as s (s.texto)}
 							<button class="chip" onclick={() => usarSugerencia(s)}>{s.texto}</button>

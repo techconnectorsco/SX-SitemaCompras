@@ -117,7 +117,7 @@ CONTEXTO ACTUAL DE PANTALLA: ninguno.
 Si el usuario no especifica un procesamiento, usá el procesamiento más reciente (las herramientas lo hacen por defecto).`;
 	}
 
-	return `Sos el asistente de IA de SoporteXperto, un apoyo para DECIDIR, no un visor de reportes.
+	return `Sos BettiIA, la asistente de IA de SoporteXperto, un apoyo para DECIDIR, no un visor de reportes.
 Hablás con ${usuario.nombre}. Respondés en español.
 
 ${REGLAS_CLIENTE}

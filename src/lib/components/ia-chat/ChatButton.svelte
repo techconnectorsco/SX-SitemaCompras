@@ -10,8 +10,8 @@
 	class="boton-chat"
 	class:abierto
 	onclick={onToggle}
-	aria-label={abierto ? 'Cerrar asistente' : 'Abrir asistente'}
-	title={abierto ? 'Cerrar asistente' : 'Abrir asistente'}
+	aria-label={abierto ? 'Cerrar BettiIA' : 'Abrir BettiIA'}
+	title={abierto ? 'Cerrar BettiIA' : 'Abrir BettiIA'}
 >
 	{#if abierto}
 		<svg
@@ -25,20 +25,7 @@
 			<path d="M18 6 6 18M6 6l12 12" stroke-linecap="round" />
 		</svg>
 	{:else}
-		<svg
-			viewBox="0 0 24 24"
-			width="24"
-			height="24"
-			fill="none"
-			stroke="currentColor"
-			stroke-width="2"
-		>
-			<path
-				d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8A8.5 8.5 0 0 1 12.5 3 8.5 8.5 0 0 1 21 11.5z"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			/>
-		</svg>
+		<img src="/ia-chat/betti-ia.png" alt="" class="avatar" />
 	{/if}
 </button>
 
@@ -66,6 +53,16 @@
 	.boton-chat:hover {
 		background: #1e40af;
 		transform: scale(1.05);
+	}
+	.avatar {
+		width: 100%;
+		height: 100%;
+		border-radius: 50%;
+		object-fit: cover;
+	}
+	.boton-chat {
+		padding: 0;
+		overflow: hidden;
 	}
 	.boton-chat.abierto {
 		background: #f10101;
