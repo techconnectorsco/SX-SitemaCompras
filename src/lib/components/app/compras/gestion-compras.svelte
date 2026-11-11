@@ -296,7 +296,7 @@
 	let guardandoDesdeModal = $state(false);
 	let accionPendiente = $state<'filtro' | 'procesamiento' | null>(null);
 	let procesamientoPendiente = $state('');
-	let exportandoHusqvarna = $state(false);
+	let exportandoHP = $state(false);
 	let exportandoOtros = $state(false);
 	// Modal de "Actualizar snapshot"
 	let mostrarModalActualizar = $state(false);
@@ -858,14 +858,14 @@
 		});
 	}
 
-	async function exportarPedidos(tipo: 'husqvarna' | 'otros') {
+	async function exportarPedidos(tipo: 'hp' | 'otros') {
 		if (!procesamientoSeleccionado) {
 			toast.error('No hay procesamiento seleccionado');
 			return;
 		}
 
-		if (tipo === 'husqvarna') {
-			exportandoHusqvarna = true;
+		if (tipo === 'hp') {
+			exportandoHP = true;
 		} else {
 			exportandoOtros = true;
 		}
@@ -893,15 +893,13 @@
 			window.URL.revokeObjectURL(url);
 			document.body.removeChild(a);
 
-			toast.success(
-				`Pedidos ${tipo === 'husqvarna' ? 'Husqvarna' : 'otras líneas'} exportados correctamente`
-			);
+			toast.success(`Pedidos ${tipo === 'hp' ? 'HP' : 'otras líneas'} exportados correctamente`);
 		} catch (error) {
 			console.error('Error exportando:', error);
 			toast.error(error instanceof Error ? error.message : 'Error al exportar pedidos');
 		} finally {
-			if (tipo === 'husqvarna') {
-				exportandoHusqvarna = false;
+			if (tipo === 'hp') {
+				exportandoHP = false;
 			} else {
 				exportandoOtros = false;
 			}
@@ -1528,19 +1526,19 @@
 			<!-- Botones de Exportación -->
 			<div class="flex items-center gap-2">
 				<button
-					onclick={() => exportarPedidos('husqvarna')}
-					disabled={exportandoHusqvarna || !procesamientoSeleccionado}
+					onclick={() => exportarPedidos('hp')}
+					disabled={exportandoHP || !procesamientoSeleccionado}
 					class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg
                  bg-[#1A73C2] hover:bg-[#1A73C2] text-white
                  disabled:opacity-50 disabled:cursor-not-allowed
                  transition-colors shadow-sm"
 				>
-					{#if exportandoHusqvarna}
+					{#if exportandoHP}
 						<LoaderCircle class="h-4 w-4 animate-spin" />
 					{:else}
 						<FileSpreadsheet class="h-4 w-4" />
 					{/if}
-					Husqvarna
+					HP
 					<Download class="h-3.5 w-3.5" />
 				</button>
 
@@ -2027,7 +2025,7 @@
 
 						<!-- ✅ Identificador visual para ocultar cálculos de vías rápidas -->
 						{@const esSoloMaritimo =
-							(sku.marca || '').toUpperCase().trim() === 'HUSQVARNA' &&
+							(sku.marca || '').toUpperCase().trim() === 'HP' &&
 							!(sku.linea || '').toUpperCase().trim().startsWith('RP')}
 
 						{@const costoUnit = sku.costo_prom_dol || sku.costo_ult_dol || 0}

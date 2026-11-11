@@ -1963,7 +1963,7 @@ export const GET: RequestHandler = async ({ url, locals, request }) => {
 
   // Datos para auditoría
   const ip = request.headers.get('x-forwarded-for') || 'unknown';
-  const userAgent = request.headers.get('user-agent') || 'VYOWEB-App';
+  const userAgent = request.headers.get('user-agent') || 'SXWEB-App';
   const nombreReporte = NOMBRES_REPORTES[tipo] || tipo;
 
   try {

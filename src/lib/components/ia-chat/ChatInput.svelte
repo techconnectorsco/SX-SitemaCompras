@@ -42,7 +42,7 @@
 			bind:this={area}
 			bind:value={texto}
 			onkeydown={onKeydown}
-			placeholder="Escribí tu consulta…"
+			placeholder="Escribe tu consulta..."
 			rows="1"
 			maxlength={maxCaracteres}
 			disabled={cargando}

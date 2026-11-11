@@ -8,11 +8,11 @@
 		avatar?: string;
 	}
 	let {
-		titulo = 'SoporteXperto IA',
+		titulo = 'BettiIA',
 		costoSesion,
 		moneda = 'USD',
 		onCerrar,
-		avatar = '/ia-chat/robot-abrir.png'
+		avatar = '/ia-chat/betti-ia.png'
 	}: Props = $props();
 
 	const costoFmt = $derived(

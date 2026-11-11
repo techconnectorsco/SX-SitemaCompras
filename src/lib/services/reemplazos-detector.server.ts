@@ -29,7 +29,7 @@ const EXTRACTORES: RegExp[] = [
 	/^\d{4}-\d{3,5}[A-Z]/,            // 1029-001E
 	/^\d{2,4}[A-Z]{2,6}\d{3,4}/,      // 160PXLBA074
 
-	// 3. Formatos estándar numéricos (Husqvarna, Oregon, etc.)
+	// 3. Formatos estándar numéricos (HP, Oregon, etc.)
 	/^\d{7,8}-\d{2}/,                 // 5877389-01
 	/^\d{5,6}-\d{2,3}/,               // 05001-039
 	/^\d{4}-\d{3,5}/,                 // 1011-9002

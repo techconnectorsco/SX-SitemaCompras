@@ -26,14 +26,14 @@ export type Lt = { lt_courier: number; lt_aereo: number; lt_maritimo: number; me
 
 /**
  * Resuelve la CLAVE de L.T. del SKU — MISMA lógica que estaba inline en el orchestrator:
- *  - HUSQVARNA → 'HUSQVARNA-A' si la línea empieza con 'RP', si no 'HUSQVARNA-B'
+ *  - HP → 'HP-A' si la línea empieza con 'RP', si no 'HP-B'
  *  - resto → marca (mayúsculas, sin espacios)
  */
 export function resolverClaveLt(marca: string, linea: string): string {
 	const m = (marca || '').toUpperCase().trim();
 	const l = (linea || '').toUpperCase().trim();
-	const clave = m === 'HUSQVARNA'
-		? (l.startsWith('RP') ? 'HUSQVARNA-A' : 'HUSQVARNA-B')
+	const clave = m === 'HP'
+		? (l.startsWith('RP') ? 'HP-A' : 'HP-B')
 		: m;
 	return clave;
 }

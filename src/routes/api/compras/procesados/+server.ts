@@ -114,9 +114,9 @@ export const GET: RequestHandler = async ({ url, locals }) => {
     // Reconstruye la clave de LT igual que resolverClaveLt(marca, linea) del forecast-core
 const CLAVE_LT_SQL = `
   CASE
-    WHEN UPPER(TRIM(marca)) = 'HUSQVARNA'
+    WHEN UPPER(TRIM(marca)) = 'HP'
       THEN CASE WHEN UPPER(TRIM(COALESCE(linea,''))) LIKE 'RP%'
-                THEN 'HUSQVARNA-A' ELSE 'HUSQVARNA-B' END
+                THEN 'HP-A' ELSE 'HP-B' END
     ELSE UPPER(TRIM(COALESCE(marca,'')))
   END`;
 
@@ -132,7 +132,7 @@ if (etiqueta) {
       `(${CLAVE_LT_SQL}) NOT IN (SELECT clave FROM marcas_lt_config WHERE activo = 1 AND clave != '__DEFAULT__')`
     );
   } else {
-    // Proveedor normal (Deyu, Husqvarna A/B, Cifarelli...): sus claves configuradas
+    // Proveedor normal (Deyu, HP A/B, LENOVO...): sus claves configuradas
     conditions.push(
       `(${CLAVE_LT_SQL}) IN (SELECT clave FROM marcas_lt_config WHERE etiqueta = ? AND activo = 1)`
     );

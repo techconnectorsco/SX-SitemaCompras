@@ -89,7 +89,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
   const codigoProcesamiento = generarCodigoProcesamiento();
 
   const ip = 'unknown';
-  const userAgent = 'VYOWEB-App';
+  const userAgent = 'SXWEB-App';
   
   // ===== LOG DE AUDITORÍA - INICIO FORECAST =====
   AuditService.log(
@@ -236,8 +236,8 @@ export const POST: RequestHandler = async ({ locals, request }) => {
         // ✅ CONFIG DE L.T. POR PROVEEDOR/MARCA (tabla marcas_lt_config)
         // Se lee UNA sola vez, solo filas activas. El mapa se busca por CLAVE:
         //   - Marca normal           → clave = marca (CLASIFICACION_4)
-        //   - HUSQVARNA              → clave = HUSQVARNA-A si la línea (CLASIFICACION_3)
-        //                              empieza con 'RP'; si no, HUSQVARNA-B
+        //   - HP              → clave = HP-A si la línea (CLASIFICACION_3)
+        //                              empieza con 'RP'; si no, HP-B
         //   - Marca sin clave en el mapa → usa el default ('__DEFAULT__', editable).
         // Fórmula por vía:
         //   courier  = PA × lt_courier
@@ -331,21 +331,21 @@ export const POST: RequestHandler = async ({ locals, request }) => {
   const factorSeg = FACTORES_SEGURIDAD[stats.abcRotacion] || 0; //se arreglo por ABC de rotacion
 
   // ✅ Resolver la CLAVE de L.T. del SKU:
-  //    - HUSQVARNA se parte en A/B según la línea (CLASIFICACION_3 = articulo.linea).
+  //    - HP se parte en A/B según la línea (CLASIFICACION_3 = articulo.linea).
   //    - El resto matchea por su marca (CLASIFICACION_4).
   //    - Si la clave no está en la tabla, usa el default editable.
   /* const marca = (articulo.marca || '').toUpperCase().trim();
   const linea = (articulo.linea || '').toUpperCase().trim();
-  const clave = marca === 'HUSQVARNA'
-    ? (linea.startsWith('RP') ? 'HUSQVARNA-A' : 'HUSQVARNA-B')
+  const clave = marca === 'HP'
+    ? (linea.startsWith('RP') ? 'HP-A' : 'HP-B')
     : marca; */
     //  Resolver la CLAVE de L.T. del SKU (misma lógica, ahora en forecast-core)
   const clave = resolverClaveLt(articulo.marca, articulo.linea);
 
   const ltAplicado = marcasLtMap.get(clave) || defaultLt;
 
-  // REGLA DE NEGOCIO: Los artículos Husqvarna B (Maquinaria/No RP) solo se piden por mar.
-  const esSoloMaritimo = clave === 'HUSQVARNA-B';
+  // REGLA DE NEGOCIO: Los artículos HP B (Maquinaria/No RP) solo se piden por mar.
+  const esSoloMaritimo = clave === 'HP-B';
 
   const forecast = calcularForecast(stats, factorSeg, existenciaData, ltAplicado, esSoloMaritimo);
 
