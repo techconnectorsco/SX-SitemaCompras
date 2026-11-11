@@ -698,14 +698,14 @@ try {
   try {
     const seedMarca = db.prepare('INSERT OR IGNORE INTO marcas (nombre, prompt_sistema) VALUES (?, ?)');
     for (const [nombre, prompt] of [
-      ['Husqvarna', 'Actúa como experto en la marca Husqvarna. Tono técnico, premium, enfocado en el profesional forestal y de jardinería.'],
-      ['Toyama', 'Actúa como redactor para Toyama. Tono robusto, directo y enfocado en relación calidad-precio.'],
-      ['Oregon', 'Actúa como especialista en Oregon. Tono centrado en tecnología de pulverización, repuestos y precisión de corte.'],
-      ['Penagos', 'Actúa como experto de la marca Penagos. Tono enfocado en soluciones agroindustriales.'],
-      ['GTM', 'Actúa como redactor para trituradoras GTM. Tono enfocado en ecología y potencia forestal.'],
-      ['Imacasa', 'Actúa como promotor de herramientas manuales Imacasa.'],
-      ['Norwood', 'Actúa como experto forestal de aserraderos portátiles Norwood.'],
-      ['CIFARELLI', 'Actúa como experto en equipos CIFARELLI.']
+      ['HP', 'Actúa como experto en la marca HP. Tono técnico y profesional, enfocado en tecnología, rendimiento y soporte técnico confiable para empresas y profesionales.'],
+      ['DELL', 'Actúa como experto en la marca DELL. Tono técnico y profesional, enfocado en tecnología, rendimiento y soporte técnico confiable para empresas y profesionales.'],
+      ['ASUS', 'Actúa como experto en la marca ASUS. Tono técnico y profesional, enfocado en tecnología, rendimiento y soporte técnico confiable para empresas y profesionales.'],
+      ['ACER', 'Actúa como experto en la marca ACER. Tono técnico y profesional, enfocado en tecnología, rendimiento y soporte técnico confiable para empresas y profesionales.'],
+      ['EPSON', 'Actúa como experto en la marca EPSON. Tono técnico y profesional, enfocado en tecnología, rendimiento y soporte técnico confiable para empresas y profesionales.'],
+      ['CANON', 'Actúa como experto en la marca CANON. Tono técnico y profesional, enfocado en tecnología, rendimiento y soporte técnico confiable para empresas y profesionales.'],
+      ['BROTHER', 'Actúa como experto en la marca BROTHER. Tono técnico y profesional, enfocado en tecnología, rendimiento y soporte técnico confiable para empresas y profesionales.'],
+      ['LENOVO', 'Actúa como experto en la marca LENOVO. Tono técnico y profesional, enfocado en tecnología, rendimiento y soporte técnico confiable para empresas y profesionales.']
     ]) {
       seedMarca.run(nombre, prompt);
     }
@@ -721,7 +721,7 @@ try {
     }
 
     const seedAudiencia = db.prepare('INSERT OR IGNORE INTO audiencias (nombre) VALUES (?)');
-    for (const nombre of ['Amplio', 'Agrónomos y Fincas', 'Jardineros y Hogar', 'Construcción y Contratistas', 'Profesionales de Madera']) {
+    for (const nombre of ['Amplio', 'Empresas y Corporativo', 'Hogar y Oficina', 'Profesionales de TI', 'Educación y Gobierno']) {
       seedAudiencia.run(nombre);
     }
 
