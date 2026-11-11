@@ -14,6 +14,28 @@ export function renderRealtimeStatusHtml(options?: MonitoringKitOptions): string
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+    (function () {
+      function apply() {
+        var m = null;
+        try { m = localStorage.getItem('mode-watcher-mode'); } catch (e) { m = null; }
+        m = m || 'system';
+        var dark = m === 'dark' ||
+          (m === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+      }
+      apply();
+      try {
+        window.addEventListener('storage', function (e) {
+          if (!e.key || e.key === 'mode-watcher-mode') apply();
+        });
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', apply);
+      } catch (e) { /* navegador sin soporte: queda el valor inicial */ }
+      window.addEventListener('message', function (e) {
+        if (e.origin === location.origin && e.data && e.data.type === 'sx-theme') apply();
+      });
+    })();
+  </script>
   <title>${escapeServerHtml(appName)} · Telemetría — SoporteXperto</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -37,9 +59,57 @@ export function renderRealtimeStatusHtml(options?: MonitoringKitOptions): string
       --sx-gris-apoyo:    #7C8DA3;
       --sx-gris-cuerpo:   #56687E;
       --sx-shadow:        0 14px 32px rgba(13, 30, 61, 0.06);
+
+      /* Tokens de ROL: --sx-blanco y --sx-azul-profundo se usaban a la vez como
+         fondo y como texto, y así no se pueden invertir en modo oscuro.
+         En claro valen lo mismo que el color que sustituyen. */
+      --sx-superficie:        #FFFFFF;
+      --sx-texto-on-dark:     #FFFFFF;
+      --sx-texto-fuerte:      #0D1E3D;
+      --sx-superficie-inversa:#0D1E3D;
+
+      /* Relleno bajo las sparklines. Los traza el canvas, que no entiende de
+         CSS: el JS lee estas variables con getComputedStyle. */
+      --sx-chart-fill-acento:  rgba(26, 115, 194, 0.12);
+      --sx-chart-fill-fuerte:  rgba(13, 30, 61, 0.10);
+      --sx-chart-fill-verde:   rgba(34, 160, 107, 0.12);
+      --sx-chart-fill-pizarra: rgba(28, 57, 79, 0.10);
       --font-display:     'Sora', 'Segoe UI Semibold', sans-serif;
       --font-body:        'Manrope', 'Segoe UI', sans-serif;
       --font-mono:        Consolas, 'SF Mono', ui-monospace, monospace;
+    }
+
+    /* Modo oscuro. Alineado con la landing y con el dashboard que embebe esta
+       vista. El tema lo fija el script del <head> leyendo el mismo
+       localStorage que usa mode-watcher en la app. */
+    :root[data-theme='dark'] {
+      --sx-superficie:        #12294A;
+      --sx-nieve:             #0B1A35;
+      --sx-bruma:             rgba(255, 255, 255, 0.08);
+      --sx-borde:             rgba(255, 255, 255, 0.10);
+      --sx-borde-int:         rgba(255, 255, 255, 0.08);
+      --sx-gris-azul:         rgba(255, 255, 255, 0.18);
+
+      --sx-texto-fuerte:      #FFFFFF;
+      --sx-texto-on-dark:     #FFFFFF;
+      --sx-azul-pizarra:      #E3ECF7;
+      --sx-gris-cuerpo:       rgba(255, 255, 255, 0.72);
+      --sx-gris-apoyo:        rgba(255, 255, 255, 0.55);
+      --sx-gris-etiqueta:     rgba(255, 255, 255, 0.55);
+
+      /* Más claro que la superficie, para que los badges se despeguen. */
+      --sx-superficie-inversa:#2A4A78;
+
+      --sx-azul-acento:       #5DAAE8;
+      --sx-azul-claro:        rgba(26, 115, 194, 0.22);
+      --sx-verde:             #4CC38A;
+      --sx-verde-claro:       rgba(34, 160, 107, 0.16);
+      --sx-shadow:            0 14px 32px rgba(0, 0, 0, 0.35);
+
+      --sx-chart-fill-acento:  rgba(93, 170, 232, 0.18);
+      --sx-chart-fill-fuerte:  rgba(255, 255, 255, 0.12);
+      --sx-chart-fill-verde:   rgba(76, 195, 138, 0.18);
+      --sx-chart-fill-pizarra: rgba(227, 236, 247, 0.12);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -72,8 +142,8 @@ export function renderRealtimeStatusHtml(options?: MonitoringKitOptions): string
       width: 34px;
       height: 34px;
       border-radius: 11px;
-      background: var(--sx-azul-profundo);
-      color: var(--sx-blanco);
+      background: var(--sx-superficie-inversa);
+      color: var(--sx-texto-on-dark);
       font-family: var(--font-display);
       font-weight: 600;
       font-size: 12px;
@@ -86,7 +156,7 @@ export function renderRealtimeStatusHtml(options?: MonitoringKitOptions): string
       font-family: var(--font-display);
       font-size: 18px;
       font-weight: 600;
-      color: var(--sx-azul-profundo);
+      color: var(--sx-texto-fuerte);
       letter-spacing: -0.4px;
     }
 
@@ -119,8 +189,8 @@ export function renderRealtimeStatusHtml(options?: MonitoringKitOptions): string
     }
 
     .span-btn.active {
-      background: var(--sx-azul-profundo);
-      color: var(--sx-blanco);
+      background: var(--sx-superficie-inversa);
+      color: var(--sx-texto-on-dark);
     }
 
     .charts-grid {
@@ -130,7 +200,7 @@ export function renderRealtimeStatusHtml(options?: MonitoringKitOptions): string
     }
 
     .chart-card {
-      background: var(--sx-blanco);
+      background: var(--sx-superficie);
       border: 1px solid var(--sx-borde);
       border-radius: 16px;
       padding: 18px;
@@ -159,7 +229,7 @@ export function renderRealtimeStatusHtml(options?: MonitoringKitOptions): string
       font-family: var(--font-display);
       font-size: 26px;
       font-weight: 600;
-      color: var(--sx-azul-profundo);
+      color: var(--sx-texto-fuerte);
       letter-spacing: -0.9px;
       line-height: 1.1;
       margin-top: 4px;
@@ -315,6 +385,13 @@ export function renderRealtimeStatusHtml(options?: MonitoringKitOptions): string
       return Number(n || 0).toLocaleString('es-ES', { maximumFractionDigits: 1 });
     }
 
+    // El canvas no entiende de CSS: los colores del tema se leen de las
+    // variables del documento. Como drawSparkline se reejecuta en cada poll,
+    // al cambiar de tema las gráficas se repintan solas.
+    function cssVar(name) {
+      return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    }
+
     function drawSparkline(canvasId, values, colorHex, fillHex) {
       const canvas = document.getElementById(canvasId);
       if (!canvas) return;
@@ -330,7 +407,7 @@ export function renderRealtimeStatusHtml(options?: MonitoringKitOptions): string
       ctx.clearRect(0, 0, w, h);
 
       // Líneas guía sutiles
-      ctx.strokeStyle = '#E9EFF6';
+      ctx.strokeStyle = cssVar('--sx-borde-int');
       ctx.lineWidth = 1;
       for (let i = 1; i <= 3; i++) {
         const y = (h / 4) * i;
@@ -407,12 +484,12 @@ export function renderRealtimeStatusHtml(options?: MonitoringKitOptions): string
       updateMetricCard('rps', rpsArr, cur.rps, 'req/s');
       updateMetricCard('rt', rtArr, cur.avgResponseTimeMs, 'ms');
 
-      drawSparkline('chart-cpu', cpuArr, '#1A73C2', 'rgba(26, 115, 194, 0.12)');
-      drawSparkline('chart-mem', memArr, '#0D1E3D', 'rgba(13, 30, 61, 0.10)');
-      drawSparkline('chart-heap', heapArr, '#22A06B', 'rgba(34, 160, 107, 0.12)');
-      drawSparkline('chart-lag', lagArr, '#1C394F', 'rgba(28, 57, 79, 0.10)');
-      drawSparkline('chart-rps', rpsArr, '#1A73C2', 'rgba(26, 115, 194, 0.12)');
-      drawSparkline('chart-rt', rtArr, '#0D1E3D', 'rgba(13, 30, 61, 0.10)');
+      drawSparkline('chart-cpu', cpuArr, cssVar('--sx-azul-acento'), cssVar('--sx-chart-fill-acento'));
+      drawSparkline('chart-mem', memArr, cssVar('--sx-texto-fuerte'), cssVar('--sx-chart-fill-fuerte'));
+      drawSparkline('chart-heap', heapArr, cssVar('--sx-verde'), cssVar('--sx-chart-fill-verde'));
+      drawSparkline('chart-lag', lagArr, cssVar('--sx-azul-pizarra'), cssVar('--sx-chart-fill-pizarra'));
+      drawSparkline('chart-rps', rpsArr, cssVar('--sx-azul-acento'), cssVar('--sx-chart-fill-acento'));
+      drawSparkline('chart-rt', rtArr, cssVar('--sx-texto-fuerte'), cssVar('--sx-chart-fill-fuerte'));
     }
 
     async function pollTelemetry() {

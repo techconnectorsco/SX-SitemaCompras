@@ -3,7 +3,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Clock, Mail, CheckCircle2, Shield } from 'lucide-svelte';
 	import { siteConfig } from '$lib/config/site';
-	import MainNav from '$lib/components/app/nav/main-nav.svelte';
+	import SxNav from '$lib/components/nav/sx-nav.svelte';
 	import Footer from '$lib/components/app/nav/footer.svelte';
 
 	const email = $page.url.searchParams.get('email');
@@ -12,10 +12,10 @@
 <!-- ✅ Contenedor principal con altura exacta de viewport -->
 <div class="h-screen flex flex-col">
 	<!-- Navbar superior -->
-	<MainNav />
+	<SxNav />
 
 	<!-- Contenedor principal - flex-1 sin overflow -->
-	<div class="flex-1 flex items-center justify-center bg-gradient-to-br from-white to-slate-50 dark:from-gray-950 dark:to-gray-900 overflow-hidden">
+	<div class="flex-1 flex items-center justify-center bg-gradient-to-br from-white to-slate-50 dark:from-gray-950 dark:to-gray-900 overflow-auto">
 		<!-- Card de pending -->
 		<div class="w-full max-w-lg px-6 py-4">
 			<!-- Logo y Header -->

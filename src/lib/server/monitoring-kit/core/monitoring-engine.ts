@@ -47,6 +47,7 @@ export class MonitoringEngine {
 			this.statusMonitorPath,
 			'/health/dashboard',
 			'/dashboard',
+			'/monitoreo',
 			'/health/summary',
 			'/health/telemetry',
 			'/favicon.ico'
@@ -60,8 +61,8 @@ export class MonitoringEngine {
 	/**
 	 * Renderiza el Centro Consolidado de Operaciones (`/health/dashboard`).
 	 */
-	getDashboardHtml(): string {
-		return renderConsolidatedDashboardHtml(this.options);
+	getDashboardHtml(embed = false): string {
+		return renderConsolidatedDashboardHtml(this.options, embed);
 	}
 
 	/**
@@ -277,7 +278,10 @@ export class MonitoringEngine {
 			return {
 				matched: true,
 				status: 302,
-				headers: { Location: '/health/dashboard' },
+				// `/monitoreo` es la ruta SvelteKit que envuelve este panel con la
+				// navbar compartida del sistema. El HTML crudo sigue disponible en
+				// `/health/dashboard` para acceso directo.
+				headers: { Location: '/monitoreo' },
 				body: ''
 			};
 		}
@@ -287,7 +291,7 @@ export class MonitoringEngine {
 				matched: true,
 				status: 200,
 				headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
-				body: this.getDashboardHtml()
+				body: this.getDashboardHtml(searchParams?.get('embed') === '1')
 			};
 		}
 

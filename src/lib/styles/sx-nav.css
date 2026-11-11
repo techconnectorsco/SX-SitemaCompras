@@ -1,0 +1,294 @@
+/**
+ * Navbar compartida (SX) — landing, accesos y auth.
+ *
+ * Mismos tokens y medidas que el header del diseño COI (`landing-coi.css`),
+ * pero bajo su propio scope `.sxnav` para que el componente funcione en
+ * cualquier vista sin depender de un ancestro `.coi`.
+ *
+ * Dark mode: clase `.dark` en `<html>`, aplicada por `mode-watcher` y por el
+ * script anti-FOUC de `src/app.html`. Una sola fuente de verdad.
+ *
+ * Alto total: 14px + 44px + 14px + 1px de borde = 73px.
+ * Si cambiás ese número, revisá `src/routes/(app)/monitoreo/+page.svelte`,
+ * que resta la altura del header para dimensionar su iframe.
+ */
+
+.sxnav {
+	--surf: #ffffff;
+	--bd: #e7eef6;
+	--bd-btn: #d8e2ee;
+	--ink: #0d1e3d;
+	--ink2: #1c394f;
+	--body: #56687e;
+	--nav: #47586e;
+	--accent: #1a73c2;
+	--accent-bg: #eaf3fc;
+	--hdr: rgba(255, 255, 255, 0.82);
+}
+
+:is(.dark) .sxnav {
+	--surf: #12294a;
+	--bd: rgba(255, 255, 255, 0.1);
+	--bd-btn: rgba(255, 255, 255, 0.18);
+	--ink: #ffffff;
+	--ink2: #e3ecf7;
+	--body: rgba(255, 255, 255, 0.72);
+	--nav: rgba(255, 255, 255, 0.72);
+	--accent: #5daae8;
+	--accent-bg: rgba(26, 115, 194, 0.22);
+	--hdr: rgba(11, 26, 53, 0.82);
+}
+
+/* ───────────────────────── cabecera ───────────────────────── */
+
+.sxnav {
+	position: sticky;
+	inset-inline: 0;
+	top: 0;
+	/* z-50: hay paneles internos sticky en z-30/z-40 que deben quedar debajo. */
+	z-index: 50;
+	background: var(--hdr);
+	backdrop-filter: blur(14px);
+	-webkit-backdrop-filter: blur(14px);
+	border-bottom: 1px solid var(--bd);
+	padding: 14px 0;
+	font-family: Manrope, 'Segoe UI', 'Helvetica Neue', sans-serif;
+}
+.sxnav *,
+.sxnav *::before,
+.sxnav *::after {
+	box-sizing: border-box;
+}
+
+.sxnav .head-in {
+	max-width: 1228px;
+	margin: 0 auto;
+	padding: 0 24px;
+	display: flex;
+	align-items: center;
+	gap: 14px;
+}
+
+.sxnav a {
+	text-decoration: none;
+	transition:
+		color 0.2s ease,
+		border-color 0.2s ease,
+		background-color 0.2s ease;
+}
+.sxnav a:focus-visible,
+.sxnav button:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+	border-radius: 4px;
+}
+
+/* ───────────────────────── marca ───────────────────────── */
+
+.sxnav .brand {
+	display: flex;
+	flex: none;
+}
+.sxnav .logo-l {
+	display: block;
+	height: 38px;
+	width: auto;
+}
+.sxnav .logo-d {
+	display: none;
+	height: 38px;
+	width: auto;
+}
+:is(.dark) .sxnav .logo-l {
+	display: none;
+}
+:is(.dark) .sxnav .logo-d {
+	display: block;
+}
+
+.sxnav .vdiv {
+	width: 1px;
+	height: 30px;
+	background: var(--bd-btn);
+	flex: none;
+}
+.sxnav .lockup {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	min-width: 0;
+}
+.sxnav .lockup-t {
+	font:
+		600 13.5px/1.2 Sora,
+		'Segoe UI Semibold',
+		sans-serif;
+	letter-spacing: -0.3px;
+	color: var(--ink2);
+	white-space: nowrap;
+}
+.sxnav .lockup-s {
+	font:
+		700 9.5px/1.2 Manrope,
+		sans-serif;
+	letter-spacing: 1.6px;
+	text-transform: uppercase;
+	color: var(--body);
+	white-space: nowrap;
+}
+
+/* ───────────────────────── enlaces ───────────────────────── */
+
+.sxnav .nav {
+	margin-left: auto;
+	display: flex;
+	align-items: center;
+	gap: 22px;
+}
+.sxnav .nav a {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	font:
+		600 14px/1.4 Manrope,
+		sans-serif;
+	color: var(--nav);
+	white-space: nowrap;
+}
+.sxnav .nav a:hover {
+	color: var(--accent);
+}
+.sxnav .nav a[aria-current='page'] {
+	color: var(--accent);
+}
+
+.sxnav .hdr-act {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex: none;
+}
+
+/* ───────────────────────── botón de tema ───────────────────────── */
+
+.sxnav .theme-btn {
+	flex: none;
+	width: 44px;
+	height: 44px;
+	border-radius: 50%;
+	border: 1px solid var(--bd-btn);
+	background: var(--surf);
+	color: var(--ink2);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	padding: 0;
+	transition:
+		border-color 0.2s ease,
+		color 0.2s ease;
+}
+.sxnav .theme-btn:hover {
+	border-color: var(--accent);
+	color: var(--accent);
+}
+.sxnav .ic-sun {
+	display: none;
+}
+:is(.dark) .sxnav .ic-moon {
+	display: none;
+}
+:is(.dark) .sxnav .ic-sun {
+	display: block;
+}
+
+/* ───────────────────────── acciones ───────────────────────── */
+
+.sxnav .btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 9px;
+	min-height: 44px;
+	border-radius: 999px;
+	font:
+		700 15px/1 Manrope,
+		sans-serif;
+	white-space: nowrap;
+	border: 1px solid transparent;
+	cursor: pointer;
+}
+.sxnav .btn-sec {
+	background: var(--surf);
+	color: var(--ink2);
+	border-color: var(--bd-btn);
+	padding: 15px 26px;
+}
+.sxnav .btn-sec:hover {
+	border-color: var(--accent);
+	color: var(--ink);
+}
+.sxnav .btn-compact {
+	padding: 12px 20px;
+	font-size: 13.5px;
+}
+
+/* ───────────────────────── cuenta ───────────────────────── */
+
+.sxnav .acct-trigger {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	height: 44px;
+	padding: 0 6px 0 0;
+	background: transparent;
+	border: 0;
+	cursor: pointer;
+	color: var(--ink2);
+	max-width: 220px;
+}
+.sxnav .acct-trigger:hover .acct-name {
+	color: var(--accent);
+}
+.sxnav .acct-name {
+	font:
+		600 13.5px/1.2 Manrope,
+		sans-serif;
+	color: var(--ink2);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	transition: color 0.2s ease;
+}
+
+/* ───────────────────────── responsive ───────────────────────── */
+
+@media (max-width: 1023px) {
+	.sxnav .nav {
+		display: none;
+	}
+	.sxnav .hdr-act {
+		margin-left: auto;
+	}
+}
+@media (max-width: 767px) {
+	.sxnav .head-in {
+		padding: 0 20px;
+	}
+	.sxnav .lockup,
+	.sxnav .vdiv {
+		display: none;
+	}
+	.sxnav .acct-name {
+		display: none;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.sxnav *,
+	.sxnav *::before,
+	.sxnav *::after {
+		transition: none !important;
+		animation: none !important;
+	}
+}

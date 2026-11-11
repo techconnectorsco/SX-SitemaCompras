@@ -11,7 +11,7 @@
 	import { zodClient } from 'sveltekit-superforms/adapters';
 	import AuthForm from './AuthForm.svelte';
 	import { siteConfig } from '$lib/config/site';
-	import MainNav from '$lib/components/app/nav/main-nav.svelte';
+	import SxNav from '$lib/components/nav/sx-nav.svelte';
 	import Footer from '$lib/components/app/nav/footer.svelte';
 	import { ShieldCheck, Info } from 'lucide-svelte';
 
@@ -52,7 +52,7 @@
 <!-- ✅ Contenedor principal con altura exacta de viewport -->
 <div class="h-screen flex flex-col">
 	<!-- Navbar superior -->
-	<MainNav />
+	<SxNav />
 
 	<!-- Contenedor principal - permite scroll si es necesario -->
 	<div class="flex-1 flex items-center justify-center bg-linear-to-br from-white to-slate-50 dark:from-gray-950 dark:to-gray-900 overflow-auto">

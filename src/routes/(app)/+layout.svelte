@@ -1,5 +1,5 @@
 <script>
-	import MainNav from '$lib/components/app/nav/main-nav.svelte';
+	import SxNav from '$lib/components/nav/sx-nav.svelte';
 	import Sidebar from '$lib/components/app/nav/sidebar.svelte';
 	import Breadcrumb from '$lib/components/app/nav/breadcrumb.svelte';
 	import { page } from '$app/stores';
@@ -9,7 +9,7 @@
 
 <div class:appAdmin={esRutaAdmin} class="flex min-h-screen flex-col">
 	<!-- Barra superior -->
-	<MainNav />
+	<SxNav />
 
 	<!-- Sidebar (solo en pantallas grandes) -->
 	<!--<Sidebar />-->

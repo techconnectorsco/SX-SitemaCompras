@@ -6,8 +6,17 @@ import { resolveHasSwagger } from '../utils/swagger.utils';
  * Diseñado bajo los lineamientos normativos del Libro de Marca SoporteXperto v1.0.
  * 100% dinámico: renderiza automáticamente tarjetas KPI para 0, 1 o N bases de datos/servicios
  * configurados en `probes`, además de métricas del proceso (RAM/Uptime), Tráfico y Seguridad.
+ *
+ * @param embed  Cuando es `true` se omiten la cabecera fija y el pie del kit, y
+ *               los accesos y acciones que vivían en la cabecera se reubican en
+ *               una barra dentro de la propia vista. Se usa desde la ruta
+ *               `/monitoreo`, que ya aporta la navbar compartida del sistema.
+ *               En `false` el HTML sale exactamente igual que siempre.
  */
-export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions): string {
+export function renderConsolidatedDashboardHtml(
+	options?: MonitoringKitOptions,
+	embed = false
+): string {
 	const appName = options?.appName ?? 'Centro Consolidado de Operaciones y Salud API';
 	const appBadge = options?.appBadge ?? 'API';
 	const appSubtitle =
@@ -18,12 +27,173 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
 	const hasSwagger = resolveHasSwagger(options);
 	const currentYear = new Date().getFullYear();
 
+	const navLinksHtml = `
+          <a class="nav-link" href="${escapeServerHtml(statusMonitorPath)}" target="_blank" rel="noopener">
+            Status Monitor <span class="arrow" aria-hidden="true">→</span>
+          </a>${
+						hasSwagger
+							? `
+          <a class="nav-link" href="${escapeServerHtml(swaggerDocsPath)}" target="_blank" rel="noopener">
+            Swagger Docs <span class="arrow" aria-hidden="true">→</span>
+          </a>`
+							: ''
+					}`;
+
+	// `id="btn-toggle-timer"` lo busca `toggleAutoRefresh()` por getElementById:
+	// debe existir exactamente una vez, tanto en modo normal como embebido.
+	const actionsHtml = `
+          <button type="button" class="btn btn-secondary" id="btn-toggle-timer" onclick="toggleAutoRefresh()">
+            Auto (3 s): Activo
+          </button>
+          <button type="button" class="btn btn-primary" onclick="loadSummary()">
+            Actualizar métricas
+          </button>`;
+
+	const topbarHtml = embed
+		? ''
+		: `  <!-- Cabecera fija institucional (Sección 12.6) -->
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <div class="brand-lockup">
+        <div class="brand-mark">
+          <span class="brand-monogram" aria-hidden="true">SX</span>
+          <span class="brand-wordmark">SoporteXperto</span>
+        </div>
+        <div class="brand-divider" aria-hidden="true"></div>
+        <div class="product-lockup">
+          <span class="product-lockup-name">${escapeServerHtml(appName)}</span>
+          <span class="product-lockup-desc">Transformación Digital · ${escapeServerHtml(appBadge)}</span>
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <nav class="nav-links" aria-label="Accesos técnicos">${navLinksHtml}
+        </nav>
+        <div class="topbar-actions">${actionsHtml}
+        </div>
+      </div>
+    </div>
+  </header>`;
+
+	const footerHtml = embed
+		? ''
+		: `  <!-- Pie de página institucional en Azul Noche (Sección 12.7) -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="footer-brand-mark">
+            <span class="footer-monogram" aria-hidden="true">SX</span>
+            <span class="footer-wordmark">SoporteXperto</span>
+          </div>
+          <p class="footer-desc">
+            Departamento de Transformación Digital. Plataformas propias, integraciones y observabilidad operativa con trazabilidad visible.
+          </p>
+        </div>
+
+        <div>
+          <span class="footer-col-title">Plataforma</span>
+          <ul class="footer-list">
+            <li>${escapeServerHtml(appName)}</li>
+            <li>Unidad: ${escapeServerHtml(appBadge)}</li>
+            <li>Endpoint: /health/summary</li>
+          </ul>
+        </div>
+
+        <div>
+          <span class="footer-col-title">Herramientas</span>
+          <ul class="footer-list">
+            <li><a href="${escapeServerHtml(statusMonitorPath)}" target="_blank" rel="noopener">Monitor en tiempo real →</a></li>${
+							hasSwagger
+								? `
+            <li><a href="${escapeServerHtml(swaggerDocsPath)}" target="_blank" rel="noopener">Documentación OpenAPI →</a></li>`
+								: ''
+						}
+          </ul>
+        </div>
+
+        <div>
+          <span class="footer-col-title">Lineamientos</span>
+          <ul class="footer-list">
+            <li>Monitoreo con control humano</li>
+            <li>Auditoría HTTP 401 y 403</li>
+            <li>Trazabilidad en memoria</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-legal">
+        <span>SoporteXperto · Departamento de Transformación Digital</span>
+        <span>© ${currentYear} SoporteXperto. Documento y consola de uso interno.</span>
+      </div>
+    </div>
+  </footer>`;
+
+	/*
+	 * Tema del documento embebido. El iframe es del mismo origen que la app, así
+	 * que lee el mismo `localStorage` que el script anti-FOUC de `src/app.html`.
+	 * Va en el <head> antes del CSS para que no haya destello blanco.
+	 *
+	 * Tres disparadores: la lectura inicial, el evento `storage` (que SÍ llega a
+	 * otros documentos del mismo origen cuando mode-watcher escribe desde la
+	 * página padre) y el cambio de preferencia del sistema. El `message` es la
+	 * red de seguridad que manda la ruta /monitoreo.
+	 */
+	const themeScriptHtml = embed
+		? `  <script>
+    (function () {
+      function apply() {
+        var m = null;
+        try { m = localStorage.getItem('mode-watcher-mode'); } catch (e) { m = null; }
+        m = m || 'system';
+        var dark = m === 'dark' ||
+          (m === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+      }
+      apply();
+      try {
+        window.addEventListener('storage', function (e) {
+          if (!e.key || e.key === 'mode-watcher-mode') apply();
+        });
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', apply);
+      } catch (e) { /* navegador sin soporte: queda el valor inicial */ }
+      window.addEventListener('message', function (e) {
+        if (e.origin === location.origin && e.data && e.data.type === 'sx-theme') apply();
+      });
+    })();
+  </script>
+`
+		: '';
+
+	/*
+	 * `min-height: 100vh` en el body se realimentaría con el alto del iframe:
+	 * /monitoreo lo dimensiona según el contenido, y el contenido se mediría
+	 * contra ese alto. Embebido, el documento debe medir lo que realmente mide.
+	 */
+	const embedStylesHtml = embed
+		? `
+    body { min-height: 0; }
+`
+		: '';
+
+	const toolbarHtml = embed
+		? `    <!-- Accesos y acciones reubicados desde la cabecera (modo embebido) -->
+    <section class="view-toolbar" aria-label="Acciones del panel">
+      <nav class="nav-links" aria-label="Accesos técnicos">${navLinksHtml}
+      </nav>
+      <div class="topbar-actions">${actionsHtml}
+      </div>
+    </section>
+
+`
+		: '';
+
 	return `<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${escapeServerHtml(appName)} — SoporteXperto</title>
+${themeScriptHtml}  <title>${escapeServerHtml(appName)} — SoporteXperto</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -58,10 +228,69 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
       --sx-shadow-2:        0 18px 40px rgba(13, 30, 61, 0.07);
       --sx-shadow-btn:      0 18px 40px rgba(13, 30, 61, 0.18);
 
+      /* Tokens de ROL (Sección 3.2).
+         Los institucionales de arriba nombran un color; estos nombran una
+         función. Hacen falta porque --sx-blanco y --sx-azul-profundo se usaban
+         a la vez como fondo y como texto, y un token con doble rol no se puede
+         invertir en modo oscuro sin dejar texto ilegible.
+         En modo claro valen exactamente lo mismo que el color que sustituyen. */
+      --sx-fondo:             #FFFFFF;   /* fondo de la página */
+      --sx-superficie:        #FFFFFF;   /* tarjetas y paneles (en claro, igual al fondo) */
+      --sx-texto-on-dark:     #FFFFFF;   /* texto sobre superficie oscura */
+      --sx-texto-fuerte:      #0D1E3D;   /* títulos y texto de alto contraste */
+      --sx-superficie-inversa:#0D1E3D;   /* fondos oscuros: th, pills críticos, badges */
+      --sx-borde-fuerte:      #D8E2EE;   /* bordes de controles (input, botón) */
+
       /* Pila tipográfica (Sección 4.1) */
       --font-display:       'Sora', 'Segoe UI Semibold', 'Helvetica Neue', sans-serif;
       --font-body:          'Manrope', 'Segoe UI', 'Helvetica Neue', sans-serif;
       --font-mono:          Consolas, 'SF Mono', ui-monospace, monospace;
+    }
+
+    /* Modo oscuro. Solo se emite en modo embebido: el acceso directo a
+       /health/dashboard conserva su salida de siempre.
+       Valores alineados con los de la landing (src/lib/styles/landing-coi.css). */
+    :root[data-theme='dark'] {
+      --sx-fondo:             #0B1A35;
+      --sx-superficie:        #12294A;
+      --sx-nieve:             #0D1E3D;
+      --sx-bruma:             rgba(255, 255, 255, 0.08);
+      --sx-borde:             rgba(255, 255, 255, 0.10);
+      --sx-borde-int:         rgba(255, 255, 255, 0.08);
+      --sx-borde-fuerte:      rgba(255, 255, 255, 0.18);
+      --sx-gris-azul:         rgba(255, 255, 255, 0.16);
+
+      --sx-texto-fuerte:      #FFFFFF;
+      --sx-texto-on-dark:     #FFFFFF;
+      --sx-azul-pizarra:      #E3ECF7;
+      --sx-gris-cuerpo:       rgba(255, 255, 255, 0.72);
+      --sx-gris-nav:          rgba(255, 255, 255, 0.72);
+      --sx-gris-apoyo:        rgba(255, 255, 255, 0.55);
+      --sx-gris-etiqueta:     rgba(255, 255, 255, 0.55);
+
+      /* Más CLARO que la superficie, para que th, pills y badges se despeguen
+         del fondo en vez de fundirse con él. */
+      --sx-superficie-inversa:#2A4A78;
+
+      --sx-azul-acento:       #5DAAE8;
+      --sx-azul-claro:        rgba(26, 115, 194, 0.22);
+      --sx-verde:             #4CC38A;
+      --sx-verde-claro:       rgba(34, 160, 107, 0.16);
+
+      --sx-shadow-2:          0 18px 40px rgba(0, 0, 0, 0.35);
+      --sx-shadow-btn:        0 18px 40px rgba(0, 0, 0, 0.45);
+    }
+
+    /* Dos reglas que no se resuelven solo con tokens. */
+    :root[data-theme='dark'] .btn-primary {
+      /* El gradiente original termina en azul profundo, que sobre fondo oscuro
+         desaparece. Se invierte para que el botón siga leyéndose. */
+      background: linear-gradient(120deg, #2D8AD8, #1A5B9A);
+    }
+    :root[data-theme='dark'] tbody tr:hover td {
+      /* --sx-nieve es casi blanco en claro; en oscuro el hover debe aclarar
+         apenas la fila, no encenderla entera. */
+      background: rgba(255, 255, 255, 0.05);
     }
 
     * {
@@ -73,12 +302,12 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
     html {
       font-family: var(--font-body);
       color: var(--sx-gris-cuerpo);
-      background-color: var(--sx-blanco);
+      background-color: var(--sx-fondo);
       -webkit-font-smoothing: antialiased;
     }
 
     body {
-      background-color: var(--sx-blanco);
+      background-color: var(--sx-fondo);
       color: var(--sx-gris-cuerpo);
       font-family: var(--font-body);
       font-size: 16px;
@@ -97,7 +326,7 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
       transition: color 0.2s ease;
     }
     a:hover {
-      color: var(--sx-azul-profundo);
+      color: var(--sx-texto-fuerte);
     }
 
     /* Foco accesible (Sección 14.1) */
@@ -174,8 +403,8 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
       width: 34px;
       height: 34px;
       border-radius: 11px;
-      background: var(--sx-azul-profundo);
-      color: var(--sx-blanco);
+      background: var(--sx-superficie-inversa);
+      color: var(--sx-texto-on-dark);
       font-family: var(--font-display);
       font-weight: 600;
       font-size: 13px;
@@ -190,7 +419,7 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
       font-weight: 600;
       font-size: 17px;
       letter-spacing: -0.5px;
-      color: var(--sx-azul-profundo);
+      color: var(--sx-texto-fuerte);
       line-height: 1;
     }
     .brand-divider {
@@ -247,7 +476,7 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
       transition: color 0.2s ease;
     }
     .nav-link:hover {
-      color: var(--sx-azul-profundo);
+      color: var(--sx-texto-fuerte);
     }
     .nav-link .arrow {
       margin-left: 9px;
@@ -279,24 +508,24 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
       white-space: nowrap;
     }
     .btn-secondary {
-      background: var(--sx-blanco);
+      background: var(--sx-superficie);
       color: var(--sx-azul-pizarra);
-      border: 1px solid var(--sx-gris-azul);
+      border: 1px solid var(--sx-borde-fuerte);
     }
     .btn-secondary:hover {
       background: var(--sx-bruma);
       border-color: var(--sx-azul-acento);
-      color: var(--sx-azul-profundo);
+      color: var(--sx-texto-fuerte);
     }
     .btn-primary {
       background: linear-gradient(120deg, var(--sx-azul-acento), var(--sx-azul-profundo));
-      color: var(--sx-blanco);
+      color: var(--sx-texto-on-dark);
       border: none;
       box-shadow: var(--sx-shadow-btn);
       padding: 13px 26px;
     }
     .btn-primary:hover {
-      color: var(--sx-blanco);
+      color: var(--sx-texto-on-dark);
       opacity: 0.94;
     }
 
@@ -329,7 +558,7 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
       font-size: 36px;
       letter-spacing: -1.4px;
       line-height: 1.1;
-      color: var(--sx-azul-profundo);
+      color: var(--sx-texto-fuerte);
       margin-bottom: 12px;
     }
     .page-subtitle {
@@ -384,34 +613,46 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
     /* Estados de advertencia o caída derivados del azul profundo (Sección 3.3) */
     .status-pill.attention {
       background-color: var(--sx-gris-azul);
-      color: var(--sx-azul-profundo);
+      color: var(--sx-texto-fuerte);
     }
     .status-pill.critical {
-      background-color: var(--sx-azul-profundo);
-      color: var(--sx-blanco);
+      background-color: var(--sx-superficie-inversa);
+      color: var(--sx-texto-on-dark);
     }
 
     /* Cuadrícula de tarjetas KPI (Sección 5.2, 5.5, 11.1 y 12.4) */
+    /* Una sola fila: el número de tarjetas depende de los probes configurados
+       (proceso + N probes + tráfico + auditoría), así que una rejilla de 4
+       columnas fijas dejaba una huérfana. El flujo por columnas las reparte
+       en línea sin importar cuántas sean; debajo de 1100px vuelven a envolver. */
     .kpi-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 24px;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(0, 1fr);
+      gap: 18px;
       margin-bottom: 48px;
     }
+    @media (max-width: 1099px) {
+      .kpi-grid {
+        grid-auto-flow: row;
+        grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+      }
+    }
     .kpi-card {
-      background: var(--sx-blanco);
+      min-width: 0;
+      background: var(--sx-superficie);
       border: 1px solid var(--sx-borde);
-      border-radius: 18px;
-      padding: 22px;
+      border-radius: 16px;
+      padding: 18px;
       box-shadow: var(--sx-shadow-2);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      gap: 16px;
+      gap: 12px;
       transition: border-color 0.2s ease;
     }
     .kpi-card:hover {
-      border-color: var(--sx-gris-azul);
+      border-color: var(--sx-borde-fuerte);
     }
     .kpi-header {
       display: flex;
@@ -421,7 +662,7 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
     }
     .kpi-title {
       font-family: var(--font-body);
-      font-size: 10.5px;
+      font-size: 10px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 1.4px;
@@ -430,9 +671,9 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
     }
     /* Contenedor de siglas de 2 letras (Sección 6.4: 34px, radio 11px) */
     .entity-sigla {
-      width: 34px;
-      height: 34px;
-      border-radius: 11px;
+      width: 30px;
+      height: 30px;
+      border-radius: 10px;
       background-color: var(--sx-azul-claro);
       color: var(--sx-azul-acento);
       font-family: var(--font-body);
@@ -445,11 +686,12 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
     }
     .kpi-value {
       font-family: var(--font-display);
-      font-size: 38px;
+      font-size: 26px;
       font-weight: 600;
-      letter-spacing: -1.6px;
-      line-height: 1;
-      color: var(--sx-azul-profundo);
+      letter-spacing: -0.9px;
+      line-height: 1.1;
+      color: var(--sx-texto-fuerte);
+      overflow-wrap: anywhere;
     }
     .kpi-value.accent {
       color: var(--sx-azul-acento);
@@ -459,7 +701,7 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
     }
     .kpi-sub {
       font-family: var(--font-body);
-      font-size: 13.5px;
+      font-size: 12px;
       line-height: 1.4;
       color: var(--sx-gris-cuerpo);
       display: flex;
@@ -501,7 +743,7 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
       gap: 10px;
     }
     .tab-btn:hover {
-      color: var(--sx-azul-profundo);
+      color: var(--sx-texto-fuerte);
     }
     .tab-btn.active {
       color: var(--sx-azul-acento);
@@ -520,8 +762,8 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
       color: var(--sx-azul-acento);
     }
     .tab-count.alert {
-      background: var(--sx-azul-profundo);
-      color: var(--sx-blanco);
+      background: var(--sx-superficie-inversa);
+      color: var(--sx-texto-on-dark);
     }
 
     /* Vistas de contenido y paneles (Sección 12.4) */
@@ -536,7 +778,7 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
       display: block;
     }
     .panel {
-      background: var(--sx-blanco);
+      background: var(--sx-superficie);
       border: 1px solid var(--sx-borde);
       border-radius: 20px;
       padding: 26px;
@@ -562,7 +804,7 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
       font-weight: 600;
       letter-spacing: -0.6px;
       line-height: 1.25;
-      color: var(--sx-azul-profundo);
+      color: var(--sx-texto-fuerte);
     }
     .panel-meta {
       font-family: var(--font-body);
@@ -575,8 +817,8 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
     }
     .search-input {
       background: var(--sx-nieve);
-      border: 1px solid var(--sx-gris-azul);
-      color: var(--sx-azul-profundo);
+      border: 1px solid var(--sx-borde-fuerte);
+      color: var(--sx-texto-fuerte);
       font-family: var(--font-body);
       padding: 10px 16px;
       min-height: 44px;
@@ -590,7 +832,7 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
       color: var(--sx-gris-etiqueta);
     }
     .search-input:focus {
-      background: var(--sx-blanco);
+      background: var(--sx-superficie);
       border-color: var(--sx-azul-acento);
     }
 
@@ -600,7 +842,7 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
       max-height: 520px;
       border: 1px solid var(--sx-borde);
       border-radius: 14px;
-      background: var(--sx-blanco);
+      background: var(--sx-superficie);
     }
     table {
       width: 100%;
@@ -609,8 +851,8 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
       text-align: left;
     }
     th {
-      background: var(--sx-azul-profundo);
-      color: var(--sx-blanco);
+      background: var(--sx-superficie-inversa);
+      color: var(--sx-texto-on-dark);
       font-family: var(--font-body);
       font-weight: 600;
       font-size: 12px;
@@ -671,8 +913,8 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
       color: var(--sx-azul-pizarra);
     }
     .method-tag.delete {
-      background: var(--sx-azul-profundo);
-      color: var(--sx-blanco);
+      background: var(--sx-superficie-inversa);
+      color: var(--sx-texto-on-dark);
     }
     .empty-state {
       padding: 48px 24px;
@@ -715,7 +957,7 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
     .iframe-box {
       width: 100%;
       height: 680px;
-      background: var(--sx-blanco);
+      background: var(--sx-superficie);
     }
     .iframe-box iframe {
       width: 100%;
@@ -727,7 +969,7 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
     pre.code-viewer {
       background: var(--sx-bruma);
       border: 1px solid var(--sx-borde-int);
-      color: var(--sx-azul-profundo);
+      color: var(--sx-texto-fuerte);
       padding: 20px;
       border-radius: 14px;
       font-family: var(--font-mono);
@@ -766,7 +1008,7 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
       height: 34px;
       border-radius: 11px;
       background: rgba(255, 255, 255, 0.12);
-      color: var(--sx-blanco);
+      color: var(--sx-texto-on-dark);
       font-family: var(--font-display);
       font-weight: 600;
       font-size: 13px;
@@ -779,7 +1021,7 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
       font-weight: 600;
       font-size: 18px;
       letter-spacing: -0.5px;
-      color: var(--sx-blanco);
+      color: var(--sx-texto-on-dark);
     }
     .footer-desc {
       font-size: 14px;
@@ -808,7 +1050,7 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
       color: rgba(255, 255, 255, 0.72);
     }
     .footer-list a:hover {
-      color: var(--sx-blanco);
+      color: var(--sx-texto-on-dark);
     }
     .footer-legal {
       padding-top: 24px;
@@ -894,7 +1136,27 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
         transition: none !important;
       }
     }
-  </style>
+    .view-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin: 0 0 24px;
+      padding: 16px 20px;
+      border: 1px solid var(--sx-borde);
+      border-radius: 20px;
+      background: var(--sx-superficie);
+      box-shadow: var(--sx-shadow-2);
+    }
+    .view-toolbar .nav-links { margin: 0; }
+    .view-toolbar .topbar-actions { margin-left: auto; }
+    @media (max-width: 720px) {
+      .view-toolbar { flex-direction: column; align-items: stretch; }
+      .view-toolbar .topbar-actions { margin-left: 0; }
+    }
+
+${embedStylesHtml}  </style>
 </head>
 <body>
 
@@ -902,45 +1164,7 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
   <div class="ambient-glow top-right" aria-hidden="true"></div>
   <div class="ambient-glow top-left" aria-hidden="true"></div>
 
-  <!-- Cabecera fija institucional (Sección 12.6) -->
-  <header class="topbar">
-    <div class="container topbar-inner">
-      <div class="brand-lockup">
-        <div class="brand-mark">
-          <span class="brand-monogram" aria-hidden="true">SX</span>
-          <span class="brand-wordmark">SoporteXperto</span>
-        </div>
-        <div class="brand-divider" aria-hidden="true"></div>
-        <div class="product-lockup">
-          <span class="product-lockup-name">${escapeServerHtml(appName)}</span>
-          <span class="product-lockup-desc">Transformación Digital · ${escapeServerHtml(appBadge)}</span>
-        </div>
-      </div>
-
-      <div class="topbar-right">
-        <nav class="nav-links" aria-label="Accesos técnicos">
-          <a class="nav-link" href="${escapeServerHtml(statusMonitorPath)}" target="_blank" rel="noopener">
-            Status Monitor <span class="arrow" aria-hidden="true">→</span>
-          </a>${
-						hasSwagger
-							? `
-          <a class="nav-link" href="${escapeServerHtml(swaggerDocsPath)}" target="_blank" rel="noopener">
-            Swagger Docs <span class="arrow" aria-hidden="true">→</span>
-          </a>`
-							: ''
-					}
-        </nav>
-        <div class="topbar-actions">
-          <button type="button" class="btn btn-secondary" id="btn-toggle-timer" onclick="toggleAutoRefresh()">
-            Auto (3 s): Activo
-          </button>
-          <button type="button" class="btn btn-primary" onclick="loadSummary()">
-            Actualizar métricas
-          </button>
-        </div>
-      </div>
-    </div>
-  </header>
+${topbarHtml}
 
   <main class="container main-section reveal-once">
     <!-- Introducción y estado operativo general -->
@@ -956,7 +1180,7 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
       </div>
     </section>
 
-    <!-- Cuadrícula dinámica de tarjetas KPI -->
+${toolbarHtml}    <!-- Cuadrícula dinámica de tarjetas KPI -->
     <section class="kpi-grid" id="kpi-grid" aria-label="Indicadores clave de salud">
       <!-- Renderizado dinámicamente según los probes y métricas del servidor -->
     </section>
@@ -1105,57 +1329,7 @@ export function renderConsolidatedDashboardHtml(options?: MonitoringKitOptions):
     </section>
   </main>
 
-  <!-- Pie de página institucional en Azul Noche (Sección 12.7) -->
-  <footer class="site-footer">
-    <div class="container">
-      <div class="footer-grid">
-        <div class="footer-brand">
-          <div class="footer-brand-mark">
-            <span class="footer-monogram" aria-hidden="true">SX</span>
-            <span class="footer-wordmark">SoporteXperto</span>
-          </div>
-          <p class="footer-desc">
-            Departamento de Transformación Digital. Plataformas propias, integraciones y observabilidad operativa con trazabilidad visible.
-          </p>
-        </div>
-
-        <div>
-          <span class="footer-col-title">Plataforma</span>
-          <ul class="footer-list">
-            <li>${escapeServerHtml(appName)}</li>
-            <li>Unidad: ${escapeServerHtml(appBadge)}</li>
-            <li>Endpoint: /health/summary</li>
-          </ul>
-        </div>
-
-        <div>
-          <span class="footer-col-title">Herramientas</span>
-          <ul class="footer-list">
-            <li><a href="${escapeServerHtml(statusMonitorPath)}" target="_blank" rel="noopener">Monitor en tiempo real →</a></li>${
-							hasSwagger
-								? `
-            <li><a href="${escapeServerHtml(swaggerDocsPath)}" target="_blank" rel="noopener">Documentación OpenAPI →</a></li>`
-								: ''
-						}
-          </ul>
-        </div>
-
-        <div>
-          <span class="footer-col-title">Lineamientos</span>
-          <ul class="footer-list">
-            <li>Monitoreo con control humano</li>
-            <li>Auditoría HTTP 401 y 403</li>
-            <li>Trazabilidad en memoria</li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="footer-legal">
-        <span>SoporteXperto · Departamento de Transformación Digital</span>
-        <span>© ${currentYear} SoporteXperto. Documento y consola de uso interno.</span>
-      </div>
-    </div>
-  </footer>
+${footerHtml}
 
   <script>
     let currentData = null;

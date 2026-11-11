@@ -1,451 +1,316 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
-	import MainNav from '$lib/components/app/nav/main-nav.svelte';
-	import { AUTH_PATHS } from '$lib/features/auth/config/auth';
+	/**
+	 * Landing pública del Centro de Operaciones Inteligentes (COI).
+	 *
+	 * Port del diseño "Landing COI SoporteXperto" (Claude Design). Todo el sistema
+	 * visual vive bajo el scope `.coi` en `landing-coi.css`, importado solo aquí,
+	 * de modo que nada de esto se filtra al resto de la aplicación.
+	 */
+	import { BarChart3, Package, Share2, Sparkles, Tag, Zap } from 'lucide-svelte';
+
 	import { siteConfig } from '$lib/config/site';
-	import Footer from '$lib/components/app/nav/footer.svelte';
-	import {
-		TrendingUp,
-		Package,
-		BarChart3,
-		Zap,
-		ChevronRight,
-		CheckCircle2,
-		Sparkles,
-		Layers,
-		Share2,
-		Tag,
-		FileText,
-		Receipt,
-		Activity
-	} from 'lucide-svelte';
+	import { AUTH_PATHS } from '$lib/features/auth/config/auth';
+	import { ACCESOS, ORIGENES } from '$lib/config/landing';
+	import SxNav from '$lib/components/nav/sx-nav.svelte';
+	import LandingFooter from '$lib/components/landing/landing-footer.svelte';
+	import HeroNetwork from '$lib/components/landing/hero-network.svelte';
+
+	import '$lib/styles/landing-coi.css';
+
+	const CARACTERISTICAS = [
+		{
+			icono: Sparkles,
+			titulo: 'Creación de contenido con IA',
+			desc: 'Genera copy, hashtags y estrategias de publicación con inteligencia artificial para todas tus marcas.'
+		},
+		{
+			icono: BarChart3,
+			titulo: 'Indicadores en tiempo real',
+			desc: 'KPIs semanales, mensuales, trimestrales y anuales con análisis por bodega y sucursal.'
+		},
+		{
+			icono: Package,
+			titulo: 'Gestión de inventarios',
+			desc: 'Control de inventarios mínimos, alertas de stock bajo y análisis de rotación por sucursal.'
+		},
+		{
+			icono: Tag,
+			titulo: 'Gestión multi-marca',
+			desc: 'Administra múltiples marcas con prompts personalizados, brand assets y estrategias diferenciadas.'
+		},
+		{
+			icono: Zap,
+			titulo: 'Alertas inteligentes',
+			desc: 'Notificaciones automáticas por producto, lead time y umbrales personalizados.'
+		},
+		{
+			icono: Share2,
+			titulo: 'Meta Hub y publicación',
+			desc: 'Publica en Facebook e Instagram, gestiona pautas y monitorea el rendimiento de tus campañas.'
+		}
+	];
+
+	const PROCESO = [
+		{
+			titulo: 'Conecta tus datos',
+			desc: 'El COI se conecta a tu ERP y lee solo las bodegas y marcas que selecciones.'
+		},
+		{
+			titulo: 'Analiza y propone',
+			desc: 'Genera forecast, alertas y borradores de contenido a partir de tus datos y tus marcas.'
+		},
+		{
+			titulo: 'Revisa y decide',
+			desc: 'Apruebas, ajustas o descartas antes de que algo se compre o se publique.'
+		}
+	];
+
+	/**
+	 * Cascada del bloque de cierre: los orígenes abren y cierran la lista y los
+	 * accesos ocupan el centro, como en el diseño. El escalonado (margen, opacidad
+	 * y tamaño) se calcula por distancia al centro para que siga siendo simétrico
+	 * aunque cambie la cantidad de módulos.
+	 */
+	const cascada = (() => {
+		const filas = [...ORIGENES.slice(0, 2), ...ACCESOS, ...ORIGENES.slice(2)].map((f) => ({
+			sigla: f.sigla,
+			titulo: f.titulo
+		}));
+
+		const centro = (filas.length - 1) / 2;
+		const pasos = [
+			{ op: 0.95, size: 18.8, m: 68 },
+			{ op: 0.9, size: 18.4, m: 72 },
+			{ op: 0.7, size: 17.4, m: 84 },
+			{ op: 0.5, size: 16.2, m: 108 },
+			{ op: 0.3, size: 15.1, m: 144 }
+		];
+
+		return filas.map((f, i) => {
+			const d = Math.min(Math.round(Math.abs(i - centro)), pasos.length - 1);
+			return { ...f, ...pasos[d] };
+		});
+	})();
 </script>
 
 <svelte:head>
 	<title>{siteConfig.title} - Centro de Operaciones Inteligentes</title>
+	<meta
+		name="description"
+		content="Compras con forecast, facturación, cuentas por cobrar y contenido con IA para tus marcas. Entra a cada módulo desde un mismo lugar."
+	/>
 </svelte:head>
 
-<div
-	class="flex min-h-screen flex-col bg-linear-to-b from-white to-slate-50 dark:from-gray-950 dark:to-gray-900"
->
-	<MainNav />
+<div class="coi">
+	<SxNav context="landing" />
 
-	<main class="flex-1">
-		<!-- Hero Section -->
-		<section class="relative overflow-hidden py-20 lg:py-10">
-			<!-- Background decoration -->
-			<div class="absolute inset-0 -z-10">
-				<div class="absolute top-0 right-0 w-96 h-96 bg-[#0D1E3D]/5 rounded-full blur-3xl"></div>
-				<div class="absolute bottom-0 left-0 w-96 h-96 bg-[#1A73C2]/5 rounded-full blur-3xl"></div>
-			</div>
+	<main>
+		<!-- 1 · Hero -->
+		<section
+			id="inicio"
+			class="hero"
+			style="position:relative;overflow:hidden;padding:96px 0 72px;min-height:640px"
+		>
+			<div
+				class="blob"
+				style="width:560px;height:560px;left:-160px;top:-140px;background:radial-gradient(circle,rgba(26,115,194,.20),rgba(26,115,194,0) 68%)"
+			></div>
+			<div
+				class="blob"
+				style="width:480px;height:480px;right:-160px;top:40px;animation-duration:30s;background:radial-gradient(circle,rgba(13,30,61,.14),rgba(13,30,61,0) 68%)"
+			></div>
 
-			<div class="container mx-auto px-4">
-				<div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-					<!-- Left Column: Content -->
-					<div class="space-y-8">
-						<!-- Logo -->
-						<div class="flex items-center gap-3">
-							<img src="/logo-soportexperto.png" alt="SoporteXperto Logo" class="h-16 w-auto" />
-							<div class="h-12 w-px bg-linear-to-b from-[#0D1E3D] to-[#1A73C2]"></div>
-							<div>
-								<p class="text-sm font-medium text-[#0D1E3D] dark:text-blue-400">
-									Sistema Inteligente
-								</p>
-								<p class="text-xs text-muted-foreground">Grupo SoporteXperto</p>
-							</div>
-						</div>
+			<HeroNetwork />
 
-						<!-- Headline -->
-						<div class="space-y-4">
-							<h1
-								class="text-4xl lg:text-6xl font-bold text-[#0D1E3D] dark:text-white leading-tight"
-							>
-								Centro de Operaciones
-								<span
-									class="block text-transparent bg-clip-text bg-linear-to-r from-[#0D1E3D] to-[#1A73C2]"
-								>
-									Inteligentes
-								</span>
-							</h1>
-							<p class="text-lg text-muted-foreground max-w-xl">
-								Herramientas inteligentes que combinan automatización de compras, forecast
-								predictivo y creación de contenido con IA para potenciar tu operación.
-							</p>
-						</div>
+			<div
+				class="wrap"
+				style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;text-align:center"
+			>
+				<p class="eyebrow rise">COI · Centro de Operaciones Inteligentes</p>
 
-						<!-- Features list -->
-						<div class="space-y-3">
-							<div class="flex items-center gap-3">
-								<div
-									class="shrink-0 w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center"
-								>
-									<CheckCircle2 class="h-4 w-4 text-green-600" />
-								</div>
-								<p class="text-sm text-muted-foreground">
-									Asistente de compras con forecast predictivo
-								</p>
-							</div>
-							<div class="flex items-center gap-3">
-								<div
-									class="shrink-0 w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center"
-								>
-									<CheckCircle2 class="h-4 w-4 text-green-600" />
-								</div>
-								<p class="text-sm text-muted-foreground">Creación de contenido impulsada por IA</p>
-							</div>
-							<div class="flex items-center gap-3">
-								<div
-									class="shrink-0 w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center"
-								>
-									<CheckCircle2 class="h-4 w-4 text-green-600" />
-								</div>
-								<p class="text-sm text-muted-foreground">
-									Gestión multi-marca y publicación en redes sociales
-								</p>
-							</div>
-						</div>
+				<div
+					class="rise"
+					style="display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:22px;animation-delay:.08s"
+				>
+					<span class="chip chip-inf">Forecast predictivo</span>
+					<span class="chip chip-inf">IA generativa</span>
+					<span class="chip chip-inf">Meta: Facebook e Instagram</span>
+					<span class="chip chip-ok">Con revisión humana</span>
+				</div>
 
-						<!-- CTA Buttons -->
-						<div class="flex flex-wrap gap-4">
-							<Button
-								href={AUTH_PATHS.LOGIN}
-								size="lg"
-								class="text-base px-8 py-6 bg-[#0D1E3D] hover:bg-[#0D1E3D]/90 dark:bg-[#0D1E3D] dark:hover:bg-[#0D1E3D]/80"
-							>
-								Acceder al Sistema
-								<ChevronRight class="ml-2 h-5 w-5" />
-							</Button>
-							<Button
-								href="/AsistenteCompras"
-								size="lg"
-								variant="outline"
-								class="text-base px-8 py-6 border-[#0D1E3D] text-[#0D1E3D] hover:bg-[#0D1E3D]/5"
-							>
-								<BarChart3 class="mr-2 h-5 w-5" />
-								Asistente de Compras
-							</Button>
-							<Button
-								href="http://facturacion.soportexperto.com:3003/"
-								size="lg"
-								variant="outline"
-								class="text-base px-8 py-6 border-[#0D1E3D] text-[#0D1E3D] hover:bg-[#0D1E3D]/5"
-							>
-								<FileText class="mr-2 h-5 w-5" />
-								Facturación
-							</Button>
-							<Button
-								href="/cuentasxcobrar"
-								size="lg"
-								variant="outline"
-								class="text-base px-8 py-6 border-[#0D1E3D] text-[#0D1E3D] hover:bg-[#0D1E3D]/5"
-							>
-								<Receipt class="mr-2 h-5 w-5" />
-								CXC
-							</Button>
-							<Button
-								href="/contentCreator"
-								size="lg"
-								variant="outline"
-								class="text-base px-8 py-6 border-[#0D1E3D] text-[#0D1E3D] hover:bg-[#0D1E3D]/5"
-							>
-								<Sparkles class="mr-2 h-5 w-5" />
-								Community Manager
-							</Button>
-							<Button
-								href="/dashboard"
-								size="lg"
-								variant="outline"
-								class="text-base px-8 py-6 border-[#0D1E3D] text-[#0D1E3D] hover:bg-[#0D1E3D]/5"
-							>
-								<Activity class="mr-2 h-5 w-5" />
-								Kit de Monitoreo
-							</Button>
-							<Button
-								href={AUTH_PATHS.REGISTER}
-								size="lg"
-								class="text-base px-8 py-6 bg-[#1A73C2] hover:bg-[#1A73C2]/90 text-white"
-							>
-								Solicitar Acceso
-							</Button>
-						</div>
-					</div>
+				<h1 class="h-hero rise" style="max-width:940px;margin-top:28px;animation-delay:.16s">
+					Toda tu operación, en un solo centro de control<span style="color:var(--accent)">.</span>
+				</h1>
 
-					<!-- Right Column: Visual Element -->
-					<div class="hidden lg:flex items-center justify-center relative">
-						<div class="relative w-full max-w-lg">
-							<!-- Decorative circles -->
-							<div
-								class="absolute -top-4 -right-4 w-72 h-72 bg-linear-to-br from-[#0D1E3D]/10 to-[#1A73C2]/10 rounded-full blur-2xl"
-							></div>
-							<div
-								class="absolute -bottom-4 -left-4 w-72 h-72 bg-linear-to-tr from-[#1A73C2]/10 to-[#0D1E3D]/10 rounded-full blur-2xl"
-							></div>
+				<p class="lead rise" style="max-width:640px;margin-top:24px;animation-delay:.24s">
+					Compras con forecast, facturación, cuentas por cobrar y contenido con IA para tus marcas.
+					Entra a cada módulo desde un mismo lugar y deja que el sistema proponga; tú decides.
+				</p>
 
-							<!-- Platform Preview -->
-							<div
-								class="relative z-10 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 border border-gray-200 dark:border-gray-700 space-y-6"
-							>
-								<div class="flex items-center gap-3 border-b pb-4">
-									<div
-										class="w-10 h-10 rounded-lg bg-[#1A73C2]/10 flex items-center justify-center"
-									>
-										<Layers class="h-5 w-5 text-[#1A73C2]" />
-									</div>
-									<div>
-										<p class="font-semibold text-sm">Plataforma SoporteXperto</p>
-										<p class="text-xs text-muted-foreground">Centro de Operaciones Inteligentes</p>
-									</div>
-								</div>
-
-								<div class="space-y-4">
-									<!-- Módulo 1 -->
-									<div
-										class="p-4 rounded-xl border bg-gray-50 dark:bg-gray-900/50 hover:border-[#0D1E3D]/50 transition-colors"
-									>
-										<div class="flex items-start justify-between">
-											<div class="flex items-center gap-3">
-												<div
-													class="w-8 h-8 rounded bg-[#0D1E3D]/10 flex items-center justify-center"
-												>
-													<BarChart3 class="h-4 w-4 text-[#0D1E3D]" />
-												</div>
-												<div>
-													<p class="text-sm font-semibold text-[#0D1E3D] dark:text-white">
-														Asistente de Compras
-													</p>
-													<p class="text-xs text-muted-foreground mt-1">
-														Forecast · SKUs · Alertas
-													</p>
-												</div>
-											</div>
-											<div
-												class="flex items-center gap-1.5 px-2 py-1 rounded-full bg-green-500/10 text-green-600 text-[10px] font-medium"
-											>
-												<div class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-												Operativo
-											</div>
-										</div>
-									</div>
-
-									<!-- Módulo 2 -->
-									<div
-										class="p-4 rounded-xl border bg-gray-50 dark:bg-gray-900/50 hover:border-[#1A73C2]/50 transition-colors"
-									>
-										<div class="flex items-start justify-between">
-											<div class="flex items-center gap-3">
-												<div
-													class="w-8 h-8 rounded bg-[#1A73C2]/10 flex items-center justify-center"
-												>
-													<Sparkles class="h-4 w-4 text-[#1A73C2]" />
-												</div>
-												<div>
-													<p class="text-sm font-semibold text-[#0D1E3D] dark:text-white">
-														Creador de Contenido
-													</p>
-													<p class="text-xs text-muted-foreground mt-1">IA · Redes · Meta Ads</p>
-												</div>
-											</div>
-											<div
-												class="flex items-center gap-1.5 px-2 py-1 rounded-full bg-green-500/10 text-green-600 text-[10px] font-medium"
-											>
-												<div class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-												Activo
-											</div>
-										</div>
-									</div>
-								</div>
-
-								<div class="grid grid-cols-2 gap-4 pt-4 border-t">
-									<div class="flex items-center gap-2">
-										<Layers class="h-4 w-4 text-muted-foreground" />
-										<span class="text-xs font-medium text-muted-foreground">2 Módulos</span>
-									</div>
-									<div class="flex items-center gap-2">
-										<Zap class="h-4 w-4 text-[#1A73C2]" />
-										<span class="text-xs font-medium text-muted-foreground"
-											>Powered by SoporteXperto AI</span
-										>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
+				<div
+					class="rise"
+					style="display:flex;flex-wrap:wrap;justify-content:center;gap:14px;margin-top:36px;animation-delay:.32s"
+				>
+					<a class="btn btn-pri" href="#accesos"
+						>Acceder al sistema <span aria-hidden="true">→</span></a
+					>
+					<a class="btn btn-sec" href="#solicitar">Solicitar acceso</a>
 				</div>
 			</div>
 		</section>
 
-		<!-- Features Section -->
-		<section class="py-10 bg-white dark:bg-gray-900">
-			<div class="container mx-auto px-4">
-				<div class="text-center mb-12">
-					<h2 class="text-3xl lg:text-4xl font-bold text-[#0D1E3D] dark:text-white mb-4">
-						Características Principales
-					</h2>
-					<p class="text-muted-foreground max-w-2xl mx-auto">
-						Módulos especializados que integran automatización, inteligencia artificial y gestión
-						operativa
+		<!-- 2 · Accesos -->
+		<section
+			id="accesos"
+			class="sec"
+			style="background:var(--bg-alt);padding:64px 0;border-top:1px solid var(--bd-in);border-bottom:1px solid var(--bd-in)"
+		>
+			<div class="wrap">
+				<div class="sec-head">
+					<p class="eyebrow">Accesos</p>
+					<h2 class="h-sec" style="margin-top:14px">Entra al módulo que necesitas</h2>
+					<p class="p-sec" style="margin-top:18px">
+						Cada acceso te lleva directo al sistema correspondiente.
 					</p>
 				</div>
 
-				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-					<!-- Feature 1: Creación de Contenido con IA -->
-					<div
-						class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#0D1E3D]/50 transition-all hover:shadow-lg"
-					>
-						<div
-							class="w-12 h-12 rounded-lg bg-[#0D1E3D]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"
+				<div class="grid-auto">
+					{#each ACCESOS as acceso (acceso.sigla)}
+						<a
+							class="card acc"
+							href={acceso.href}
+							target={acceso.externo ? '_blank' : null}
+							rel={acceso.externo ? 'noopener noreferrer' : null}
+							data-sveltekit-reload={acceso.reload ? '' : null}
 						>
-							<Sparkles class="h-6 w-6 text-[#0D1E3D]" />
-						</div>
-						<h3 class="text-xl font-semibold mb-2 text-[#0D1E3D] dark:text-white">
-							Creación de Contenido con IA
-						</h3>
-						<p class="text-muted-foreground">
-							Genera copy, hashtags y estrategias de publicación con inteligencia artificial para
-							todas tus marcas.
-						</p>
-					</div>
-
-					<!-- Feature 2: Indicadores en Tiempo Real -->
-					<div
-						class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#1A73C2]/50 transition-all hover:shadow-lg"
-					>
-						<div
-							class="w-12 h-12 rounded-lg bg-[#1A73C2]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"
-						>
-							<BarChart3 class="h-6 w-6 text-[#1A73C2]" />
-						</div>
-						<h3 class="text-xl font-semibold mb-2 text-[#0D1E3D] dark:text-white">
-							Indicadores en Tiempo Real
-						</h3>
-						<p class="text-muted-foreground">
-							KPIs semanales, mensuales, trimestrales y anuales con análisis por bodega y sucursal.
-						</p>
-					</div>
-
-					<!-- Feature 3: Gestión de Inventarios -->
-					<div
-						class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#0D1E3D]/50 transition-all hover:shadow-lg"
-					>
-						<div
-							class="w-12 h-12 rounded-lg bg-[#0D1E3D]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"
-						>
-							<Package class="h-6 w-6 text-[#0D1E3D]" />
-						</div>
-						<h3 class="text-xl font-semibold mb-2 text-[#0D1E3D] dark:text-white">
-							Gestión de Inventarios
-						</h3>
-						<p class="text-muted-foreground">
-							Control de inventarios mínimos, alertas de stock bajo y análisis de rotación por
-							sucursal.
-						</p>
-					</div>
-
-					<!-- Feature 4: Gestión Multi-Marca -->
-					<div
-						class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#1A73C2]/50 transition-all hover:shadow-lg"
-					>
-						<div
-							class="w-12 h-12 rounded-lg bg-[#1A73C2]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"
-						>
-							<Tag class="h-6 w-6 text-[#1A73C2]" />
-						</div>
-						<h3 class="text-xl font-semibold mb-2 text-[#0D1E3D] dark:text-white">
-							Gestión Multi-Marca
-						</h3>
-						<p class="text-muted-foreground">
-							Administra múltiples marcas con prompts personalizados, brand assets y estrategias
-							diferenciadas.
-						</p>
-					</div>
-
-					<!-- Feature 5: Alertas Inteligentes -->
-					<div
-						class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#0D1E3D]/50 transition-all hover:shadow-lg"
-					>
-						<div
-							class="w-12 h-12 rounded-lg bg-[#0D1E3D]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"
-						>
-							<Zap class="h-6 w-6 text-[#0D1E3D]" />
-						</div>
-						<h3 class="text-xl font-semibold mb-2 text-[#0D1E3D] dark:text-white">
-							Alertas Inteligentes
-						</h3>
-						<p class="text-muted-foreground">
-							Notificaciones automáticas por producto, lead time y umbrales personalizados.
-						</p>
-					</div>
-
-					<!-- Feature 6: Meta Hub & Publicación -->
-					<div
-						class="group p-6 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-[#1A73C2]/50 transition-all hover:shadow-lg"
-					>
-						<div
-							class="w-12 h-12 rounded-lg bg-[#1A73C2]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"
-						>
-							<Share2 class="h-6 w-6 text-[#1A73C2]" />
-						</div>
-						<h3 class="text-xl font-semibold mb-2 text-[#0D1E3D] dark:text-white">
-							Meta Hub & Publicación
-						</h3>
-						<p class="text-muted-foreground">
-							Publica directamente en Facebook e Instagram, gestiona pautas y monitorea el
-							rendimiento de tus campañas.
-						</p>
-					</div>
+							<div style="display:flex;align-items:center;justify-content:space-between">
+								<span class="sig">{acceso.sigla}</span>
+							</div>
+							<h3 class="h-card">{acceso.titulo}</h3>
+							<p class="p-card">{acceso.sub}</p>
+							<span class="acc-go">
+								{acceso.externo ? 'Abrir sistema' : 'Ingresar al sistema'}
+								<i aria-hidden="true">{acceso.externo ? '↗' : '→'}</i>
+							</span>
+						</a>
+					{/each}
 				</div>
 			</div>
 		</section>
 
-		<!-- CTA Section -->
-		<section class="py-20 bg-linear-to-br from-[#0D1E3D] to-[#0D1E3D]/90 text-white">
-			<div class="container mx-auto px-4 text-center">
-				<div class="max-w-3xl mx-auto space-y-6">
-					<h2 class="text-3xl lg:text-4xl font-bold">¿Listo para Transformar tu Operación?</h2>
-					<p class="text-lg text-blue-100">
+		<!-- 3 · Características -->
+		<section id="modulos" class="sec" style="padding:64px 0 24px">
+			<div class="wrap">
+				<div class="sec-head">
+					<p class="eyebrow">Qué incluye</p>
+					<h2 class="h-sec" style="margin-top:14px">Características principales</h2>
+					<p class="p-sec" style="margin-top:18px">
+						Módulos especializados que integran automatización, inteligencia artificial y gestión
+						operativa.
+					</p>
+				</div>
+
+				<div class="grid-auto-lg">
+					{#each CARACTERISTICAS as item (item.titulo)}
+						{@const Icono = item.icono}
+						<article class="card mod">
+							<span class="mod-ico"><Icono size={22} /></span>
+							<h3 class="h-card">{item.titulo}</h3>
+							<p class="p-card">{item.desc}</p>
+						</article>
+					{/each}
+				</div>
+			</div>
+		</section>
+
+		<!-- 4 · Proceso -->
+		<section id="proceso" class="sec" style="padding:64px 0 24px">
+			<div class="wrap">
+				<div class="sec-head">
+					<p class="eyebrow">Cómo funciona</p>
+					<h2 class="h-sec" style="margin-top:14px">El sistema propone y ejecuta; tú decides</h2>
+					<p class="p-sec" style="margin-top:18px">
+						Implementación acompañada por SoporteXperto, con el control siempre en tu equipo.
+					</p>
+				</div>
+
+				<div class="grid-auto-lg">
+					{#each PROCESO as paso (paso.titulo)}
+						<div class="card" style="padding:28px;display:flex;flex-direction:column;gap:12px">
+							<span class="sig sig-n" aria-hidden="true">→</span>
+							<h3 class="h-card">{paso.titulo}</h3>
+							<p class="p-card">{paso.desc}</p>
+						</div>
+					{/each}
+				</div>
+			</div>
+		</section>
+
+		<!-- 5 · Cierre -->
+		<section id="solicitar" class="wrap sec" style="padding-top:48px;padding-bottom:64px">
+			<div class="cta">
+				<div
+					class="blob"
+					style="width:440px;height:440px;right:-80px;top:10px;background:radial-gradient(circle,rgba(26,115,194,.38),rgba(26,115,194,0) 68%)"
+				></div>
+
+				<div class="cta-copy">
+					<p class="eyebrow" style="color:rgba(255,255,255,.72)">Acceso al COI</p>
+					<h2 class="h-close" style="margin-top:14px;font-size:40px;letter-spacing:-1.5px">
+						¿Listo para transformar tu operación?
+					</h2>
+					<p
+						style="max-width:520px;margin:14px 0 0;font:400 16px/1.6 Manrope,sans-serif;color:rgba(255,255,255,.72);text-wrap:pretty"
+					>
 						Accede a la plataforma y potencia tus procesos de compras y creación de contenido con
 						inteligencia artificial.
 					</p>
-					<div class="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-						<Button
-							href={AUTH_PATHS.REGISTER}
-							size="lg"
-							variant="secondary"
-							class="text-base px-8 py-6 bg-white text-[#0D1E3D] hover:bg-gray-100"
-						>
-							Solicitar Acceso
-							<ChevronRight class="ml-2 h-5 w-5" />
-						</Button>
-						<Button
-							href="mailto:{siteConfig.contact.email}"
-							size="lg"
-							variant="secondary"
-							class="text-base px-8 py-6 bg-white text-[#0D1E3D] hover:bg-gray-100"
-						>
-							Contactar Soporte
-						</Button>
+					<div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:24px">
+						<a class="btn btn-wh" href={AUTH_PATHS.REGISTER}>
+							Solicitar acceso <span aria-hidden="true">→</span>
+						</a>
+						<a class="btn btn-out" href="mailto:{siteConfig.contact.email}">
+							Hablar con SoporteXperto
+						</a>
 					</div>
+				</div>
+
+				<div class="cta-vis" aria-hidden="true">
+					<svg class="cta-chev" viewBox="0 0 200 400" preserveAspectRatio="none" focusable="false">
+						<polyline
+							points="196,0 14,200 196,400"
+							fill="none"
+							stroke="rgba(255,255,255,.14)"
+							stroke-width="1"
+						/>
+						<polyline
+							points="196,0 44,200 196,400"
+							fill="none"
+							stroke="rgba(255,255,255,.14)"
+							stroke-width="1"
+						/>
+						<polyline
+							points="196,0 74,200 196,400"
+							fill="none"
+							stroke="rgba(255,255,255,.14)"
+							stroke-width="1"
+						/>
+						<polyline
+							points="196,0 104,200 196,400"
+							fill="none"
+							stroke="rgba(255,255,255,.14)"
+							stroke-width="1"
+						/>
+					</svg>
+					{#each cascada as fila (fila.sigla)}
+						<div class="cta-row" style="--m:{fila.m}px;opacity:{fila.op}">
+							<i>{fila.sigla}</i><span style="font-size:{fila.size}px">{fila.titulo}</span>
+						</div>
+					{/each}
 				</div>
 			</div>
 		</section>
 	</main>
 
-	<Footer />
+	<LandingFooter />
 </div>
-
-<style>
-	@keyframes fadeIn {
-		from {
-			opacity: 0;
-			transform: translateY(10px);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
-	}
-
-	main {
-		animation: fadeIn 0.6s ease-out;
-	}
-</style>
