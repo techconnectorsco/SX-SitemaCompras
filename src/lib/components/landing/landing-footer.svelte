@@ -6,8 +6,7 @@
 	 * Componente propio: `app/nav/footer.svelte` lo comparten Login, Register y
 	 * `auth/pending`, así que no se toca.
 	 *
-	 * Los datos de contacto salen de `siteConfig` en lugar de los marcadores del
-	 * diseño (`[CORREO DE SOPORTE]`, `[TELÉFONO]`, `[SITIO WEB]`).
+	 * El bloque de contacto solo expone el sitio web.
 	 */
 	import { siteConfig } from '$lib/config/site';
 	import { ACCESOS } from '$lib/config/landing';
@@ -54,10 +53,6 @@
 
 			<div>
 				<p class="ft-t">Contacto</p>
-				<a class="ft-a" href="mailto:{siteConfig.contact.email}">{siteConfig.contact.email}</a>
-				<a class="ft-a" href="tel:{siteConfig.contact.phone.replace(/[^\d+]/g, '')}">
-					{siteConfig.contact.phone}
-				</a>
 				<a class="ft-a" href="https://{sitio}" target="_blank" rel="noopener noreferrer">{sitio}</a>
 			</div>
 		</div>
