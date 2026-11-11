@@ -2,7 +2,7 @@
 	/**
 	 * Landing pública del Centro de Operaciones Inteligentes (COI).
 	 *
-	 * Port del diseño "Landing COI SoporteXperto" (Claude Design). Todo el sistema
+	 * Port del diseño "Landing COI SoporteXperto". Todo el sistema
 	 * visual vive bajo el scope `.coi` en `landing-coi.css`, importado solo aquí,
 	 * de modo que nada de esto se filtra al resto de la aplicación.
 	 */
@@ -223,7 +223,45 @@
 			</div>
 		</section>
 
-		<!-- 4 · Proceso -->
+		<!-- 4 · Betti IA -->
+		<section id="betti" class="wrap sec" style="padding-top:40px;padding-bottom:24px">
+			<div class="betti">
+				<div
+					class="blob"
+					style="width:320px;height:320px;left:-60px;top:-80px;background:radial-gradient(circle,rgba(26,115,194,.34),rgba(26,115,194,0) 68%)"
+				></div>
+
+				<div class="betti-foto">
+					<img
+						src="/ia-chat/betti-ia.png"
+						alt="Betti, el agente de inteligencia artificial del COI"
+						width="168"
+						height="168"
+						loading="lazy"
+						decoding="async"
+					/>
+				</div>
+
+				<div class="betti-copy">
+					<p class="eyebrow" style="color:rgba(255,255,255,.72)">Tu agente de IA</p>
+					<h2 class="h-blk betti-h" style="margin-top:12px">
+						Betti está conectada a todo el COI<span style="color:var(--accent)">.</span>
+					</h2>
+					<p class="betti-p">
+						Lee tus datos, entiende tus módulos y te responde en lenguaje natural. Pregúntale qué
+						comprar, dónde tienes riesgo de quiebre o dónde estás inmovilizando dinero, y te
+						contesta con los números de tu operación.
+					</p>
+					<div class="betti-chips">
+						{#each ACCESOS as acceso (acceso.sigla)}
+							<span class="betti-chip">{acceso.titulo}</span>
+						{/each}
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- 5 · Proceso -->
 		<section id="proceso" class="sec" style="padding:64px 0 24px">
 			<div class="wrap">
 				<div class="sec-head">
@@ -246,7 +284,7 @@
 			</div>
 		</section>
 
-		<!-- 5 · Cierre -->
+		<!-- 6 · Cierre -->
 		<section id="solicitar" class="wrap sec" style="padding-top:48px;padding-bottom:64px">
 			<div class="cta">
 				<div

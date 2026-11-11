@@ -1,7 +1,7 @@
 /**
  * Sistema visual de la landing pública (COI).
  *
- * Portado del diseño "Landing COI SoporteXperto" hecho en Claude Design.
+ * Portado del diseño "Landing COI SoporteXperto".
  * Se importa ÚNICAMENTE desde `src/routes/+page.svelte`, así que Vite lo deja
  * en el chunk de esa ruta y no pesa en el resto de la app.
  *
@@ -660,6 +660,82 @@
 	fill: var(--body);
 }
 
+/* ───────────────────────── Betti ───────────────────────── */
+
+/*
+ * Misma familia visual que `.cta`, pero más baja y con el retrato a la
+ * izquierda: invertida, las dos cards oscuras de la página no se leen como la
+ * misma pieza repetida.
+ *
+ * El texto y los chips usan blancos fijos en vez de tokens a propósito. Sobre
+ * este gradiente, `--ink` (navy en claro) y `--accent-bg` (azul claro en claro)
+ * quedarían ilegibles; es el mismo criterio que ya sigue `.cta-row i`.
+ */
+.coi .betti {
+	position: relative;
+	overflow: hidden;
+	background: linear-gradient(120deg, #0b1a35, #12294a 55%, #1c394f);
+	border-radius: 30px;
+	padding: 36px 48px;
+	display: flex;
+	align-items: center;
+	gap: 36px;
+}
+:is(.dark) .coi .betti {
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+.coi .betti-foto {
+	position: relative;
+	z-index: 2;
+	flex: none;
+	width: 168px;
+	height: 168px;
+	border-radius: 50%;
+	overflow: hidden;
+	border: 1px solid rgba(255, 255, 255, 0.18);
+}
+.coi .betti-foto img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+.coi .betti-copy {
+	position: relative;
+	z-index: 2;
+	/* Crece hasta llenar lo que deja el retrato; sin esto el bloque se queda del
+	   ancho de su texto y sobra aire a la derecha de la card. */
+	flex: 1 1 auto;
+	min-width: 0;
+}
+.coi .betti-h {
+	color: #ffffff;
+}
+.coi .betti-p {
+	font:
+		400 15.5px/1.6 Manrope,
+		sans-serif;
+	color: rgba(255, 255, 255, 0.72);
+	margin: 12px 0 0;
+	text-wrap: pretty;
+}
+.coi .betti-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 18px;
+}
+.coi .betti-chip {
+	font:
+		700 12.5px/1.2 Manrope,
+		sans-serif;
+	color: #ffffff;
+	background: rgba(255, 255, 255, 0.1);
+	border: 1px solid rgba(255, 255, 255, 0.14);
+	padding: 7px 14px;
+	border-radius: 999px;
+}
+
 /* ───────────────────────── cierre ───────────────────────── */
 
 .coi .cta {
@@ -833,6 +909,10 @@
 	.coi .cta {
 		padding: 40px;
 	}
+	.coi .betti {
+		padding: 32px;
+		gap: 28px;
+	}
 }
 @media (max-width: 1279px) {
 	.coi .bg-net {
@@ -911,6 +991,19 @@
 	.coi .cta {
 		padding: 44px 24px;
 		border-radius: 20px;
+	}
+	.coi .betti {
+		flex-direction: column;
+		text-align: center;
+		padding: 32px 24px;
+		border-radius: 20px;
+	}
+	.coi .betti-foto {
+		width: 132px;
+		height: 132px;
+	}
+	.coi .betti-chips {
+		justify-content: center;
 	}
 	.coi .lockup {
 		display: none !important;
