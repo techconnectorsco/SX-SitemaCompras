@@ -92,26 +92,6 @@ export function runSeedCatalogos() {
     }
     console.log(`[seed] Redes sociales insertadas: ${redesInserted}`);
 
-    // 5. Cuentas del cliente
-    const cuentasStmt = db.prepare(`
-        INSERT OR IGNORE INTO cuentas (nombre)
-        VALUES (?)
-    `);
-
-    const cuentas = [
-        ['SX'],
-        ['Sx'],
-        ['Outlet'],
-        ['Retail Pro']
-    ];
-
-    let cuentasInserted = 0;
-    for (const c of cuentas) {
-        const info = cuentasStmt.run(c[0]);
-        cuentasInserted += info.changes;
-    }
-    console.log(`[seed] Cuentas insertadas: ${cuentasInserted}`);
-
     console.log('[seed] ✅ Seeding de catálogos completado.');
 }
 

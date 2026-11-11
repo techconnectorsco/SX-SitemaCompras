@@ -729,11 +729,6 @@ try {
     for (const [id, nombre] of [[1, 'Facebook'], [2, 'Instagram'], [3, 'Sitio Web (Blog)'], [4, 'SharePoint']] as const) {
       seedRed.run(id, nombre);
     }
-
-    const seedCuenta = db.prepare('INSERT OR IGNORE INTO cuentas (nombre) VALUES (?)');
-    for (const nombre of ['SX', 'Outlet', 'Retail Pro']) {
-      seedCuenta.run(nombre);
-    }
   } catch (e) {
     console.error('[db] ⚠️ Error seeding catálogos iniciales:', e);
   }
