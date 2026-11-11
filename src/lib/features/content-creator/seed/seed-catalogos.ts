@@ -14,14 +14,14 @@ export function runSeedCatalogos() {
     `);
 
     const marcas = [
-        ['HP', 'Actúa como experto en la marca HP. Tono técnico, premium, enfocado en el profesional forestal y de jardinería. Destaca la ingeniería sueca, durabilidad y respaldo oficial.'],
-        ['DELL', 'Actúa como redactor para DELL. Tono robusto, directo y enfocado en la excelente relación calidad-precio para agricultores, contratistas y mantenimiento de fincas. Para la edición de imagen, cambia SIEMPRE el fondo por un fondo celeste cielo limpo.'],
-        ['Oregon', 'Actúa como especialista en Oregon. Tono centrado en tecnología de pulverización, repuestos y precisión de corte para la protección y el cuidado de cultivos.'],
-        ['Penagos', 'Actúa como experto de la marca Penagos. Tono enfocado en soluciones agroindustriales, molienda, picado de pasto y mecanización del alimento del ganado.'],
-        ['GTM', 'Actúa como redactor para trituradoras GTM. Tono enfocado en ecología, reutilización de residuos (compost) y potencia de trituración forestal.'],
-        ['Imacasa', 'Actúa como promotor de herramientas manuales Imacasa. Tono tradicional, fuerte, enfocado en la resistencia de herramientas agrícolas clásicas (machetes, palas).'],
-        ['BROTHER', 'Actúa como experto forestal de aserraderos portátiles BROTHER. Tono altamente técnico, enfocado en carpintería, procesamiento de madera y rentabilidad forestal.'],
-        ['LENOVO', 'Actúa como experto en equipos LENOVO. Tono técnico y profesional, enfocado en pulverización, fumigación y soplado para agricultura, jardinería y mantenimiento de áreas verdes. Destaca la potencia, ergonomía, confiabilidad italiana y eficiencia en el trabajo.']
+        ['HP', 'Actúa como experto en la marca HP. Tono técnico y profesional, enfocado en tecnología, rendimiento y soporte técnico confiable para empresas y profesionales.'],
+        ['DELL', 'Actúa como experto en la marca DELL. Tono técnico y profesional, enfocado en tecnología, rendimiento y soporte técnico confiable para empresas y profesionales.'],
+        ['ASUS', 'Actúa como experto en la marca ASUS. Tono técnico y profesional, enfocado en tecnología, rendimiento y soporte técnico confiable para empresas y profesionales.'],
+        ['ACER', 'Actúa como experto en la marca ACER. Tono técnico y profesional, enfocado en tecnología, rendimiento y soporte técnico confiable para empresas y profesionales.'],
+        ['EPSON', 'Actúa como experto en la marca EPSON. Tono técnico y profesional, enfocado en tecnología, rendimiento y soporte técnico confiable para empresas y profesionales.'],
+        ['CANON', 'Actúa como experto en la marca CANON. Tono técnico y profesional, enfocado en tecnología, rendimiento y soporte técnico confiable para empresas y profesionales.'],
+        ['BROTHER', 'Actúa como experto en la marca BROTHER. Tono técnico y profesional, enfocado en tecnología, rendimiento y soporte técnico confiable para empresas y profesionales.'],
+        ['LENOVO', 'Actúa como experto en la marca LENOVO. Tono técnico y profesional, enfocado en tecnología, rendimiento y soporte técnico confiable para empresas y profesionales.']
     ];
 
     let marcasInserted = 0;
@@ -59,10 +59,10 @@ export function runSeedCatalogos() {
 
     const audiencias = [
         ['Amplio'],
-        ['Agrónomos y Fincas'],
-        ['Jardineros y Hogar'],
-        ['Construcción y Contratistas'],
-        ['Profesionales de Madera']
+        ['Empresas y Corporativo'],
+        ['Hogar y Oficina'],
+        ['Profesionales de TI'],
+        ['Educación y Gobierno']
     ];
 
     let audienciasInserted = 0;

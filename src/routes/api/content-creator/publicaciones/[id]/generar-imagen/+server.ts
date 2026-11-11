@@ -1,17 +1,21 @@
+import type { RequestHandler } from './$types';
 import { json } from '@sveltejs/kit';
 import {
 	IAContentService,
 	type ImageGenerationProgress
 } from '$lib/features/content-creator/services/ia-content-service';
 import path from 'path';
+import sharp from 'sharp';
+import { isBrandBeta, betaGeneration } from '$lib/features/content-creator/brand-beta/service';
 import db from '$lib/config/db-config';
 import { AssetService } from '$lib/features/content-creator/services/asset-service';
 import { readUploadFile } from '$lib/server/uploads-storage';
 
 type ProgressSender = (event: ImageGenerationProgress) => void;
 
-export async function POST({ params, request, locals }) {
+export const POST: RequestHandler = async ({ params, request, locals }) => {
 	const wantsProgress = request.headers.get('accept')?.includes('text/event-stream') ?? false;
+	if (!locals.user) return json({ error: 'No autorizado' }, { status: 401 });
 	const body = await request.json();
 
 	const generate = async (sendProgress?: ProgressSender) => {
@@ -45,14 +49,30 @@ export async function POST({ params, request, locals }) {
 		}
 		if (!isCrear && !base64Image) throw new Error('Se requiere base64Image, imageUrl o modo=crear');
 
+		if (index !== undefined && (!Number.isInteger(index) || index < 0 || index > 99))
+			throw new Error('Índice de slide inválido');
 		let brandAssets: any[] = [];
+		const publication = db
+			.prepare('SELECT marca_id FROM publicaciones WHERE id=? AND user_id=? AND deleted_at IS NULL')
+			.get(publicacionId, userId) as any;
+		const brandId =
+			publication?.marca_id ??
+			(db.prepare('SELECT id FROM marcas WHERE nombre=?').get(brand || '') as any)?.id;
 		if (Array.isArray(selectedAssetIds) && selectedAssetIds.length > 0) {
+			if (
+				isBrandBeta() &&
+				(new Set(selectedAssetIds).size !== selectedAssetIds.length ||
+					selectedAssetIds.some((id) => !Number.isInteger(id) || id <= 0))
+			)
+				throw new Error('Selección de assets inválida');
 			const assets = selectedAssetIds.map((id) => ({
 				id,
 				asset: db
 					.prepare('SELECT * FROM marca_assets WHERE id = ? AND deleted_at IS NULL')
 					.get(id) as any
 			}));
+			if (isBrandBeta() && assets.some(({ asset }) => asset && asset.marca_id !== brandId))
+				throw new Error('Los assets deben pertenecer a la marca de la publicación');
 			const missing = assets.filter(({ asset }) => !asset).map(({ id }) => id);
 			if (missing.length) throw new Error(`Assets no disponibles: ${missing.join(', ')}`);
 			brandAssets = await Promise.all(
@@ -62,7 +82,25 @@ export async function POST({ params, request, locals }) {
 						throw new Error(
 							`El asset seleccionado "${asset.nombre}" (ID ${id}) no está disponible en disco.`
 						);
-					return { nombre: asset.nombre, tipo: asset.tipo, mimeType: asset.mime_type, base64 };
+					if (isBrandBeta() && asset.mime_type === 'image/svg+xml') {
+						const png = await sharp(Buffer.from(base64, 'base64')).png().toBuffer();
+						return {
+							id,
+							marcaId: asset.marca_id,
+							nombre: asset.nombre,
+							tipo: asset.tipo,
+							mimeType: 'image/png',
+							base64: png.toString('base64')
+						};
+					}
+					return {
+						id,
+						marcaId: asset.marca_id,
+						nombre: asset.nombre,
+						tipo: asset.tipo,
+						mimeType: asset.mime_type,
+						base64
+					};
 				})
 			);
 		}
@@ -81,7 +119,8 @@ export async function POST({ params, request, locals }) {
 
 	if (!wantsProgress) {
 		try {
-			return json({ success: true, imageUrl: await generate() });
+			const imageUrl = await generate();
+			return json({ success: true, imageUrl, ...betaGeneration(imageUrl, locals.user!.id) });
 		} catch (error: any) {
 			console.error('[API generar-imagen] Error:', error);
 			return json(
@@ -97,13 +136,19 @@ export async function POST({ params, request, locals }) {
 			const send = (
 				event:
 					| ImageGenerationProgress
-					| { phase: 'success'; imageUrl: string }
+					| {
+							phase: 'success';
+							imageUrl: string;
+							complianceReport?: unknown;
+							evaluationStatus?: string;
+							generationId?: number;
+					  }
 					| { phase: 'error'; error: string }
 			) => controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
 			try {
 				send({ phase: 'generating', attempt: 1, maxAttempts: 3 });
 				const imageUrl = await generate(send);
-				send({ phase: 'success', imageUrl });
+				send({ phase: 'success', imageUrl, ...betaGeneration(imageUrl, locals.user!.id) });
 			} catch (error: any) {
 				console.error('[API generar-imagen] Error:', error);
 				send({ phase: 'error', error: error.message || 'Error interno al generar imagen' });
@@ -119,4 +164,4 @@ export async function POST({ params, request, locals }) {
 			Connection: 'keep-alive'
 		}
 	});
-}
+};

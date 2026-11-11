@@ -33,7 +33,7 @@
 
 	interface ExcelPost {
 		id: string;
-		title: string; // Tipo de contenido (ej: DELL Ahoyadora)
+		title: string; // Tipo de contenido (ej: DELL Laptop)
 		format: string; // Formato de salida (ej: Carrusel)
 		context: string; // Contexto para post (Tópico central)
 		objective: string; // Objetivo en RRSS
@@ -220,7 +220,7 @@
 		}
 	}
 
-	// Marcas del catálogo de Vedoba
+	// Marcas del catálogo de SX
 	let brands = $derived(catalogos.marcas.map((m: any) => m.nombre));
 
 	// Estado para Assets de Marca
@@ -234,8 +234,18 @@
 	let showFichasSelectorModal = $state(false);
 	let fichasDisponibles = $state<any[]>([]);
 	let loadingFichasSelector = $state(false);
+	let fichaSearchQuery = $state('');
+	const filteredFichasSelector = $derived.by(() => {
+		const query = fichaSearchQuery.trim().toLowerCase();
+		return fichasDisponibles.filter((ficha) =>
+			[ficha.nombre_producto, ficha.descripcion, ficha.especificaciones_texto].some((value) =>
+				(value ?? '').toLowerCase().includes(query)
+			)
+		);
+	});
 
 	async function openFichasSelector() {
+		fichaSearchQuery = '';
 		showFichasSelectorModal = true;
 		loadingFichasSelector = true;
 		try {
@@ -1033,7 +1043,6 @@
 		}
 
 		const promptGeneral = draftPost.prompt?.trim() || '';
-		const systemPrompt = buildSystemPromptForBrand(draftPost.brand).trim();
 		if (draftPost.esCarrusel) {
 			const carouselSlideCount = draftPost.carouselImages?.length ?? 0;
 			if (carouselSlideCount < MIN_CAROUSEL_SLIDES || carouselSlideCount > MAX_CAROUSEL_SLIDES) {
@@ -1174,9 +1183,8 @@
 				Promise.all(
 					slidesProcesables.map(async ({ img, idx }) => {
 						try {
-							// Un prompt de slide reemplaza al general; el system prompt sólo es fallback
-							// cuando existe una imagen principal y no hay ninguno de los dos.
-							const resolvedPrompt = img.prompt?.trim() || promptGeneral || systemPrompt;
+							// Un prompt de slide reemplaza al general; si no hay ninguno, el backend aplica el prompt estructurado
+							const resolvedPrompt = img.prompt?.trim() || promptGeneral || undefined;
 							const url = await generateImageWithProgress(
 								`/api/content-creator/publicaciones/${realId}/generar-imagen`,
 								{
@@ -1267,7 +1275,7 @@
 						title: postToProcess.title,
 						context: postToProcess.context,
 						objective: postToProcess.objective,
-						customPrompt: promptGeneral || systemPrompt,
+						customPrompt: promptGeneral || undefined,
 						modo: isSingleCrear ? 'crear' : 'editar',
 						selectedAssetIds: assetIdsForGeneration
 					},
@@ -1756,12 +1764,12 @@
 					<!-- Detalles de Calendario -->
 					<div class="border-t pt-3 space-y-3.5 text-xs">
 						<label
-							class="flex items-start gap-2 rounded-lg border border-orange-200 bg-orange-50/60 p-2.5 text-xs font-semibold text-slate-700 cursor-pointer dark:border-orange-900/60 dark:bg-orange-950/20 dark:text-slate-200"
+							class="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50/60 p-2.5 text-xs font-semibold text-slate-700 cursor-pointer dark:border-blue-900/60 dark:bg-blue-950/20 dark:text-slate-200"
 						>
 							<input
 								type="checkbox"
 								bind:checked={draftPost.publicarAlAprobar}
-								class="mt-0.5 rounded border-orange-300 text-[#1A73C2] focus:ring-[#1A73C2]"
+								class="mt-0.5 rounded border-blue-300 text-[#1A73C2] focus:ring-[#1A73C2]"
 							/>
 							<span>
 								Publicar al aprobar
@@ -2285,6 +2293,17 @@
 							</button>
 						</div>
 
+						<div class="space-y-1 shrink-0">
+							<label for="ficha-search" class="text-xs font-medium">Buscar ficha técnica</label>
+							<input
+								id="ficha-search"
+								type="search"
+								bind:value={fichaSearchQuery}
+								placeholder="Buscar producto o especificación..."
+								class="w-full rounded-md border bg-background px-3 py-2 text-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+							/>
+						</div>
+
 						<div class="flex-1 overflow-y-auto space-y-3 pr-1">
 							{#if loadingFichasSelector}
 								<div class="flex flex-col items-center justify-center py-10 gap-2">
@@ -2304,9 +2323,13 @@
 										menú principal.
 									</p>
 								</div>
+							{:else if filteredFichasSelector.length === 0}
+								<p role="status" class="py-10 text-center text-xs text-muted-foreground">
+									No se encontraron fichas que coincidan con la búsqueda.
+								</p>
 							{:else}
 								<div class="grid grid-cols-1 gap-2.5">
-									{#each fichasDisponibles as ficha}
+									{#each filteredFichasSelector as ficha}
 										<div
 											class="flex flex-col gap-2 p-3 border rounded-lg hover:border-[#0D1E3D]/50 bg-card transition"
 										>

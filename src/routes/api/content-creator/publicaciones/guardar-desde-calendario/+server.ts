@@ -67,7 +67,7 @@ function resolverDatos(data: any) {
     const audiencia = db.prepare('SELECT id FROM audiencias WHERE nombre = ?').get(data.audience) as { id: number } | undefined;
 
     // Cuenta Meta: prioriza `cuentaId` (número, FK a cuentas.id).
-    // Fallback a búsqueda por nombre data.cuenta o 'Vedoba' (compat legacy — cuentas demos viejas).
+    // Fallback a búsqueda por nombre data.cuenta o 'SX' (compat legacy — cuentas demos viejas).
     let cuenta: { id: number } | undefined;
     if (data.cuentaId && Number.isFinite(Number(data.cuentaId))) {
         cuenta = db.prepare('SELECT id FROM cuentas WHERE id = ? AND deleted_at IS NULL')

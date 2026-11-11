@@ -32,7 +32,7 @@ function verifyState(stateFromMeta: string, stateFromCookie: string, sessionId: 
 	if (!ts || !nonce || !sig) return false;
 	const payload = `${sessionId}.${nonce}.${ts}`;
 	const secret =
-		env.FACEBOOK_APP_SECRET || process.env.FACEBOOK_APP_SECRET || 'vedoba-dev-secret';
+		env.FACEBOOK_APP_SECRET || process.env.FACEBOOK_APP_SECRET || 'sx-dev-secret';
 	const expected = createHmac('sha256', secret)
 		.update(payload)
 		.digest('base64url');

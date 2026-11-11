@@ -2,7 +2,8 @@ export type ImageGenerationEvent =
 	| { phase: 'generating'; attempt: number; maxAttempts: number }
 	| { phase: 'retrying'; attempt: number; maxAttempts: number; delayMs: number }
 	| { phase: 'saving' }
-	| { phase: 'success'; imageUrl: string }
+	| { phase: 'validating' }
+	| { phase: 'success'; imageUrl: string; complianceReport?: unknown; evaluationStatus?: string }
 	| { phase: 'error'; error: string };
 
 export async function generateImageWithProgress(
@@ -48,6 +49,7 @@ export function imageProgressLabel(event: ImageGenerationEvent | null, creating 
 	if (!event || event.phase === 'generating') return `${creating ? 'Creando' : 'Editando'} imagen…`;
 	if (event.phase === 'retrying')
 		return `Servicio ocupado. Reintentando (${event.attempt}/${event.maxAttempts})…`;
+	if (event.phase === 'validating') return 'Evaluando cumplimiento de marca…';
 	if (event.phase === 'saving') return 'Guardando imagen…';
 	return creating ? 'Creando imagen…' : 'Editando imagen…';
 }

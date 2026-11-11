@@ -122,10 +122,10 @@ export function getAdminContentReport(filters: AdminFilters) {
 		.prepare(
 			`
         SELECT id, nombre name, token_expires_at expiresAt,
-            CASE WHEN meta_access_token IS NULL OR meta_access_token = '' OR token_expires_at IS NULL OR token_expires_at <= ?
+            CASE WHEN meta_access_token IS NULL OR meta_access_token = '' OR token_expires_at IS NULL OR (token_expires_at != 0 AND token_expires_at <= ?)
                 THEN 'invalid' ELSE 'expiring' END status
         FROM cuentas WHERE deleted_at IS NULL
-          AND (meta_access_token IS NULL OR meta_access_token = '' OR token_expires_at IS NULL OR token_expires_at <= ?)
+          AND (meta_access_token IS NULL OR meta_access_token = '' OR token_expires_at IS NULL OR (token_expires_at != 0 AND token_expires_at <= ?))
         ORDER BY token_expires_at ASC LIMIT 50
     `
 		)
@@ -141,7 +141,7 @@ export function getAdminContentReport(filters: AdminFilters) {
 				`
 		SELECT COUNT(*) count FROM cuentas
 		WHERE deleted_at IS NULL AND
-		(meta_access_token IS NULL OR meta_access_token = '' OR token_expires_at IS NULL OR token_expires_at <= ?)
+		(meta_access_token IS NULL OR meta_access_token = '' OR token_expires_at IS NULL OR (token_expires_at != 0 AND token_expires_at <= ?))
 	`
 			)
 			.get(now + 7 * 86400) as { count: number }

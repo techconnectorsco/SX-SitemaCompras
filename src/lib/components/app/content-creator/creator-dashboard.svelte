@@ -143,7 +143,7 @@
 						<p class="text-3xl font-bold">{formatNum(stats.tokensUsed)}</p>
 						<p class="text-xs text-muted-foreground">De 1,000,000 cuota</p>
 					</div>
-					<div class="flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-950/50">
+					<div class="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-950/50">
 						<Coins class="h-6 w-6 text-[#1A73C2] dark:text-[#1A73C2]" />
 					</div>
 				</div>

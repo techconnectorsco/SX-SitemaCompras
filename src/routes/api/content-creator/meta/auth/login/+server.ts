@@ -24,7 +24,7 @@ function buildState(sessionId: string): { state: string; nonce: string } {
 	const ts = Date.now().toString(36);
 	// State opaco al usuario; el servidor valida nonce + ts + signature tras callback.
 	const secret =
-		env.FACEBOOK_APP_SECRET || process.env.FACEBOOK_APP_SECRET || 'vedoba-dev-secret';
+		env.FACEBOOK_APP_SECRET || process.env.FACEBOOK_APP_SECRET || 'sx-dev-secret';
 	const payload = `${sessionId}.${nonce}.${ts}`;
 	const sig = createHmac('sha256', secret).update(payload).digest('base64url');
 	return { state: `${ts}.${nonce}.${sig}`, nonce: payload };

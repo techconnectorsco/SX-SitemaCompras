@@ -785,6 +785,32 @@ try {
     // Columna ya existe
   }
 
+  // Contexto estructurado y evaluaciones de cumplimiento para el creador de contenido.
+  // IF NOT EXISTS permite aplicarlo tanto a instalaciones nuevas como existentes.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS beta_brand_manual_contexts (
+      manual_id INTEGER PRIMARY KEY REFERENCES marca_manuales(id) ON DELETE CASCADE,
+      context_json TEXT NOT NULL,
+      references_json TEXT NOT NULL,
+      metadata_json TEXT NOT NULL,
+      created_at INTEGER NOT NULL DEFAULT (unixepoch())
+    );
+    CREATE TABLE IF NOT EXISTS beta_brand_generations (
+      id INTEGER PRIMARY KEY,
+      publication_id INTEGER NOT NULL REFERENCES publicaciones(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL REFERENCES users(id),
+      slide_index INTEGER,
+      image_url TEXT NOT NULL,
+      creative_prompt TEXT NOT NULL,
+      request_json TEXT NOT NULL,
+      report_json TEXT,
+      evaluation_status TEXT NOT NULL,
+      created_at INTEGER NOT NULL DEFAULT (unixepoch())
+    );
+    CREATE INDEX IF NOT EXISTS idx_beta_brand_generations_publication
+      ON beta_brand_generations(publication_id, user_id, id DESC);
+  `);
+
   // BODEGAS (gestión de inventario Exactus)
   // 1) Crear tabla (no-op si ya existe). Para DBs nuevas, cc_incluida nace incluida.
   db.exec(`

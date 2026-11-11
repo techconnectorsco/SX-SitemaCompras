@@ -55,6 +55,8 @@ export interface MetaAccount {
 export interface MetaAccountWithStatus extends MetaAccount {
 	/** True si la cuenta tiene token y no ha expirado. */
 	token_valid: boolean;
+	/** True cuando el token de página fue configurado sin fecha de vencimiento. */
+	token_never_expires: boolean;
 	/** Días hasta la expiración (negativos si ya expiró). */
 	days_until_expiration: number | null;
 	/** Redes sociales habilitadas para esta cuenta (IDs). */
@@ -88,16 +90,24 @@ export function listAccounts(): MetaAccountWithStatus[] {
 		const redes = (redesStmt.all(row.id) as { red_social_id: number }[]).map(
 			(r) => r.red_social_id
 		);
-		// token_expires_at está en segundos (epoch), comparar en ms.
-		const expiresAtMs = row.token_expires_at ? row.token_expires_at * 1000 : null;
+		// token_expires_at está en segundos (epoch). El valor 0 representa un
+		// Page Access Token sin vencimiento; NULL significa vencimiento desconocido.
+		const token_never_expires = row.token_expires_at === 0;
+		const expiresAtMs =
+			row.token_expires_at && row.token_expires_at > 0 ? row.token_expires_at * 1000 : null;
 		const token_valid =
 			!!row.meta_access_token &&
-			expiresAtMs != null &&
-			expiresAtMs > nowMs;
+			(token_never_expires || (expiresAtMs != null && expiresAtMs > nowMs));
 		const days_until_expiration = expiresAtMs
 			? Math.floor((expiresAtMs - nowMs) / (24 * 60 * 60 * 1000))
 			: null;
-		return { ...row, token_valid, days_until_expiration, redes_activas: redes };
+		return {
+			...row,
+			token_valid,
+			token_never_expires,
+			days_until_expiration,
+			redes_activas: redes
+		};
 	});
 }
 
@@ -219,7 +229,8 @@ function applyRedes(
  * True si faltan <= TOKEN_REFRESH_MARGIN_MS para expires_at.
  */
 export function tokenNeedsRefresh(cuenta: MetaAccount): boolean {
-	if (!cuenta.token_expires_at || !cuenta.meta_refresh_token) return false;
+	if (!cuenta.token_expires_at || cuenta.token_expires_at <= 0 || !cuenta.meta_refresh_token)
+		return false;
 	return cuenta.token_expires_at * 1000 - Date.now() <= TOKEN_REFRESH_MARGIN_MS;
 }
 

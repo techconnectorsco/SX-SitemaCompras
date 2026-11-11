@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { BrandComplianceReport } from '$lib/features/content-creator/brand-beta/schema';
 	import { toast } from 'svelte-sonner';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
@@ -196,12 +197,16 @@
 		loading: boolean;
 	} | null>(null);
 
-	async function loadLastPrompt(post: ExcelPost, tipo: 'imagen' | 'copy' = 'imagen') {
+	async function loadLastPrompt(
+		post: ExcelPost,
+		tipo: 'imagen' | 'copy' = 'imagen',
+		slideIndex?: number
+	) {
 		try {
 			const numericId = post.id.replace('MER-', '');
 			if (!/^\d+$/.test(numericId)) return;
 			const res = await fetch(
-				`/api/content-creator/publicaciones/${numericId}/ultimo-prompt?tipo=${tipo}`
+				`/api/content-creator/publicaciones/${numericId}/ultimo-prompt?tipo=${tipo}${slideIndex === undefined ? '' : '&index=' + slideIndex}`
 			);
 			if (!res.ok) return;
 			const data = await res.json();
@@ -217,7 +222,7 @@
 		if (!selectedPost) return;
 		regeneratingSlideIndex =
 			typeof slideIndex === 'number' && !Number.isNaN(slideIndex) ? slideIndex : null;
-		await loadLastPrompt(selectedPost);
+		await loadLastPrompt(selectedPost, 'imagen', slideIndex);
 
 		// Prompt por defecto: el del slide (si estamos regenerando uno), si no el último usado, si no el del post
 		let basePrompt = buildPromptPreview(selectedPost);
@@ -435,6 +440,44 @@
 		return filteredPosts[0] || null;
 	});
 
+	let brandReports = $state<
+		Array<{
+			id: number;
+			slide_index: number | null;
+			image_url: string;
+			report: BrandComplianceReport | null;
+			evaluation_status: string;
+			ruleLabels?: Record<string, string>;
+		}>
+	>([]);
+	$effect(() => {
+		const post = selectedPost;
+		const key = post
+			? JSON.stringify([
+					post.id,
+					post.imagePreview,
+					post.carouselImages?.map((i: { imagePreview: string | null }) => i.imagePreview)
+				])
+			: '';
+		let active = true;
+		brandReports = [];
+		if (key && post)
+			fetch(`/api/content-creator/publicaciones/${post.id}/brand-compliance`)
+				.then((r) => r.json())
+				.then((data) => {
+					if (active)
+						brandReports = (data.generations || []).filter((g: any) =>
+							g.slide_index === null
+								? g.image_url === post.imagePreview
+								: g.image_url === post.carouselImages?.[g.slide_index]?.imagePreview
+						);
+				})
+				.catch(() => {});
+		return () => {
+			active = false;
+		};
+	});
+
 	// Variables derivadas seguras para el carrusel (evita errores de compilador Svelte 5 en el DOM)
 	const isCarousel = $derived(
 		selectedPost
@@ -461,11 +504,7 @@
 
 	function buildPromptPreview(post: ExcelPost): string {
 		if (lastCustomPrompts[post.id]) return lastCustomPrompts[post.id];
-		if (post.prompt && post.prompt.trim()) return post.prompt;
-		const brandPrompt =
-			catalogos?.marcas?.find((m: any) => m.nombre === post.brand)?.prompt_sistema ||
-			'Aplica los estilos de marca por defecto.';
-		return `${brandPrompt}\nContexto del producto: ${post.title}. ${post.context || ''}.\nObjetivo: ${post.objective || 'Interacción'}.`.trim();
+		return post.prompt?.trim() || '';
 	}
 
 	// Generar o Re-generar imagen con la IA de Gemini/Imagen
@@ -546,7 +585,7 @@
 				title: post.title,
 				context: post.context,
 				objective: post.objective,
-				customPrompt,
+				customPrompt: customPrompt?.trim() || undefined,
 				selectedAssetIds: assetIds || Array.from(assetSelectorDialog?.selectedIds || [])
 			};
 		}
@@ -1244,6 +1283,35 @@
 				</Card.Header>
 
 				<Card.Content class="p-5 space-y-5">
+					{#each brandReports as generation (generation.id)}
+						<details class="rounded-lg border p-3 text-sm">
+							<summary class="cursor-pointer font-semibold"
+								>Evaluación de marca · {generation.slide_index === null
+									? 'Imagen'
+									: 'Slide ' + (generation.slide_index + 1)}</summary
+							>
+							{#if generation.report}
+								<p class="mt-2">{generation.report.summary}</p>
+								<p class="text-xs text-muted-foreground">
+									Evaluación orientativa. La aprobación sigue disponible.
+								</p>
+								{#each generation.report.rules as rule (rule.ruleId)}
+									<div class="mt-2 border-t pt-2">
+										<strong
+											>{generation.ruleLabels?.[rule.ruleId] || rule.ruleId}: {rule.status ===
+											'compliant'
+												? 'Cumple'
+												: rule.status === 'noncompliant'
+													? 'Incumple'
+													: 'No verificable'}</strong
+										>
+										<p>{rule.evidence}</p>
+										{#if rule.recommendation}<p>{rule.recommendation}</p>{/if}
+									</div>
+								{/each}
+							{:else}<p class="mt-2">Evaluación no disponible.</p>{/if}
+						</details>
+					{/each}
 					{#if isPostLocked}
 						<div
 							class="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/40 px-3 py-2 text-slate-500 dark:text-slate-400"

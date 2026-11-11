@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import ImageProviderSelector from '$lib/features/content-creator/components/ImageProviderSelector.svelte';
 	import {
 		Activity,
 		AlertTriangle,
@@ -170,11 +171,12 @@
 			<div class="flex flex-wrap items-start justify-between gap-4">
 				<div class="space-y-2">
 					<p
-						class="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-orange-200"
+						class="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-blue-200"
 					>
 						<Clapperboard class="size-4" /> Centro de operación
 					</p>
 					<h1 class="text-2xl font-bold tracking-tight sm:text-3xl">Creador de contenido</h1>
+					<ImageProviderSelector />
 					<p class="max-w-2xl text-sm text-indigo-100">
 						Consumo de IA, producción editorial y actividad de publicaciones en un solo lugar.
 					</p>
@@ -232,7 +234,7 @@
 			<button
 				type="submit"
 				disabled={loading}
-				class="h-10 rounded-md bg-[#1A73C2] px-5 text-sm font-semibold text-white hover:bg-orange-700 disabled:opacity-50"
+				class="h-10 rounded-md bg-[#1A73C2] px-5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
 				>Aplicar</button
 			>
 		</form>
@@ -251,14 +253,14 @@
 				type="button"
 				aria-current={activeTab === 'overview' ? 'page' : undefined}
 				onclick={() => (activeTab = 'overview')}
-				class={`border-b-2 px-4 py-3 text-sm font-semibold ${activeTab === 'overview' ? 'border-[#1A73C2] text-orange-700 dark:text-[#1A73C2]' : 'border-transparent text-slate-500 hover:text-slate-900'}`}
+				class={`border-b-2 px-4 py-3 text-sm font-semibold ${activeTab === 'overview' ? 'border-[#1A73C2] text-blue-700 dark:text-[#1A73C2]' : 'border-transparent text-slate-500 hover:text-slate-900'}`}
 				>Resumen operativo</button
 			>
 			<button
 				type="button"
 				aria-current={activeTab === 'audit' ? 'page' : undefined}
 				onclick={() => (activeTab = 'audit')}
-				class={`border-b-2 px-4 py-3 text-sm font-semibold ${activeTab === 'audit' ? 'border-[#1A73C2] text-orange-700 dark:text-[#1A73C2]' : 'border-transparent text-slate-500 hover:text-slate-900'}`}
+				class={`border-b-2 px-4 py-3 text-sm font-semibold ${activeTab === 'audit' ? 'border-[#1A73C2] text-blue-700 dark:text-[#1A73C2]' : 'border-transparent text-slate-500 hover:text-slate-900'}`}
 				>Auditoría</button
 			>
 		</nav>

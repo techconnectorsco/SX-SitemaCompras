@@ -1,4 +1,5 @@
 import { json } from '@sveltejs/kit';
+import { isBrandBeta } from '$lib/features/content-creator/brand-beta/service';
 import type { RequestHandler } from './$types';
 import db from '$lib/config/db-config';
 import { SharePointService } from '$lib/features/content-creator/services/sharepoint-service';
@@ -6,23 +7,40 @@ import { IAContentService } from '$lib/features/content-creator/services/ia-cont
 
 // GET /api/content-creator/marcas/[id]/manual
 export const GET: RequestHandler = async ({ params, locals }) => {
-  try {
-    if (!locals.user) return json({ error: 'No autorizado' }, { status: 401 });
+	try {
+		if (!locals.user) return json({ error: 'No autorizado' }, { status: 401 });
 
-    const marcaId = parseInt(params.id);
-    if (isNaN(marcaId)) {
-      return json({ error: 'ID de marca inválido' }, { status: 400 });
-    }
+		const marcaId = parseInt(params.id);
+		if (isNaN(marcaId)) {
+			return json({ error: 'ID de marca inválido' }, { status: 400 });
+		}
 
-    const manuales = db.prepare(
-      'SELECT id, nombre, file_path, file_name, mime_type, file_size, resumen_ia, analizado_at, created_at FROM marca_manuales WHERE marca_id = ? AND deleted_at IS NULL ORDER BY id DESC'
-    ).all(marcaId);
+		const manuales = db
+			.prepare(
+				'SELECT id, nombre, file_path, file_name, mime_type, file_size, resumen_ia, analizado_at, created_at FROM marca_manuales WHERE marca_id = ? AND deleted_at IS NULL ORDER BY id DESC'
+			)
+			.all(marcaId);
 
-    return json({ success: true, manuales });
-  } catch (error: any) {
-    console.error('[API GET marca manuales]', error);
-    return json({ error: error.message || 'Error interno' }, { status: 500 });
-  }
+		const result = isBrandBeta()
+			? (manuales as any[]).map((manual) => {
+					const current = db
+						.prepare('SELECT manual_id FROM beta_brand_manual_contexts WHERE manual_id=?')
+						.get(manual.id);
+					return {
+						...manual,
+						requiresReanalysis: !current,
+						resumen_ia:
+							!current && manual.resumen_ia
+								? 'Requiere reanálisis para obtener contexto estructurado.\n\n' + manual.resumen_ia
+								: manual.resumen_ia
+					};
+				})
+			: manuales;
+		return json({ success: true, manuales: result });
+	} catch (error: any) {
+		console.error('[API GET marca manuales]', error);
+		return json({ error: error.message || 'Error interno' }, { status: 500 });
+	}
 };
 
 // POST /api/content-creator/marcas/[id]/manual

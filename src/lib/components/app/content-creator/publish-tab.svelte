@@ -48,9 +48,9 @@
 		{
 			id: 'log-1',
 			timestamp: '2026-06-08 09:32',
-			brand: 'Vedoba',
+			brand: 'SX',
 			network: 'Instagram',
-			title: 'Lanzamiento Lubricantes Verdes',
+			title: 'Lanzamiento Laptops Empresariales',
 			status: '200 OK',
 			logId: 'ig_media_9823472'
 		},

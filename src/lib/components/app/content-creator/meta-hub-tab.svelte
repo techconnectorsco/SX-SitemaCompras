@@ -92,25 +92,25 @@
 		ads: [
 			{
 				id: 'c1',
-				title: 'Motosierra LG MS 250 - Descuento',
+				title: 'Laptop HP ProBook 450 - Descuento',
 				status: 'Activo desde 05 Jun',
-				copy: '¡Aprovechá la temporada! Llevate la potente MS 250 con un 15% de descuento especial. Ideal para fincas y corte de leña. Envío gratis a todo el país.',
+				copy: '¡Aprovechá la temporada! Llevate la potente ProBook 450 con un 15% de descuento especial. Ideal para oficinas y teletrabajo. Envío gratis a todo el país.',
 				cta: 'Cotizar por WhatsApp',
 				reach: 'Medio (10k - 50k impresiones)'
 			},
 			{
 				id: 'c2',
-				title: 'Servicio técnico especializado LG',
+				title: 'Servicio técnico especializado HP',
 				status: 'Activo desde 02 Jun',
-				copy: '¿Tu motosierra perdió fuerza? Traela a nuestro taller autorizado. Repuestos originales y mecánicos certificados en Costa Rica.',
+				copy: '¿Tu laptop perdió rendimiento? Traela a nuestro taller autorizado. Repuestos originales y técnicos certificados en Costa Rica.',
 				cta: 'Llamar ahora',
 				reach: 'Bajo (<10k impresiones)'
 			},
 			{
 				id: 'c3',
-				title: 'Ahoyadoras Husqvarna en Oferta',
+				title: 'Impresoras HP en Oferta',
 				status: 'Activo desde 28 May',
-				copy: 'Facilitá el trabajo en el campo. Perforadora Husqvarna con broca incluida. Financiamiento disponible a tasa 0% con tarjetas participantes.',
+				copy: 'Facilitá el trabajo en la oficina. Impresora multifuncional HP con tinta incluida. Financiamiento disponible a tasa 0% con tarjetas participantes.',
 				cta: 'Más información',
 				reach: 'Alto (50k+ impresiones)'
 			}
@@ -140,9 +140,9 @@
 			phone: '+506 8345-6712',
 			date: '2026-06-10 17:34',
 			brand: 'DELL',
-			product: 'Ahoyadora TEA52X-200',
+			product: 'Laptop Latitude 5440',
 			status: 'Nuevo',
-			notes: 'Interesado en cotizar con broca de 200mm para proyecto ganadero'
+			notes: 'Interesado en cotizar 10 equipos para una oficina nueva'
 		},
 		{
 			id: 'L-002',
@@ -150,21 +150,21 @@
 			email: 'mesalazar@ice.co.cr',
 			phone: '+506 7012-9843',
 			date: '2026-06-10 14:15',
-			brand: 'Husqvarna',
-			product: 'Sopladora 125BVX',
+			brand: 'HP',
+			product: 'Impresora LaserJet M404',
 			status: 'Contactado',
 			notes: 'Pregunta si aplica el precio de descuento en sucursal Alajuela'
 		},
 		{
 			id: 'L-003',
 			name: 'Carlos Monge Castro',
-			email: 'cmonge@agrocostarica.com',
+			email: 'cmonge@ejemplo.com',
 			phone: '+506 8831-2940',
 			date: '2026-06-09 09:12',
-			brand: 'Oregon',
-			product: 'Atomizadora OR518771',
+			brand: 'LENOVO',
+			product: 'ThinkPad E14',
 			status: 'Calificado',
-			notes: 'Requiere 3 unidades para finca cafetalera, solicita crédito empresarial'
+			notes: 'Requiere 3 unidades para su empresa, solicita crédito empresarial'
 		},
 		{
 			id: 'L-004',
@@ -173,7 +173,7 @@
 			phone: '+506 8521-0045',
 			date: '2026-06-08 18:22',
 			brand: 'DELL',
-			product: 'Multifuncional TBC26MTX',
+			product: 'Monitor UltraSharp U2723QE',
 			status: 'No responde',
 			notes: 'Formulario enviado desde anuncio de video en Instagram'
 		}
@@ -253,7 +253,7 @@
 		setTimeout(() => {
 			isAuditingCompetitor = false;
 			competitorAudited = true;
-			competitorAnalysis.aiInsights = `Análisis Estratégico de IA (Gemini) para "${searchCompetitor}":\n\n1. Oportunidad en el Formato: El competidor concentra el 60% de su pauta en Reels y videos de demostración rápida, pero no tiene piezas estáticas detalladas ni carruseles educativos. Podemos ganar terreno publicando carruseles comparativos de DELL/Husqvarna enfocados en especificaciones técnicas claras.\n2. Mensaje y Copy: Utilizan copies muy promocionales basados exclusivamente en descuentos temporales. Esto genera fatiga publicitaria rápido. La propuesta de Vedoba de generar copys basados en problemáticas específicas del agro (ej: "Dificultades al excavar") generará un CTR más alto.\n3. Segmentación Sugerida: El competidor está pautando fuertemente en zonas periféricas (San Carlos, Pérez Zeledón). Recomendamos contrarrestar con una campaña enfocada en posventa y talleres de servicio autorizados, que es su principal debilidad de comentarios en redes.`;
+			competitorAnalysis.aiInsights = `Análisis Estratégico de IA (Gemini) para "${searchCompetitor}":\n\n1. Oportunidad en el Formato: El competidor concentra el 60% de su pauta en Reels y videos de demostración rápida, pero no tiene piezas estáticas detalladas ni carruseles educativos. Podemos ganar terreno publicando carruseles comparativos de DELL/HP enfocados en especificaciones técnicas claras.\n2. Mensaje y Copy: Utilizan copies muy promocionales basados exclusivamente en descuentos temporales. Esto genera fatiga publicitaria rápido. La propuesta de SoporteXperto de generar copys basados en problemáticas específicas del agro (ej: "Dificultades al excavar") generará un CTR más alto.\n3. Segmentación Sugerida: El competidor está pautando fuertemente en zonas periféricas (San Carlos, Pérez Zeledón). Recomendamos contrarrestar con una campaña enfocada en posventa y talleres de servicio autorizados, que es su principal debilidad de comentarios en redes.`;
 			toast.success('¡Análisis de competidores completado con Gemini!');
 		}, 2000);
 	}
@@ -1167,7 +1167,7 @@
 								</td>
 								<td class="py-3.5 px-3 text-right">
 									<a
-										href={`https://wa.me/${lead.phone.replace(/[\s+]/g, '')}?text=Hola%20${encodeURIComponent(lead.name)},%20te%20escribimos%20de%20Vedoba%20sobre%20tu%20inter%C3%A9s%20en%20el%20equipo%20${encodeURIComponent(lead.product)}`}
+										href={`https://wa.me/${lead.phone.replace(/[\s+]/g, '')}?text=Hola%20${encodeURIComponent(lead.name)},%20te%20escribimos%20de%20SoporteXperto%20sobre%20tu%20inter%C3%A9s%20en%20el%20equipo%20${encodeURIComponent(lead.product)}`}
 										target="_blank"
 										class="inline-flex items-center justify-center rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[10px] px-2.5 py-1.5 shadow-sm"
 									>

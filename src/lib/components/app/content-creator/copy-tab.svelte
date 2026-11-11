@@ -21,7 +21,7 @@
 
 	let { entries = $bindable() } = $props<{ entries: ScheduleEntry[] }>();
 
-	let selectedBrand = $state<string>('Vedoba');
+	let selectedBrand = $state<string>('Soportexperto');
 	let selectedTone = $state<string>('Inspiracional');
 	let ideaInput = $state<string>('');
 	let generating = $state<boolean>(false);
@@ -51,22 +51,22 @@
 		setTimeout(() => {
 			generating = false;
 
-			if (selectedBrand === 'Vedoba') {
+			if (selectedBrand === 'Soportexperto') {
 				generatedOptions = [
 					{
 						id: 1,
 						type: 'Storytelling (Recomendado)',
-						text: `Detrás de cada gran proyecto hay decisiones inteligentes. 🛠️ En Vedoba, te equipamos con tecnología de punta para que tu negocio nunca se detenga. \n\n¿Listo para elevar la productividad esta semana? Escríbenos y un asesor especialista te guiará. #Vedoba #Productividad #Ingenieria`
+						text: `Detrás de cada gran proyecto hay decisiones inteligentes. 🛠️ En SoporteXperto, te equipamos con tecnología de punta para que tu negocio nunca se detenga. \n\n¿Listo para elevar la productividad esta semana? Escríbenos y un asesor especialista te guiará. #SX #Productividad #Ingenieria`
 					},
 					{
 						id: 2,
 						type: 'Directo y Promocional',
-						text: `¡Lleva el rendimiento de tus equipos al máximo nivel! 🚀 Obtén asesoría especializada sin costo adicional en todas tus compras de este mes. \n\n👉 Visita el enlace en nuestra biografía y cotiza directo por WhatsApp. #EquiposIndustriales #AsesoriaVedoba`
+						text: `¡Lleva el rendimiento de tus equipos al máximo nivel! 🚀 Obtén asesoría especializada sin costo adicional en todas tus compras de este mes. \n\n👉 Visita el enlace en nuestra biografía y cotiza directo por WhatsApp. #EquiposIndustriales #AsesoriaSX`
 					},
 					{
 						id: 3,
 						type: 'Educativo / Informativo',
-						text: `¿Sabías que un mantenimiento preventivo puede ahorrarte hasta un 40% en costos operativos? 💡 \n\nEn nuestro último blog te explicamos 3 claves esenciales para prolongar la vida útil de tus maquinarias. Léelo completo en vedoba.com/blog. #ConsejoExperto #Vedoba #Mantenimiento`
+						text: `¿Sabías que un mantenimiento preventivo puede ahorrarte hasta un 40% en costos operativos? 💡 \n\nEn nuestro último blog te explicamos 3 claves esenciales para prolongar la vida útil de tus equipos. Léelo completo en soportexperto.com/blog. #ConsejoExperto #SX #Mantenimiento`
 					}
 				];
 			} else if (selectedBrand === 'Outlet') {
@@ -84,7 +84,7 @@
 					{
 						id: 3,
 						type: 'Social Proof / Testimonio',
-						text: `🔥 El favorito de nuestros clientes regresó... ¡y con 50% de descuento! \n\nNo dejes que te lo cuenten. Compra en línea hoy y recíbelo en la puerta de tu casa. 📦 #Ofertas #OutletVedoba`
+						text: `🔥 El favorito de nuestros clientes regresó... ¡y con 50% de descuento! \n\nNo dejes que te lo cuenten. Compra en línea hoy y recíbelo en la puerta de tu casa. 📦 #Ofertas #OutletSX`
 					}
 				];
 			} else {
@@ -144,7 +144,7 @@
 				Brand Agent Config
 			</h3>
 			<p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-				Gemini se adaptará al tono y personalidad configurados para cada marca en Vedoba.
+				Gemini se adaptará al tono y personalidad configurados para cada marca en SoporteXperto.
 			</p>
 
 			<div class="mt-4 space-y-3.5">

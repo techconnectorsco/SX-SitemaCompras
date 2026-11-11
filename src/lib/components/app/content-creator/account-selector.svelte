@@ -21,6 +21,7 @@
 		meta_facebook_page_id: string | null;
 		meta_instagram_id: string | null;
 		token_valid: boolean;
+		token_never_expires: boolean;
 		days_until_expiration: number | null;
 		redes_activas: number[];
 		deleted_at: number | null;
@@ -37,7 +38,7 @@
 	let refreshing = $state<number | null>(null);
 	let disconnecting = $state<number | null>(null);
 
-	const STORAGE_KEY = 'vedoba:meta-account-id';
+	const STORAGE_KEY = 'sx:meta-account-id';
 
 	onMount(() => {
 		loadAccounts();
@@ -145,7 +146,10 @@
 		label: string;
 	} {
 		if (!a.token_valid) {
-			return { cls: 'text-red-500', icon: AlertCircle, label: 'Token inválido' };
+			return { cls: 'text-red-500', icon: AlertCircle, label: 'Token vencido o no configurado' };
+		}
+		if (a.token_never_expires) {
+			return { cls: 'text-green-500', icon: CheckCircle2, label: 'Sin caducidad' };
 		}
 		if (a.days_until_expiration != null && a.days_until_expiration <= 7) {
 			return { cls: 'text-amber-500', icon: Clock, label: `Vence en ${a.days_until_expiration}d` };
@@ -215,9 +219,14 @@
 						<div class="ml-auto flex items-center gap-1">
 							<button
 								type="button"
-								onclick={(e) => { e.stopPropagation(); refreshAccount(a.id); }}
-								disabled={refreshing === a.id}
-								title="Refrescar token"
+								onclick={(e) => {
+									e.stopPropagation();
+									refreshAccount(a.id);
+								}}
+								disabled={refreshing === a.id || a.token_never_expires}
+								title={a.token_never_expires
+									? 'Este Page Token no requiere renovación'
+									: 'Refrescar token'}
 								class="rounded p-1 hover:bg-muted transition-colors"
 							>
 								<RefreshCw class={`h-3 w-3 ${refreshing === a.id ? 'animate-spin' : ''}`} />

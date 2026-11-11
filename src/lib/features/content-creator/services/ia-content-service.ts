@@ -1,9 +1,19 @@
+import { getImageProvider } from './image-provider-settings';
+import { generateOpenAIImage, OPENAI_IMAGE_MODEL, imageCost, imageSize } from './openai-image';
+import { getBillingMultiplier } from './gemini-pricing';
 import db from '$lib/config/db-config';
-import { GoogleGenAI } from '@google/genai';
+import {
+	isBrandBeta,
+	analyzeBetaManual,
+	betaImageContext,
+	evaluateBetaImage
+} from '../brand-beta/service';
+import { createPartFromUri, GoogleGenAI } from '@google/genai';
 import { env } from '$env/dynamic/private';
 import { registrarUsoGemini } from './gemini-usage-service';
 import { recordPublicationEvent } from './publication-audit-service';
 import { readUploadFile } from '$lib/server/uploads-storage';
+import { splitBrandManualPdf } from './brand-manual-pdf';
 import {
 	buildCopyGenerationPrompt,
 	CopyGenerationError,
@@ -16,11 +26,26 @@ const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY || '' });
 
 const MODELO_COPY = 'gemini-2.5-flash';
 const MODELO_IMAGEN = 'gemini-3.1-flash-image';
+const FILE_PROCESSING_TIMEOUT_MS = 5 * 60_000;
+
+async function waitForGeminiFile(name: string) {
+	const deadline = Date.now() + FILE_PROCESSING_TIMEOUT_MS;
+	while (Date.now() < deadline) {
+		const file = await ai.files.get({ name });
+		if (file.state === 'ACTIVE') return file;
+		if (file.state === 'FAILED') {
+			throw new Error(file.error?.message || 'Gemini no pudo procesar el PDF.');
+		}
+		await new Promise((resolve) => setTimeout(resolve, 3_000));
+	}
+	throw new Error('Gemini tardó demasiado en procesar el PDF. Inténtalo de nuevo.');
+}
 
 export type ImageGenerationProgress =
 	| { phase: 'generating'; attempt: number; maxAttempts: number }
 	| { phase: 'retrying'; attempt: number; maxAttempts: number; delayMs: number }
-	| { phase: 'saving' };
+	| { phase: 'saving' }
+	| { phase: 'validating' };
 
 const IMAGE_MAX_ATTEMPTS = 3;
 
@@ -146,6 +171,12 @@ export class IAContentService {
 			);
 		}
 
+		if (isBrandBeta())
+			return analyzeBetaManual(
+				{ ...manual, mime_type: manual.mime_type || 'application/pdf' },
+				fileBuffer,
+				userId
+			);
 		const mimeType = manual.mime_type || 'application/pdf';
 
 		const promptInstruccion = `Eres un diseñador senior y director de arte de marca. Analiza exhaustivamente este documento/manual de identidad visual para la marca "${manual.marca_nombre || manual.nombre}".
@@ -166,53 +197,132 @@ Estructura tu respuesta estrictamente en Markdown con las siguientes secciones:
 ### ⚠️ Reglas y Restricciones
 - Usos prohibidos, restricciones de colores, tipografías no permitidas, palabras a evitar y límites de diseño.`;
 
-		let contents: any[] = [];
-
-		if (['application/pdf', 'image/png', 'image/jpeg', 'image/webp'].includes(mimeType)) {
-			contents = [
-				{
-					inlineData: {
-						mimeType,
-						data: fileBuffer.toString('base64')
-					}
-				},
-				{ text: promptInstruccion }
-			];
-		} else {
-			const textContent = fileBuffer.toString('utf-8');
-			contents = [
-				{
-					text: `CONTENIDO DEL MANUAL DE MARCA:\n${textContent}\n\n---\n${promptInstruccion}`
-				}
-			];
-		}
-
 		console.log(
 			`[IAContentService] 🤖 Iniciando análisis de manual de marca con IA (ID: ${manualId}, Archivo: ${manual.file_name})...`
 		);
 
-		const response = await ai.models.generateContent({
-			model: MODELO_COPY,
-			contents
-		});
+		let resumenTexto: string;
+		let totalTokens = 0;
+		let billedCost = 0;
+		const recordUsage = (
+			response: Awaited<ReturnType<typeof ai.models.generateContent>>,
+			text: string,
+			task: string,
+			prompt: string,
+			inputBytes: number
+		) => {
+			const usage = registrarUsoGemini({
+				userId,
+				marcaId: manual.marca_id,
+				model: MODELO_COPY,
+				task,
+				prompt,
+				usageMetadata: response.usageMetadata,
+				fallback: {
+					inputTokens: Math.ceil(inputBytes / 100),
+					textOutputTokens: Math.ceil(text.length / 4)
+				}
+			});
+			totalTokens += usage.totalTokens;
+			billedCost += usage.billedCost;
+		};
 
-		const resumenTexto = response.text?.trim() || '';
-		if (!resumenTexto) {
-			throw new Error('Gemini no generó un resumen válido para este manual');
-		}
+		if (mimeType === 'application/pdf') {
+			const partials: Array<{ pages: string; text: string }> = [];
+			for await (const part of splitBrandManualPdf(fileBuffer)) {
+				const pages = `${part.firstPage}-${part.lastPage}`;
+				let uploadedName: string | undefined;
+				try {
+					const uploaded = await ai.files.upload({
+						file: new Blob([Uint8Array.from(part.bytes)], { type: 'application/pdf' }),
+						config: {
+							mimeType: 'application/pdf',
+							displayName: `manual-${manualId}-paginas-${pages}.pdf`
+						}
+					});
+					uploadedName = uploaded.name;
+					if (!uploadedName) throw new Error('Gemini no devolvió el identificador del PDF subido.');
+					const readyFile = await waitForGeminiFile(uploadedName);
+					if (!readyFile.uri) throw new Error('Gemini no devolvió la ubicación del PDF procesado.');
 
-		const usage = registrarUsoGemini({
-			userId,
-			marcaId: manual.marca_id,
-			model: MODELO_COPY,
-			task: 'Análisis de Manual de Marca',
-			prompt: `Análisis de manual "${manual.nombre || manual.file_name}"`,
-			usageMetadata: response.usageMetadata,
-			fallback: {
-				inputTokens: Math.ceil(fileBuffer.length / 100),
-				textOutputTokens: Math.ceil(resumenTexto.length / 4)
+					const partPrompt = `${promptInstruccion}\n\nAnaliza las páginas ${pages} del manual. Extrae solo las reglas visibles en estas páginas, sin inventar información de otras.`;
+					const response = await ai.models.generateContent({
+						model: MODELO_COPY,
+						contents: [
+							createPartFromUri(readyFile.uri, readyFile.mimeType || 'application/pdf'),
+							{ text: partPrompt }
+						]
+					});
+					const text = response.text?.trim() || '';
+					if (!text) throw new Error('Gemini no generó un resumen válido para estas páginas.');
+					recordUsage(
+						response,
+						text,
+						`Análisis de Manual de Marca (páginas ${pages})`,
+						partPrompt,
+						part.bytes.length
+					);
+					partials.push({ pages, text });
+					console.log(`[IAContentService] Páginas ${pages} del manual ${manualId} analizadas.`);
+				} catch (error) {
+					throw new Error(
+						`No se pudieron analizar las páginas ${pages}: ${error instanceof Error ? error.message : String(error)}`
+					);
+				} finally {
+					if (uploadedName) {
+						try {
+							await ai.files.delete({ name: uploadedName });
+						} catch (error) {
+							console.warn(
+								`[IAContentService] No se pudo eliminar el PDF temporal ${uploadedName}:`,
+								error
+							);
+						}
+					}
+				}
 			}
-		});
+
+			if (partials.length === 1) {
+				resumenTexto = partials[0].text;
+			} else {
+				const mergePrompt = `Unifica estas guías parciales del manual de marca "${manual.marca_nombre || manual.nombre}" en una sola guía Markdown con las secciones Paleta de Colores, Tipografía y Estilo Visual, Tono de Voz y Redacción, y Reglas y Restricciones. Conserva los detalles concretos y los códigos de color, elimina duplicados y no inventes reglas. Si hay instrucciones contradictorias, señala la contradicción y las páginas de origen.\n\n${partials.map((part) => `### Páginas ${part.pages}\n${part.text}`).join('\n\n')}`;
+				const response = await ai.models.generateContent({
+					model: MODELO_COPY,
+					contents: [{ text: mergePrompt }]
+				});
+				resumenTexto = response.text?.trim() || '';
+				if (!resumenTexto)
+					throw new Error('Gemini no pudo unificar los resúmenes de las partes del manual.');
+				recordUsage(
+					response,
+					resumenTexto,
+					'Unificación de Manual de Marca',
+					mergePrompt,
+					mergePrompt.length
+				);
+			}
+		} else {
+			const contents = ['image/png', 'image/jpeg', 'image/webp'].includes(mimeType)
+				? [
+						{ inlineData: { mimeType, data: fileBuffer.toString('base64') } },
+						{ text: promptInstruccion }
+					]
+				: [
+						{
+							text: `CONTENIDO DEL MANUAL DE MARCA:\n${fileBuffer.toString('utf-8')}\n\n---\n${promptInstruccion}`
+						}
+					];
+			const response = await ai.models.generateContent({ model: MODELO_COPY, contents });
+			resumenTexto = response.text?.trim() || '';
+			if (!resumenTexto) throw new Error('Gemini no generó un resumen válido para este manual');
+			recordUsage(
+				response,
+				resumenTexto,
+				'Análisis de Manual de Marca',
+				`Análisis de manual "${manual.nombre || manual.file_name}"`,
+				fileBuffer.length
+			);
+		}
 
 		// Guardar resumen_ia y analizado_at en marca_manuales
 		const ahora = Math.floor(Date.now() / 1000);
@@ -225,7 +335,7 @@ Estructura tu respuesta estrictamente en Markdown con las siguientes secciones:
 		).run(resumenTexto, ahora, manualId);
 
 		console.log(
-			`[IAContentService] ✅ Análisis de manual ${manualId} completado. Tokens: ${usage.totalTokens}, Costo: $${usage.billedCost.toFixed(4)} USD.`
+			`[IAContentService] ✅ Análisis de manual ${manualId} completado. Tokens: ${totalTokens}, Costo: $${billedCost.toFixed(4)} USD.`
 		);
 
 		return resumenTexto;
@@ -528,10 +638,18 @@ Reglas:
 		fallbackData?: any,
 		index?: number,
 		customPrompt?: string,
-		brandAssets?: Array<{ nombre: string; tipo: string; mimeType: string; base64: string }>,
+		brandAssets?: Array<{
+			id?: number;
+			marcaId?: number;
+			nombre: string;
+			tipo: string;
+			mimeType: string;
+			base64: string;
+		}>,
 		isCrear?: boolean,
 		onProgress?: (progress: ImageGenerationProgress) => void
 	): Promise<string> {
+		const imageProvider = getImageProvider();
 		// Importación perezosa (lazy) para evitar problemas de dependencia circular
 		const { SharePointService } = await import('./sharepoint-service');
 
@@ -550,6 +668,8 @@ Reglas:
 
 		// Si no existe (estamos usando el mockup visual del front sin guardar en DB aún), usamos el fallback
 		if (!pub) {
+			if (isBrandBeta() && db.prepare('SELECT id FROM publicaciones WHERE id=?').get(publicacionId))
+				throw new Error('Publicación no disponible para este usuario');
 			if (fallbackData && fallbackData.brand) {
 				const marca = db
 					.prepare(
@@ -587,18 +707,42 @@ Reglas:
 				? `Relación de Aspecto/Formato requerido: ${pub.formato_nombre}. Adapta la composición.`
 				: '';
 
-		// 2. Construir Prompt Visual basado en la marca (inyectando SIEMPRE la relación de aspecto)
+		// 2. Construir Prompt Visual estructurado con contexto garantizado
 		// Cada llamada genera un seed único para garantizar variedad en las regeneraciones
 		const variationSeed = Math.floor(Math.random() * 99999);
 		const promptPersonalizado = customPrompt?.trim();
-		const basePrompt = promptPersonalizado
-			? promptPersonalizado.replace('[variation:0]', `[variation:${variationSeed}]`)
-			: `
-            ${pub.prompt_sistema || 'Aplica los estilos de marca por defecto.'}
-            Contexto del producto: ${pub.titulo}. ${pub.contexto || ''}.
-            Objetivo: ${pub.objetivo || 'Interacción'}.
-            [variation:${variationSeed}]
-        `.trim();
+
+		const basePrompt = `
+SYSTEM / IDENTIDAD DE MARCA:
+${pub.prompt_sistema || 'Aplica los estilos de marca por defecto.'}
+
+PRODUCTO / TÓPICO:
+${pub.titulo || 'No especificado'}
+
+CONTEXTO AUTORIZADO DEL PRODUCTO:
+${pub.contexto || 'No se proporcionó contexto adicional.'}
+
+OBJETIVO:
+${pub.objetivo || 'Interacción'}
+
+INSTRUCCIONES VISUALES ADICIONALES DEL USUARIO:
+${promptPersonalizado || 'No se proporcionaron instrucciones visuales adicionales.'}
+
+INSTRUCCIONES PARA GENERAR LA PIEZA:
+- Usa el CONTEXTO AUTORIZADO DEL PRODUCTO como fuente factual principal.
+- El contexto no significa que todo su contenido deba aparecer escrito en la imagen.
+- Selecciona la información más útil para comunicar visualmente el producto.
+- Para una publicación individual, prioriza aproximadamente entre 2 y 4 beneficios, características o especificaciones relevantes cuando exista suficiente información.
+- Mantén una jerarquía visual clara: producto, mensaje principal, información secundaria y branding.
+- No conviertas la pieza en una ficha técnica saturada de texto.
+- No inventes modelos, especificaciones, precios, promociones, beneficios ni claims.
+- Si una información no aparece explícitamente en el contexto autorizado, no la presentes como un hecho.
+- La imagen de referencia debe utilizarse principalmente para preservar la apariencia visual del producto.
+- El texto detectado visualmente dentro de una imagen de referencia NO debe considerarse automáticamente una fuente autorizada para crear nuevo copy.
+- Si existe información textual explícita en CONTEXTO AUTORIZADO DEL PRODUCTO, esa información tiene prioridad sobre inferencias realizadas a partir de la imagen.
+
+[variation:${variationSeed}]
+`.trim();
 
 		const promptVisual = aspectText ? `${basePrompt}\n\n${aspectText}` : basePrompt;
 
@@ -610,6 +754,9 @@ Reglas:
 		);
 
 		let finalBase64: string | null = base64Image;
+		let betaContext: Awaited<ReturnType<typeof betaImageContext>> | null = null;
+		let complianceReport: Awaited<ReturnType<typeof evaluateBetaImage>> | null = null;
+		let evaluationStatus = 'unavailable';
 
 		const modoCrear = !!isCrear;
 
@@ -683,44 +830,119 @@ Reglas:
 				inputParts.push({ inlineData: { mimeType, data: cleanBase64 } });
 			}
 			inputParts.push(...assetParts, ...manualParts, textPromptPart);
-
-			// Llamada real a Gemini con soporte de imagen como input Y output
-			const response = await generateImageWithRetry({
-				model: MODELO_IMAGEN,
-				contents: [
-					{
-						role: 'user',
-						parts: inputParts
-					}
-				],
-				config: {
-					responseModalities: ['IMAGE', 'TEXT']
-				}
-			});
-
-			// Extraer la imagen generada de la respuesta
-			const parts = response.candidates?.[0]?.content?.parts ?? [];
-
-			const imagePart = parts.find((p: any) => p.inlineData?.mimeType?.startsWith('image/'));
-
-			if (imagePart?.inlineData?.data) {
-				finalBase64 = `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`;
-				console.log(
-					`[IAContentService] ✅ ${modoCrear ? 'Imagen creada' : 'Imagen editada'} por Gemini correctamente.`
+			if (isBrandBeta()) {
+				if ((brandAssets || []).some((a) => a.marcaId !== pub.marca_id))
+					throw new Error('Assets de otra marca');
+				betaContext = await betaImageContext(
+					pub.marca_id,
+					pub,
+					promptPersonalizado || '',
+					brandAssets || [],
+					cleanBase64 ? { mimeType, data: cleanBase64 } : null,
+					modoCrear
 				);
-			} else {
-				throw new Error('Gemini no devolvió una imagen válida.');
+				inputParts.splice(0, inputParts.length, ...betaContext.parts);
 			}
 
-			const usage = registrarUsoGemini({
-				userId,
-				marcaId: pub.marca_id,
-				publicacionId,
-				model: MODELO_IMAGEN,
-				task: 'Edición de Imagen con Prompt de Marca',
-				prompt: promptVisual,
-				usageMetadata: response.usageMetadata
-			});
+			let imagePart: any;
+			let usage: { inputTokens: number; completionTokens: number; billedCost: number };
+			if (imageProvider === 'openai') {
+				const result = await generateOpenAIImage(
+					inputParts,
+					pub.aspect_ratio || '1:1',
+					env.OPENAI_API_KEY || ''
+				);
+				imagePart = { inlineData: result.image };
+				finalBase64 = `data:image/png;base64,${result.image.data}`;
+				const u = result.usage;
+				const providerCost = u ? imageCost(u) : 0;
+				const billedCost = providerCost * getBillingMultiplier();
+				db.prepare(
+					`INSERT INTO ai_token_logs (user_id, marca_id, publicacion_id, modelo_ia, tarea, prompt_utilizado, tokens_prompt, tokens_completion, tokens_image, tokens_totales, costo_proveedor, costo_estimado, billing_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+				).run(
+					userId,
+					pub.marca_id,
+					pub.id ? publicacionId : null,
+					OPENAI_IMAGE_MODEL,
+					'Generación de Imagen OpenAI',
+					betaContext?.prompt || promptVisual,
+					u?.input_tokens ?? 0,
+					u?.output_tokens ?? 0,
+					u?.output_tokens ?? 0,
+					u?.total_tokens ?? 0,
+					providerCost,
+					billedCost,
+					u?.input_tokens_details ? 'verified' : 'estimated'
+				);
+				usage = {
+					inputTokens: u?.input_tokens ?? 0,
+					completionTokens: u?.output_tokens ?? 0,
+					billedCost
+				};
+			} else {
+				// Llamada real a Gemini con soporte de imagen como input Y output
+				const response = await generateImageWithRetry(
+					{
+						model: MODELO_IMAGEN,
+						contents: [
+							{
+								role: 'user',
+								parts: inputParts
+							}
+						],
+						config: {
+							responseModalities: ['IMAGE', 'TEXT'],
+							...(betaContext
+								? { imageConfig: { aspectRatio: pub.aspect_ratio || '1:1', imageSize: '1K' } }
+								: {})
+						}
+					},
+					onProgress
+				);
+
+				usage = registrarUsoGemini({
+					userId,
+					marcaId: pub.marca_id,
+					publicacionId: isBrandBeta() && !pub.id ? null : publicacionId,
+					model: MODELO_IMAGEN,
+					task: betaContext ? 'Generación de Imagen beta' : 'Edición de Imagen con Prompt de Marca',
+					prompt: betaContext?.prompt || promptVisual,
+					usageMetadata: response.usageMetadata
+				});
+
+				// Extraer la imagen generada de la respuesta
+				const parts = response.candidates?.[0]?.content?.parts ?? [];
+
+				imagePart = parts.find(
+					(p: any) => !p.thought && p.inlineData?.mimeType?.startsWith('image/')
+				);
+
+				if (imagePart?.inlineData?.data) {
+					finalBase64 = `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`;
+					console.log(
+						`[IAContentService] ✅ ${modoCrear ? 'Imagen creada' : 'Imagen editada'} por Gemini correctamente.`
+					);
+				} else {
+					throw new Error('Gemini no devolvió una imagen válida.');
+				}
+			}
+
+			if (betaContext) {
+				onProgress?.({ phase: 'validating' });
+				try {
+					complianceReport = await evaluateBetaImage(
+						betaContext,
+						imagePart.inlineData,
+						brandAssets || [],
+						userId,
+						pub.marca_id,
+						isBrandBeta() && !pub.id ? null : publicacionId
+					);
+					evaluationStatus = 'available';
+				} catch (error) {
+					console.warn('[Brand beta] Evaluación no disponible', error);
+				}
+			}
 			console.log(
 				`[IAContentService] 🪙 Tokens registrados — prompt: ${usage.inputTokens}, completion: ${usage.completionTokens}, costo: $${usage.billedCost.toFixed(6)}`
 			);
@@ -737,10 +959,16 @@ Reglas:
 
 		// 3. Guardar la imagen en el almacenamiento persistente local (mock de SharePoint)
 		onProgress?.({ phase: 'saving' });
+		const extension =
+			betaContext && finalBase64.startsWith('data:image/png')
+				? 'png'
+				: betaContext && finalBase64.startsWith('data:image/webp')
+					? 'webp'
+					: 'jpg';
 		const imageName =
 			index !== undefined
-				? `ia_gen_pub_${publicacionId}_${index}.jpg`
-				: `ia_gen_pub_${publicacionId}.jpg`;
+				? `ia_gen_pub_${publicacionId}_${index}${betaContext ? '_' + crypto.randomUUID() : ''}.${extension}`
+				: `ia_gen_pub_${publicacionId}${betaContext ? '_' + crypto.randomUUID() : ''}.${extension}`;
 		const sharepointUrl = await SharePointService.uploadImage(imageName, finalBase64);
 
 		// 4. Guardar la URL en la tabla publicaciones usando el campo correcto
@@ -776,7 +1004,7 @@ Reglas:
 					imagePreview: sharepointUrl,
 					imageName: imageName,
 					imageBase64: '', // No guardamos la base64 en la BD por eficiencia
-					prompt: prev.prompt || '',
+					prompt: betaContext ? promptPersonalizado || '' : prev.prompt || '',
 					modo: prev.modo || 'editar'
 				};
 
@@ -801,6 +1029,31 @@ Reglas:
 			console.warn('[IAContentService] No se pudo guardar la URL en publicaciones:', e);
 		}
 
+		if (betaContext)
+			db.prepare(
+				`INSERT INTO beta_brand_generations(publication_id,user_id,slide_index,image_url,creative_prompt,request_json,report_json,evaluation_status) VALUES(?,?,?,?,?,?,?,?)`
+			).run(
+				publicacionId,
+				userId,
+				index ?? null,
+				sharepointUrl,
+				promptPersonalizado || '',
+				JSON.stringify({
+					...betaContext,
+					parts: undefined,
+					model: imageProvider === 'openai' ? OPENAI_IMAGE_MODEL : MODELO_IMAGEN,
+					imageConfig:
+						imageProvider === 'openai'
+							? {
+									size: imageSize(pub.aspect_ratio || '1:1'),
+									quality: 'high',
+									output_format: 'png'
+								}
+							: { aspectRatio: pub.aspect_ratio || '1:1', imageSize: '1K' }
+				}),
+				complianceReport ? JSON.stringify(complianceReport) : null,
+				evaluationStatus
+			);
 		return sharepointUrl;
 	}
 }

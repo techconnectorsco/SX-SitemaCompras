@@ -112,7 +112,7 @@
 				'#InnovacionSX',
 				'#EficienciaSostenible',
 				'#EcoEquipos',
-				'#Vedoba2026',
+				'#SX2026',
 				'#SolucionesProfesionales'
 			];
 			tagPool[activeCategory] = [...new Set([...tagPool[activeCategory], ...iaSuggestions])];
@@ -162,7 +162,7 @@
 				<Button
 					variant="outline"
 					size="sm"
-					class="border-orange-200 text-[#1A73C2] bg-orange-50 hover:bg-orange-100 hover:text-orange-700 dark:border-orange-950 dark:bg-orange-950/20 dark:text-[#1A73C2]"
+					class="border-blue-200 text-[#1A73C2] bg-blue-50 hover:bg-blue-100 hover:text-blue-700 dark:border-blue-950 dark:bg-blue-950/20 dark:text-[#1A73C2]"
 					onclick={suggestHashtagsWithIa}
 					disabled={loadingIa}
 				>

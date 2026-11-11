@@ -289,7 +289,7 @@
 				<p class="text-sm font-semibold">Nuevo proveedor</p>
 				<p class="text-xs text-muted-foreground">
 					La "Marca (Exactus)" debe coincidir <strong>exactamente</strong> con el nombre en Exactus
-					(CLASIFICACION_4), ej. <code>OREGON</code>.
+					(CLASIFICACION_4), ej. <code>ASUS</code>.
 				</p>
 				<div class="grid grid-cols-2 md:grid-cols-6 gap-2 items-end">
 					<div class="col-span-2">
@@ -297,7 +297,7 @@
 						<label class="text-xs text-muted-foreground">Marca (Exactus)</label>
 						<input
 							type="text"
-							placeholder="Ej: OREGON"
+							placeholder="Ej: ASUS"
 							bind:value={nueva.marca_exactus}
 							class="w-full px-2 py-1.5 border rounded dark:bg-slate-900 dark:border-slate-700 uppercase"
 						/>
@@ -307,7 +307,7 @@
 						<label class="text-xs text-muted-foreground">Etiqueta (nombre amigable)</label>
 						<input
 							type="text"
-							placeholder="Ej: Oregon"
+							placeholder="Ej: Asus"
 							bind:value={nueva.etiqueta}
 							class="w-full px-2 py-1.5 border rounded dark:bg-slate-900 dark:border-slate-700"
 						/>
