@@ -8,9 +8,11 @@
 
 import type { ModuloIA } from './tipos';
 import { moduloCompras } from './modulos/compras';
+import { moduloContenido } from './modulos/contenido';
 
 export const MODULOS: ModuloIA[] = [
-	moduloCompras
+	moduloCompras,
+	moduloContenido
 	// , moduloFinanzas   <- futuro
 	// , moduloPais       <- futuro
 ];

@@ -45,6 +45,13 @@
 			{ texto: '¿Dónde tengo mayor riesgo de quiebre?', enviar: true },
 			{ texto: '¿Dónde estoy inmovilizando dinero?', enviar: true }
 		];
+		if (contexto.ruta?.includes('content-creator')) {
+			return [
+				{ texto: '¿Qué publicaciones tengo en revisión?', enviar: true },
+				{ texto: '¿Qué productos me conviene promocionar?', enviar: true },
+				{ texto: '¿Cuánto llevo gastado en IA de contenido?', enviar: true }
+			];
+		}
 		if (codigoSku) {
 			// Contextual: rellena el campo (no envía) para que el usuario confirme.
 			return [
