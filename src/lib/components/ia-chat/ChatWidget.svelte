@@ -12,12 +12,17 @@
 		/** Contexto opcional: si el popup se abre dentro de un PROC o SKU. */
 		codigoProcesamiento?: string;
 		codigoSku?: string;
+		/** Contexto opcional para CxC: cliente o agente seleccionado. */
+		cardCode?: string;
+		agenteCodigo?: number;
 		titulo?: string;
 	}
 	let {
 		autenticado = true,
 		codigoProcesamiento,
 		codigoSku,
+		cardCode,
+		agenteCodigo,
 		titulo = 'BettiIA'
 	}: Props = $props();
 
@@ -35,6 +40,8 @@
 	const contexto: ContextoPantalla = $derived({
 		codigoProcesamiento,
 		codigoSku,
+		cardCode,
+		agenteCodigo,
 		ruta: typeof window !== 'undefined' ? window.location.pathname : undefined
 	});
 
@@ -51,6 +58,26 @@
 				{ texto: '¿Qué productos me conviene promocionar?', enviar: true },
 				{ texto: '¿Cuánto llevo gastado en IA de contenido?', enviar: true }
 			];
+		}
+		if (contexto.ruta?.includes('cuentasxcobrar')) {
+			const fijasCxc = [
+				{
+					texto: '¿Cuál es el resumen de la cartera vencida y los clientes más morosos?',
+					enviar: true
+				},
+				{
+					texto: '¿Qué clientes con saldo tienen deshabilitado el envío automático?',
+					enviar: true
+				},
+				{ texto: '¿Cómo han estado las últimas ejecuciones del RPA de CxC?', enviar: true }
+			];
+			if (cardCode) {
+				return [
+					{ texto: `Audite el cliente ${cardCode} y dígame su saldo vencido`, enviar: false },
+					...fijasCxc
+				];
+			}
+			return fijasCxc;
 		}
 		if (codigoSku) {
 			// Contextual: rellena el campo (no envía) para que el usuario confirme.

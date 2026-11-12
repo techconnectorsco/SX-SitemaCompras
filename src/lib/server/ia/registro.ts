@@ -9,12 +9,12 @@
 import type { ModuloIA } from './tipos';
 import { moduloCompras } from './modulos/compras';
 import { moduloContenido } from './modulos/contenido';
+import { moduloCxc } from './modulos/cxc';
 
 export const MODULOS: ModuloIA[] = [
 	moduloCompras,
-	moduloContenido
-	// , moduloFinanzas   <- futuro
-	// , moduloPais       <- futuro
+	moduloContenido,
+	moduloCxc
 ];
 
 /** Módulos a los que el usuario tiene acceso según sus permisos. */

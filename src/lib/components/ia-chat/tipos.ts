@@ -37,5 +37,7 @@ export interface RespuestaApi {
 export interface ContextoPantalla {
 	codigoProcesamiento?: string;
 	codigoSku?: string;
+	cardCode?: string;
+	agenteCodigo?: number;
 	ruta?: string;
 }

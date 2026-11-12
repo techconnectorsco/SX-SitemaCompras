@@ -30,7 +30,13 @@ export interface ContextoPantalla {
 	codigoProcesamiento?: string;
 	/** SKU seleccionado, si aplica. */
 	codigoSku?: string;
-	/** Ruta actual, ej: '/compras/forecast'. Solo informativa. */
+	/** Cliente CxC seleccionado en Auditoría o Envío, si aplica. */
+	cardCode?: string;
+	/** Agente comercial seleccionado en Giras, si aplica. */
+	agenteCodigo?: number;
+	/** Pestaña activa en el módulo actual (ej. 'dashboard' | 'envio' | 'auditoria' | 'gira'). */
+	tabActiva?: string;
+	/** Ruta actual, ej: '/compras/forecast' o '/cuentasxcobrar'. */
 	ruta?: string;
 }
 
